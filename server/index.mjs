@@ -1,13 +1,12 @@
 import http from "http";
 import path from "path";
 import fs from "fs";
-import { generateAppHtml } from "@/server/libs/pageLoader";
-import {
-  processAllComponents,
-  watchDirectory,
-} from "@/server/libs/componentBuilder";
-import CONST from "@/src/data/CONST";
-import { resolvePath } from "../config/utils.mjs";
+import { generateAppHtml } from "@/server/pageLoader.mjs";
+import { processAllComponents } from "@/server/componentBuilder.mjs";
+import CONST from "@/src/CONST.mjs";
+import { resolvePath } from "@/src/utils/paths.mjs";
+import { watchDirectory } from "@/watcher/methods.mjs";
+import "@/src/utils/console.mjs";
 
 const server = http.createServer(async (req, res) => {
   "use strict";
@@ -20,7 +19,7 @@ const server = http.createServer(async (req, res) => {
 
     if (!componentName) {
       res.writeHead(400, { "Content-Type": "text/plain" });
-      res.end("❌ Component name is missing");
+      res.end(CONST.consoleMessages.server.missingComponentName);
       return;
     }
 
@@ -29,7 +28,7 @@ const server = http.createServer(async (req, res) => {
       (err, data) => {
         if (err) {
           res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end("❌ Component not found");
+          res.end(CONST.consoleMessages.server.componentNotFound);
         } else {
           res.writeHead(200, { "Content-Type": "application/javascript" });
           res.end(data);
@@ -51,7 +50,7 @@ const server = http.createServer(async (req, res) => {
       fs.readFile(filePath, (err, data) => {
         if (err) {
           res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end("Not found");
+          res.end(CONST.consoleMessages.server.notFound);
         } else {
           res.writeHead(200, { "Content-Type": contentType });
           res.end(data);
@@ -62,18 +61,18 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(CONST.PORT, async () => {
-  if ([...process.argv].includes("--restart")) {
-    console.log("\n🔁 Server restarted");
+  if (process.argv.includes("--restart")) {
+    console.msg("server.restarted");
   } else {
-    console.log(`\n🚀 Server running at http://localhost:${CONST.PORT}`);
-    console.log('🔁 Press "r" to reload components.');
-    console.log('🔁 Press "s" to restart server.\n');
+    console.msg("server.running", CONST.PORT);
+    console.msg("server.pressReload");
+    console.msg("server.pressRestart");
   }
 
   try {
     await processAllComponents();
     watchDirectory();
   } catch (err) {
-    console.error("❌ Error during server initialization:", err);
+    console.msg("server.initError", err);
   }
 });

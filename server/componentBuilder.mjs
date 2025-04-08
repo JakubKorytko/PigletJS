@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { resolvePath } from "@/config/utils.mjs";
-import { toPascalCase, toKebabCase, indent } from "@/utils/stringUtils.mjs";
+import { resolvePath } from "@/src/utils/paths.mjs";
+import { toPascalCase, toKebabCase, indent } from "@/src/utils/stringUtils.mjs";
 
 /**
  * Builds a web component from a .cc.html file.
@@ -16,7 +16,7 @@ async function buildComponent(filePath) {
     const contentMatch = html.match(/<content>([\s\S]*?)<\/content>/i);
 
     if (!contentMatch) {
-      console.error(`❌ Missing <content> tag in file: ${filePath}`);
+      console.msg("components.missingContent", filePath);
       return;
     }
 
@@ -65,9 +65,9 @@ customElements.define('${tagName}', ${componentName});`.trim();
 
     const outputPath = resolvePath(`@/builtComponents/${componentName}.mjs`);
     await fs.promises.writeFile(outputPath, output);
-    console.log(`✔ Component generated: ${outputPath}`);
+    console.msg("components.generated", outputPath);
   } catch (err) {
-    console.error(`❌ Error generating component from file: ${filePath}`, err);
+    console.msg("components.generationError", filePath, err);
   }
 }
 
@@ -85,41 +85,13 @@ async function processAllComponents(dir = resolvePath("@/components")) {
       if (file.isDirectory()) {
         await processAllComponents(filePath);
       } else if (file.name.endsWith(".cc.html")) {
-        console.log(`✔ Generating component from file: ${file.name}`);
+        console.msg("components.generatingFrom", file.name);
         await buildComponent(filePath);
       }
     }
   } catch (err) {
-    console.error("❌ Error while processing components:", err);
+    console.msg("components.processingError", err);
   }
 }
 
-/**
- * Watches the components directory for changes and rebuilds modified components.
- */
-function watchDirectory() {
-  let debounceTimeout;
-
-  fs.watch(
-    resolvePath("@/components"),
-    { recursive: true },
-    (eventType, filename) => {
-      if (filename && filename.endsWith(".cc.html")) {
-        clearTimeout(debounceTimeout);
-        debounceTimeout = setTimeout(() => {
-          const filePath = resolvePath(`@/components/${filename}`);
-          console.log(`✔ File changed: ${filename}`);
-          buildComponent(filePath).catch((err) =>
-            console.error("❌ Error while generating component:", err),
-          );
-        }, 500);
-      }
-    },
-  );
-
-  console.log(
-    `✔ Watching for changes in directory: ${resolvePath("@/components")}`,
-  );
-}
-
-export { processAllComponents, watchDirectory };
+export { buildComponent, processAllComponents };

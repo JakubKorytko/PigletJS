@@ -12,7 +12,7 @@ spawn(
         .toString()
         .replace("__dirname", "./config/loader.mjs"),
     )}`,
-    "./config/watcher.mjs",
+    "./watcher/index.mjs",
     `--rootDir="${pathToFileURL(import.meta.dirname)}"`,
   ],
   {

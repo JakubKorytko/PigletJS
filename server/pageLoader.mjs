@@ -1,6 +1,6 @@
 import fs from "fs";
-import { resolvePath } from "@/config/utils.mjs";
-import { toKebabCase } from "@/utils/stringUtils.mjs";
+import { resolvePath } from "@/src/utils/paths.mjs";
+import { toKebabCase } from "@/src/utils/stringUtils.mjs";
 
 /**
  * Loads the HTML content of a specific page.
@@ -15,7 +15,7 @@ async function loadPage(pageName) {
   try {
     return await fs.promises.readFile(pagePath, "utf-8");
   } catch (err) {
-    console.error(`❌ Failed to load page: ${pageName}`, err);
+    console.msg("pages.failedToLoad", pageName, err);
     return false;
   }
 }
@@ -86,7 +86,7 @@ async function generateAppHtml(pageName) {
     appHtml = appHtml.replace("<!-- PAGE_CONTENT -->", pageContent);
     return appHtml;
   } catch (err) {
-    console.error(`❌ Error generating HTML: ${err.message}`, err);
+    console.msg("pages.htmlGeneratingError", err);
     return false;
   }
 }

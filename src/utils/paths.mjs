@@ -1,4 +1,4 @@
-import CONST from "@/src/data/CONST.mjs";
+import CONST from "@/src/CONST.mjs";
 import path from "path";
 
 /**
