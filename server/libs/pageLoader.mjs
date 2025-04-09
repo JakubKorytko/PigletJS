@@ -1,6 +1,6 @@
 import fs from "fs";
-import { resolvePath } from "@/src/utils/paths.mjs";
-import { toKebabCase } from "@/src/utils/stringUtils.mjs";
+import { resolvePath } from "@/utils/paths.mjs";
+import { toKebabCase } from "@/utils/stringUtils.mjs";
 
 /**
  * Loads the HTML content of a specific page.

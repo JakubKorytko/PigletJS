@@ -1,7 +1,8 @@
 import fs from "fs";
 import { fork } from "child_process";
-import { getRootDirFromArgv, resolvePath } from "@/src/utils/paths.mjs";
-import { buildComponent } from "@/server/componentBuilder.mjs";
+import { getRootDirFromArgv, resolvePath } from "@/utils/paths.mjs";
+import { buildComponent } from "@/server/libs/componentBuilder.mjs";
+import { subprocessRef } from "@/watcher/subprocessRef.mjs";
 
 /**
  * Creates a subprocess for running the server.
@@ -23,14 +24,15 @@ let debounceTimeout;
  *
  * @param {string} eventType - The type of the file system event (e.g., "change").
  * @param {string} filename - The name of the file that triggered the event.
- * @param subprocess -
+ * @param {boolean} [forced=false] - Whether to force a restart regardless of file type.
  */
-const resetSubprocess = (subprocess, eventType, filename) => {
-  if (filename && filename.endsWith(".mjs")) {
+const resetSubprocess = (eventType, filename, forced = false) => {
+  if (forced || (filename && filename.endsWith(".mjs"))) {
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-      subprocess.kill("SIGINT");
-      subprocess = createSubprocess(["--restart"]);
+      subprocessRef.instance.kill("SIGINT");
+      subprocessRef.instance = null;
+      subprocessRef.instance = createSubprocess(["--restart"]);
     }, 500);
   }
 };

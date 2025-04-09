@@ -1,67 +1,29 @@
 import http from "http";
-import path from "path";
-import fs from "fs";
-import { generateAppHtml } from "@/server/pageLoader.mjs";
-import { processAllComponents } from "@/server/componentBuilder.mjs";
+import { processAllComponents } from "@/server/libs/componentBuilder.mjs";
 import CONST from "@/src/CONST.mjs";
-import { resolvePath } from "@/src/utils/paths.mjs";
 import { watchDirectory } from "@/watcher/methods.mjs";
-import "@/src/utils/console.mjs";
+import "@/utils/console.mjs";
+import {
+  proxyHandler,
+  routeNames,
+  serverHandler,
+} from "@/server/libs/helpers.mjs";
+import ComponentController from "@/server/controllers/component.controller.mjs";
+import FileController from "@/server/controllers/file.controller.mjs";
+import PageController from "@/server/controllers/page.controller.mjs";
 
-const server = http.createServer(async (req, res) => {
-  "use strict";
+const { component, page, file } = routeNames;
 
-  if (req.url.startsWith(CONST.customRouteAliases.component)) {
-    const componentName = req.url.replace(
-      CONST.customRouteAliases.component,
-      "",
-    );
+const server = new Proxy(http.createServer(serverHandler), proxyHandler);
 
-    if (!componentName) {
-      res.writeHead(400, { "Content-Type": "text/plain" });
-      res.end(CONST.consoleMessages.server.missingComponentName);
-      return;
-    }
-
-    fs.readFile(
-      resolvePath(`@/builtComponents/${componentName}.mjs`),
-      (err, data) => {
-        if (err) {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end(CONST.consoleMessages.server.componentNotFound);
-        } else {
-          res.writeHead(200, { "Content-Type": "application/javascript" });
-          res.end(data);
-        }
-      },
-    );
-  } else {
-    const pageName = req.url.replace("/", "") || "home";
-    let htmlContent = await generateAppHtml(pageName);
-
-    if (htmlContent) {
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(htmlContent);
-    } else {
-      const filePath = resolvePath(`@/public/${req.url}`);
-      const ext = path.extname(filePath);
-      const contentType = CONST.mimeTypes[ext] || "application/octet-stream";
-
-      fs.readFile(filePath, (err, data) => {
-        if (err) {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end(CONST.consoleMessages.server.notFound);
-        } else {
-          res.writeHead(200, { "Content-Type": contentType });
-          res.end(data);
-        }
-      });
-    }
-  }
-});
+server.customRoutes = {
+  [component]: ComponentController,
+  [file]: FileController,
+  [page]: PageController,
+};
 
 server.listen(CONST.PORT, async () => {
-  if (process.argv.includes("--restart")) {
+  if ([...process.argv].includes("--restart")) {
     console.msg("server.restarted");
   } else {
     console.msg("server.running", CONST.PORT);
@@ -76,3 +38,5 @@ server.listen(CONST.PORT, async () => {
     console.msg("server.initError", err);
   }
 });
+
+export default server;

@@ -20,7 +20,8 @@ export default {
     public: path.resolve(rootDir, "public"),
     pages: path.resolve(rootDir, "src/pages"),
     server: path.resolve(rootDir, "server"),
-    config: path.resolve(rootDir, "config"),
+    utils: path.resolve(rootDir, "utils"),
+    watcher: path.resolve(rootDir, "watcher"),
   },
   mimeTypes: {
     ".html": "text/html",
@@ -38,6 +39,7 @@ export default {
   customRouteAliases: {
     component: "/component/",
   },
+  routes: ["component", "page", "file"],
   consoleMessages: {
     server: {
       start: '🔧 Server is starting... Press "r" to reload components.',
@@ -72,7 +74,7 @@ export default {
       regeneratingError: "❌ Error while regenerating components:",
       missingContent: (filePath) =>
         `❌ Missing <content> tag in file: ${filePath}`,
-      generated: (outputPath) => `✔ Component generated: ${outputPath}`,
+      generated: (outputPath) => `✅ Component generated: ${outputPath}`,
       generatingFrom: (fileName) =>
         `⏳ Generating component from file: ${fileName}`,
       processingError: (err) => ["❌ Error while processing components:", err],
@@ -83,7 +85,7 @@ export default {
       watchingForChanges: (path) =>
         `👀 Watching for changes in directory: ${path}`,
       generatingError: (err) => ["❌ Error while generating component:", err],
-      changed: (filename) => `✔ File changed: ${filename}`,
+      changed: (filename) => `✅ File changed: ${filename}`,
     },
     pages: {
       failedToLoad: (pageName, err) => [

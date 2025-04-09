@@ -1,42 +1,50 @@
 import fs from "fs";
-import { resolvePath } from "@/src/utils/paths.mjs";
-import { processAllComponents } from "@/server/componentBuilder.mjs";
+import { resolvePath } from "@/utils/paths.mjs";
+import { processAllComponents } from "@/server/libs/componentBuilder.mjs";
 import { createSubprocess, resetSubprocess } from "@/watcher/methods.mjs";
-import "@/src/utils/console.mjs";
-
-let subprocess = createSubprocess();
+import "@/utils/console.mjs";
+import { subprocessRef } from "@/watcher/subprocessRef.mjs";
 
 const resetServer = (eventType, filename) =>
-  resetSubprocess(subprocess, eventType, filename);
+  resetSubprocess(eventType, filename, false);
 
-fs.watch(resolvePath("@/server"), { recursive: true }, resetServer);
-fs.watch(resolvePath("@/config"), { recursive: true }, resetServer);
+const resetServerOnButtonClick = () =>
+  resetSubprocess(undefined, undefined, true);
+
+const directoriesToWatch = ["@/server", "@/watcher", "@/utils"];
+
+for (const directory of directoriesToWatch) {
+  fs.watch(resolvePath(directory), { recursive: true }, resetServer);
+}
 
 process.stdin.setEncoding("utf-8");
 process.stdin.setRawMode(true);
 process.stdin.resume();
 
+subprocessRef.instance = createSubprocess();
+
 process.stdin.on("data", async (key) => {
   "use strict";
 
   if (key === "r") {
-    console.msg("server.reloading");
+    console.msg("components.reloading");
     try {
       await processAllComponents();
-      console.msg("server.regenerated");
+      console.msg("components.regenerated");
     } catch (err) {
-      console.msg("server.regeneratingError", err);
+      console.msg("components.regeneratingError", err);
     }
   }
 
   if (key === "s") {
     console.msg("server.restarting");
-    subprocess.kill("SIGINT");
-    subprocess = createSubprocess(["--restart"]);
+    resetServerOnButtonClick();
   }
 
   if (key === "\u0003") {
     console.msg("server.shuttingDown");
+    subprocessRef.instance.kill("SIGINT");
+    subprocessRef.instance = null;
     process.exit();
   }
 });

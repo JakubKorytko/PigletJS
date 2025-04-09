@@ -1,4 +1,4 @@
-import CONST from "../CONST.mjs";
+import CONST from "../src/CONST.mjs";
 
 console.msg = function (path, ...args) {
   if (!path || typeof path !== "string") {

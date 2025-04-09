@@ -8,9 +8,9 @@ spawn(
     "--import",
     `data:text/javascript,${encodeURIComponent(
       fs
-        .readFileSync("./config/loader-arg.mjs", "utf8")
+        .readFileSync("./watcher/loader-arg.mjs", "utf8")
         .toString()
-        .replace("__dirname", "./config/loader.mjs"),
+        .replace("__dirname", "./watcher/loader.mjs"),
     )}`,
     "./watcher/index.mjs",
     `--rootDir="${pathToFileURL(import.meta.dirname)}"`,
