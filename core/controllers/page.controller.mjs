@@ -1,4 +1,4 @@
-import { generateAppHtml } from "@/server/libs/pageLoader.mjs";
+import { generateAppHtml } from "@/core/libs/pageLoader.mjs";
 
 export default async (req, res) => {
   const pageName = req.url.replace("/", "") || "home";

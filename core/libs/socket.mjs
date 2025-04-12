@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { clientsRef } from "@/server/libs/clientsRef.mjs";
+import { clientsRef } from "@/core/libs/clientsRef.mjs";
 
 const socketHandler = (req, socket) => {
   const key = req.headers["sec-websocket-key"];
@@ -35,4 +35,11 @@ const reloadClients = () => {
   });
 };
 
-export { reloadClients, socketHandler };
+const runReloadClientOnWSMessageListener = () =>
+  process.on("message", (msg) => {
+    if (msg.type === "reload") {
+      reloadClients();
+    }
+  });
+
+export { socketHandler, runReloadClientOnWSMessageListener, reloadClients };

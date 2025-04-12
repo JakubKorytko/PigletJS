@@ -1,7 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { resolvePath } from "@/utils/paths.mjs";
-import { toPascalCase, toKebabCase, indent } from "@/utils/stringUtils.mjs";
+import { resolvePath } from "@/core/utils/paths.mjs";
+import {
+  toPascalCase,
+  toKebabCase,
+  indent,
+} from "@/core/utils/stringUtils.mjs";
 
 /**
  * Builds a web component from a .cc.html file.

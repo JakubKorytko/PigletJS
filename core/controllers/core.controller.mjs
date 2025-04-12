@@ -1,10 +1,11 @@
-import { resolvePath } from "@/utils/paths.mjs";
+import { resolvePath } from "@/core/utils/paths.mjs";
 import path from "path";
-import CONST from "@/src/CONST.mjs";
+import CONST from "@/core/CONST.mjs";
 import fs from "fs";
 
 export default (req, res) => {
-  const filePath = resolvePath(`@/public/${req.url}`);
+  const pathWithoutCore = req.url.replace("/core/", "");
+  const filePath = resolvePath(`@/coreBrowserLogic/${pathWithoutCore}.mjs`);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/octet-stream";
 

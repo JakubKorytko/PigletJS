@@ -1,6 +1,6 @@
-import CONST from "@/src/CONST.mjs";
+import CONST from "@/core/CONST.mjs";
 import fs from "fs";
-import { resolvePath } from "@/utils/paths.mjs";
+import { resolvePath } from "@/core/utils/paths.mjs";
 
 export default (req, res) => {
   const componentName = req.url.replace(CONST.customRouteAliases.component, "");

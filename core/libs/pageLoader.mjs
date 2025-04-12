@@ -1,6 +1,6 @@
 import fs from "fs";
-import { resolvePath } from "@/utils/paths.mjs";
-import { toKebabCase } from "@/utils/stringUtils.mjs";
+import { resolvePath } from "@/core/utils/paths.mjs";
+import { toKebabCase } from "@/core/utils/stringUtils.mjs";
 
 /**
  * Loads the HTML content of a specific page.
@@ -11,27 +11,23 @@ import { toKebabCase } from "@/utils/stringUtils.mjs";
 async function loadPage(pageName) {
   "use strict";
 
-  // Rozdzielamy ścieżkę na katalogi i nazwę pliku
   const pathSegments = pageName.split("/");
 
-  // Rekursywnie szukamy pliku w podkatalogach
   for (let i = 1; i <= pathSegments.length; i++) {
-    const subPath = pathSegments.slice(0, i).join("/"); // Tworzymy ścieżkę do podkatalogu
+    const subPath = pathSegments.slice(0, i).join("/");
     const pagePath = resolvePath(`@/pages/${subPath}.html`);
 
     try {
-      // Sprawdzamy, czy plik istnieje w danej ścieżce
       return await fs.promises.readFile(pagePath, "utf-8");
     } catch (err) {
-      // Jeśli nie uda się wczytać pliku, kontynuujemy próby w wyższych katalogach
       if (i === pathSegments.length) {
         console.msg("pages.failedToLoad", pageName, err);
-        return false; // Po ostatniej próbie zwracamy błąd
+        return false;
       }
     }
   }
 
-  return false; // Jeśli plik nie został znaleziony
+  return false;
 }
 
 /**
@@ -64,18 +60,15 @@ async function generateAppHtml(pageName) {
       componentTags.add(pascalTag);
     }
 
-    // Replace PascalCase component tags with kebab-case
     componentTags.forEach((tag) => {
       const kebabTag = toKebabCase(tag);
 
-      // Convert self-closing tags (<Tag />) to standard tags (<Tag></Tag>)
       const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
       pageContent = pageContent.replace(
         selfClosingTagRegex,
         `<${kebabTag}$1></${kebabTag}>`,
       );
 
-      // Replace opening and closing PascalCase tags with kebab-case
       pageContent = pageContent.replace(
         new RegExp(`<${tag}([^>]*)>`, "g"),
         `<${kebabTag}$1>`,
@@ -86,17 +79,14 @@ async function generateAppHtml(pageName) {
       );
     });
 
-    // Add <script> tags for each component before the closing </body> tag
     let scriptTags = "";
     componentTags.forEach((tag) => {
       const scriptTag = `<script src="component/${tag}"></script>`;
       scriptTags += `${scriptTag}\n`; // Append each script tag
     });
 
-    // Add the script tags at the end of the body section
     appHtml = appHtml.replace("</body>", `${scriptTags}</body>`);
 
-    // Inject page content into the app shell
     appHtml = appHtml.replace("<!-- PAGE_CONTENT -->", pageContent);
     return appHtml;
   } catch (err) {

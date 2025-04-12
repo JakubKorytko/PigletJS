@@ -13,15 +13,11 @@ export default {
   PORT,
   directories: {
     "@": rootDir,
-    src: path.resolve(rootDir, "src"),
-    components: path.resolve(rootDir, "src/components"),
-    build: path.resolve(rootDir, "build"),
+    components: path.resolve(rootDir, "src", "components"),
     builtComponents: path.resolve(rootDir, "build", "components"),
-    public: path.resolve(rootDir, "public"),
-    pages: path.resolve(rootDir, "src/pages"),
-    server: path.resolve(rootDir, "server"),
-    utils: path.resolve(rootDir, "utils"),
-    watcher: path.resolve(rootDir, "watcher"),
+    pages: path.resolve(rootDir, "src", "pages"),
+    public: path.resolve(rootDir, "src", "public"),
+    coreBrowserLogic: path.resolve(rootDir, "core", "browserLogic"),
   },
   mimeTypes: {
     ".html": "text/html",
@@ -38,8 +34,9 @@ export default {
   },
   customRouteAliases: {
     component: "/component/",
+    core: "/core/",
   },
-  routes: ["component", "page", "file"],
+  routes: ["component", "page", "file", "core"],
   consoleMessages: {
     server: {
       start: '🔧 Server is starting... Press "r" to reload components.',

@@ -1,9 +1,9 @@
 import fs from "fs";
 import { fork } from "child_process";
-import { getRootDirFromArgv, resolvePath } from "@/utils/paths.mjs";
-import { buildComponent } from "@/server/libs/componentBuilder.mjs";
-import { subprocessRef } from "@/watcher/subprocessRef.mjs";
-import { reloadClients } from "@/server/libs/socket.mjs";
+import { getRootDirFromArgv, resolvePath } from "@/core/utils/paths.mjs";
+import { buildComponent } from "@/core/libs/componentBuilder.mjs";
+import { subprocessRef } from "@/core/watcher/subprocessRef.mjs";
+import { reloadClients } from "@/core/libs/socket.mjs";
 
 /**
  * Creates a subprocess for running the server.

@@ -94,19 +94,16 @@ class CIf extends HTMLElement {
     }
   }
 
-  // Update method called when state changes
   update(newState) {
-    console.log("State updated:", newState);
-    // Zmieniamy metodę, by sprawdzała nazwę właściwości z atrybutu 'condition' w 'newState'
-    let conditionProperty = this.getAttribute("condition"); // Pobierz nazwę właściwości z atrybutu
+    let conditionProperty = this.getAttribute("condition");
 
     let negated = false;
     if (conditionProperty.startsWith("!")) {
       negated = true;
-      conditionProperty = conditionProperty.substring(1); // Usuwamy "!" z nazwy
+      conditionProperty = conditionProperty.substring(1);
     }
 
-    this.setConditionFromState(conditionProperty, negated); // Sprawdzamy nową wartość na podstawie nazwy właściwości
+    this.setConditionFromState(conditionProperty, negated);
     this.updateVisibility();
   }
 }

@@ -1,9 +1,9 @@
 import fs from "fs";
-import { resolvePath } from "@/utils/paths.mjs";
-import { processAllComponents } from "@/server/libs/componentBuilder.mjs";
-import { createSubprocess, resetSubprocess } from "@/watcher/methods.mjs";
-import "@/utils/console.mjs";
-import { subprocessRef } from "@/watcher/subprocessRef.mjs";
+import { resolvePath } from "@/core/utils/paths.mjs";
+import { processAllComponents } from "@/core/libs/componentBuilder.mjs";
+import { createSubprocess, resetSubprocess } from "@/core/watcher/methods.mjs";
+import "@/core/utils/console.mjs";
+import { subprocessRef } from "@/core/watcher/subprocessRef.mjs";
 
 const resetServer = (eventType, filename) =>
   resetSubprocess(eventType, filename, false);
@@ -11,7 +11,7 @@ const resetServer = (eventType, filename) =>
 const resetServerOnButtonClick = () =>
   resetSubprocess(undefined, undefined, true);
 
-const directoriesToWatch = ["@/server", "@/watcher", "@/utils"];
+const directoriesToWatch = ["@/server", "@/core/watcher", "@/core/utils"];
 
 for (const directory of directoriesToWatch) {
   fs.watch(resolvePath(directory), { recursive: true }, resetServer);
