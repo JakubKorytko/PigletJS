@@ -1,5 +1,10 @@
 <content>
-  <h3>MySecondBox Component</h3>
+  <c-if condition="display">
+    <h3>MySecondBox Component</h3>
+  </c-if>
+  <c-if condition="!nested.object.hide">
+    <h4>Im not visible by default!</h4>
+  </c-if>
 </content>
 
 <style>
@@ -11,5 +16,9 @@
 </style>
 
 <script>
-  console.log("Me too!");
+  const display = useState(_componentName, "display");
+  const nested = useState(_componentName, "nested");
+
+  nested.value = { object: { hide: true } };
+  display.value = true;
 </script>

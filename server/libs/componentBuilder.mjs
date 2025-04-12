@@ -20,11 +20,19 @@ async function buildComponent(filePath) {
       return;
     }
 
-    const content = contentMatch[1].trim();
-
     const baseName = path.basename(filePath, ".cc.html");
     const componentName = toPascalCase(baseName);
     const tagName = toKebabCase(componentName);
+
+    const content = contentMatch[1].trim();
+
+    const modifiedContent = content.replace(
+      /<c-if([^>]*)>/g,
+      (match, attrs) => {
+        if (/host__element\s*=/.test(attrs)) return match;
+        return `<c-if host__element="${componentName}"${attrs}>`;
+      },
+    );
 
     const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
     const styleCSS = styleMatch ? styleMatch[1].trim() : "";
@@ -41,7 +49,7 @@ class ${componentName} extends HTMLElement {
           <style>
 ${indent(styleCSS, 12)}
           </style>
-${indent(content, 8)}
+${indent(modifiedContent, 8)}
         \`;
 
         ${scriptJS ? `this.runScript(shadow);` : ""}
@@ -51,13 +59,15 @@ ${indent(content, 8)}
         scriptJS
           ? `runScript(shadowRoot) {
         (function(shadowRoot, hostElement) {
+        const _componentName = hostElement.constructor.name; 
 ${indent(scriptJS, 8)}
         })(shadowRoot, this);
       }`
           : ""
       }
     }
-customElements.define('${tagName}', ${componentName});`.trim();
+customElements.define('${tagName}', ${componentName});
+`.trim();
 
     await fs.promises.mkdir(resolvePath("@/builtComponents"), {
       recursive: true,

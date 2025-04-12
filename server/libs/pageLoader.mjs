@@ -11,13 +11,27 @@ import { toKebabCase } from "@/utils/stringUtils.mjs";
 async function loadPage(pageName) {
   "use strict";
 
-  const pagePath = resolvePath(`@/pages/${pageName}.html`);
-  try {
-    return await fs.promises.readFile(pagePath, "utf-8");
-  } catch (err) {
-    console.msg("pages.failedToLoad", pageName, err);
-    return false;
+  // Rozdzielamy ścieżkę na katalogi i nazwę pliku
+  const pathSegments = pageName.split("/");
+
+  // Rekursywnie szukamy pliku w podkatalogach
+  for (let i = 1; i <= pathSegments.length; i++) {
+    const subPath = pathSegments.slice(0, i).join("/"); // Tworzymy ścieżkę do podkatalogu
+    const pagePath = resolvePath(`@/pages/${subPath}.html`);
+
+    try {
+      // Sprawdzamy, czy plik istnieje w danej ścieżce
+      return await fs.promises.readFile(pagePath, "utf-8");
+    } catch (err) {
+      // Jeśli nie uda się wczytać pliku, kontynuujemy próby w wyższych katalogach
+      if (i === pathSegments.length) {
+        console.msg("pages.failedToLoad", pageName, err);
+        return false; // Po ostatniej próbie zwracamy błąd
+      }
+    }
   }
+
+  return false; // Jeśli plik nie został znaleziony
 }
 
 /**
