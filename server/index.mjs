@@ -11,6 +11,7 @@ import {
 import ComponentController from "@/server/controllers/component.controller.mjs";
 import FileController from "@/server/controllers/file.controller.mjs";
 import PageController from "@/server/controllers/page.controller.mjs";
+import { reloadClients, socketHandler } from "@/server/libs/socket.mjs";
 
 const { component, page, file } = routeNames;
 
@@ -36,6 +37,14 @@ server.listen(CONST.PORT, async () => {
     watchDirectory();
   } catch (err) {
     console.msg("server.initError", err);
+  }
+});
+
+server.on("upgrade", socketHandler);
+
+process.on("message", (msg) => {
+  if (msg.type === "reload") {
+    reloadClients();
   }
 });
 

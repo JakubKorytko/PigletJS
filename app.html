@@ -7,5 +7,14 @@
   </head>
   <body>
     <!-- PAGE_CONTENT -->
+    <script>
+      const ws = new WebSocket("ws://" + location.host);
+
+      ws.onmessage = (event) => {
+        if (event.data === "reload") {
+          location.reload();
+        }
+      };
+    </script>
   </body>
 </html>

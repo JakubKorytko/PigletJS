@@ -3,6 +3,7 @@ import { fork } from "child_process";
 import { getRootDirFromArgv, resolvePath } from "@/utils/paths.mjs";
 import { buildComponent } from "@/server/libs/componentBuilder.mjs";
 import { subprocessRef } from "@/watcher/subprocessRef.mjs";
+import { reloadClients } from "@/server/libs/socket.mjs";
 
 /**
  * Creates a subprocess for running the server.
@@ -40,7 +41,7 @@ const resetSubprocess = (eventType, filename, forced = false) => {
 /**
  * Watches the components directory for changes and rebuilds modified components.
  */
-function watchDirectory() {
+const watchDirectory = () => {
   let debounceTimeout;
 
   fs.watch(
@@ -52,15 +53,15 @@ function watchDirectory() {
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/components/${filename}`);
           console.msg("components.changed", filename);
-          buildComponent(filePath).catch((err) =>
-            console.msg("components.generatingError", err),
-          );
+          buildComponent(filePath)
+            .catch((err) => console.msg("components.generatingError", err))
+            .then(reloadClients);
         }, 500);
       }
     },
   );
 
   console.msg("components.watchingForChanges", resolvePath("@/components"));
-}
+};
 
 export { watchDirectory, resetSubprocess, createSubprocess };

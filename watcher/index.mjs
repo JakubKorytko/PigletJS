@@ -31,6 +31,7 @@ process.stdin.on("data", async (key) => {
     try {
       await processAllComponents();
       console.msg("components.regenerated");
+      subprocessRef.instance.send({ type: "reload" });
     } catch (err) {
       console.msg("components.regeneratingError", err);
     }
