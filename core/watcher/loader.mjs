@@ -4,7 +4,7 @@ import fs from "fs";
 
 let projectRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../",
+  "../../",
 );
 
 /**

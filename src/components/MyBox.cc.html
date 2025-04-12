@@ -1,5 +1,7 @@
 <content>
-  <h3>MyBox Component</h3>
+  <c-if condition="display">
+    <h3>MyBox Component</h3>
+  </c-if>
 </content>
 
 <style>
@@ -11,5 +13,6 @@
 </style>
 
 <script>
-  console.log("I can also access the console!");
+  const display = useState(_componentName, "display");
+  display.value = true;
 </script>

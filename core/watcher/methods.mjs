@@ -1,7 +1,9 @@
 import fs from "fs";
 import { fork } from "child_process";
-import { getRootDirFromArgv, resolvePath } from "@/src/utils/paths.mjs";
-import { buildComponent } from "@/server/componentBuilder.mjs";
+import { getRootDirFromArgv, resolvePath } from "@/core/utils/paths.mjs";
+import { buildComponent } from "@/core/libs/componentBuilder.mjs";
+import { subprocessRef } from "@/core/watcher/subprocessRef.mjs";
+import { reloadClients } from "@/core/libs/socket.mjs";
 
 /**
  * Creates a subprocess for running the server.
@@ -23,14 +25,15 @@ let debounceTimeout;
  *
  * @param {string} eventType - The type of the file system event (e.g., "change").
  * @param {string} filename - The name of the file that triggered the event.
- * @param subprocess -
+ * @param {boolean} [forced=false] - Whether to force a restart regardless of file type.
  */
-const resetSubprocess = (subprocess, eventType, filename) => {
-  if (filename && filename.endsWith(".mjs")) {
+const resetSubprocess = (eventType, filename, forced = false) => {
+  if (forced || (filename && filename.endsWith(".mjs"))) {
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-      subprocess.kill("SIGINT");
-      subprocess = createSubprocess(["--restart"]);
+      subprocessRef.instance.kill("SIGINT");
+      subprocessRef.instance = null;
+      subprocessRef.instance = createSubprocess(["--restart"]);
     }, 500);
   }
 };
@@ -38,7 +41,7 @@ const resetSubprocess = (subprocess, eventType, filename) => {
 /**
  * Watches the components directory for changes and rebuilds modified components.
  */
-function watchDirectory() {
+const watchDirectory = () => {
   let debounceTimeout;
 
   fs.watch(
@@ -50,15 +53,15 @@ function watchDirectory() {
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/components/${filename}`);
           console.msg("components.changed", filename);
-          buildComponent(filePath).catch((err) =>
-            console.msg("components.generatingError", err),
-          );
+          buildComponent(filePath)
+            .catch((err) => console.msg("components.generatingError", err))
+            .then(reloadClients);
         }, 500);
       }
     },
   );
 
   console.msg("components.watchingForChanges", resolvePath("@/components"));
-}
+};
 
 export { watchDirectory, resetSubprocess, createSubprocess };

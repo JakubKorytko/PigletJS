@@ -13,14 +13,11 @@ export default {
   PORT,
   directories: {
     "@": rootDir,
-    src: path.resolve(rootDir, "src"),
-    components: path.resolve(rootDir, "src/components"),
-    build: path.resolve(rootDir, "build"),
+    components: path.resolve(rootDir, "src", "components"),
     builtComponents: path.resolve(rootDir, "build", "components"),
-    public: path.resolve(rootDir, "public"),
-    pages: path.resolve(rootDir, "src/pages"),
-    server: path.resolve(rootDir, "server"),
-    config: path.resolve(rootDir, "config"),
+    pages: path.resolve(rootDir, "src", "pages"),
+    public: path.resolve(rootDir, "src", "public"),
+    coreBrowserLogic: path.resolve(rootDir, "core", "browserLogic"),
   },
   mimeTypes: {
     ".html": "text/html",
@@ -37,7 +34,9 @@ export default {
   },
   customRouteAliases: {
     component: "/component/",
+    core: "/core/",
   },
+  routes: ["component", "page", "file", "core"],
   consoleMessages: {
     server: {
       start: '🔧 Server is starting... Press "r" to reload components.',
@@ -72,7 +71,7 @@ export default {
       regeneratingError: "❌ Error while regenerating components:",
       missingContent: (filePath) =>
         `❌ Missing <content> tag in file: ${filePath}`,
-      generated: (outputPath) => `✔ Component generated: ${outputPath}`,
+      generated: (outputPath) => `✅ Component generated: ${outputPath}`,
       generatingFrom: (fileName) =>
         `⏳ Generating component from file: ${fileName}`,
       processingError: (err) => ["❌ Error while processing components:", err],
@@ -83,7 +82,7 @@ export default {
       watchingForChanges: (path) =>
         `👀 Watching for changes in directory: ${path}`,
       generatingError: (err) => ["❌ Error while generating component:", err],
-      changed: (filename) => `✔ File changed: ${filename}`,
+      changed: (filename) => `✅ File changed: ${filename}`,
     },
     pages: {
       failedToLoad: (pageName, err) => [
