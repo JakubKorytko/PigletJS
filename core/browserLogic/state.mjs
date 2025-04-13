@@ -22,29 +22,29 @@ class State {
   }
 
   _notify() {
-    this._observers.forEach((observer) => observer.update(this._state));
+    this._observers.forEach((observer) => observer.stateChange(this._state));
   }
 }
 
-const globalStates = {};
+window.AppState = {};
 
-const useState = (componentName, path) => {
-  if (!globalStates[componentName]) {
-    globalStates[componentName] = {};
+const useState = (componentName, path, initialValue) => {
+  if (!window.AppState[componentName]) {
+    window.AppState[componentName] = {};
   }
 
   const key = Array.isArray(path) ? path.join(".") : path;
 
-  if (!globalStates[componentName][key]) {
-    globalStates[componentName][key] = new State();
+  if (!window.AppState[componentName][key]) {
+    window.AppState[componentName][key] = new State(initialValue);
   }
 
   return {
     get value() {
-      return globalStates[componentName][key].state;
+      return window.AppState[componentName][key].state;
     },
     set value(newValue) {
-      globalStates[componentName][key].setState(newValue);
+      window.AppState[componentName][key].setState(newValue);
     },
   };
 };
@@ -52,11 +52,11 @@ const useState = (componentName, path) => {
 function useObserver(componentName, path) {
   const key = Array.isArray(path) ? path.join(".") : path;
 
-  if (!globalStates[componentName] || !globalStates[componentName][key]) {
+  if (!window.AppState[componentName] || !window.AppState[componentName][key]) {
     return [() => {}, () => {}];
   }
 
-  const state = globalStates[componentName][key];
+  const state = window.AppState[componentName][key];
 
   return [state.addObserver.bind(state), state.removeObserver.bind(state)];
 }

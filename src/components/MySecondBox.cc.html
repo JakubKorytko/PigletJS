@@ -16,8 +16,8 @@
 </style>
 
 <script>
-  const display = useState(_componentName, "display");
-  const nested = useState(_componentName, "nested");
+  const display = component.state("display");
+  const nested = component.state("nested");
 
   nested.value = { object: { hide: true } };
   display.value = true;

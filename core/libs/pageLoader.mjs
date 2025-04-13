@@ -50,7 +50,7 @@ async function generateAppHtml(pageName) {
       return false;
     }
 
-    const componentTags = new Set();
+    const componentTags = new Set(["App"]); // zawsze dołącz App jako komponent bazowy
     const tagRegex =
       /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
     let match;
@@ -61,33 +61,36 @@ async function generateAppHtml(pageName) {
     }
 
     componentTags.forEach((tag) => {
-      const kebabTag = toKebabCase(tag);
+      const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag); // specjalny przypadek dla App
 
       const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
-      pageContent = pageContent.replace(
+      appHtml = appHtml.replace(
         selfClosingTagRegex,
         `<${kebabTag}$1></${kebabTag}>`,
       );
 
-      pageContent = pageContent.replace(
+      appHtml = appHtml.replace(
         new RegExp(`<${tag}([^>]*)>`, "g"),
         `<${kebabTag}$1>`,
       );
-      pageContent = pageContent.replace(
-        new RegExp(`</${tag}>`, "g"),
-        `</${kebabTag}>`,
-      );
+      appHtml = appHtml.replace(new RegExp(`</${tag}>`, "g"), `</${kebabTag}>`);
     });
 
-    let scriptTags = "";
+    appHtml = appHtml.replace(
+      /<app([^>]*)>(.*?)<\/app>/is,
+      `<app$1>${pageContent}</app>`,
+    );
+
+    let scriptTags = fs.readFileSync(
+      resolvePath("@/core/scripts.html"),
+      "utf8",
+    );
     componentTags.forEach((tag) => {
-      const scriptTag = `<script src="component/${tag}"></script>`;
-      scriptTags += `${scriptTag}\n`; // Append each script tag
+      scriptTags += `<script src="component/${tag}"></script>\n`;
     });
 
     appHtml = appHtml.replace("</body>", `${scriptTags}</body>`);
 
-    appHtml = appHtml.replace("<!-- PAGE_CONTENT -->", pageContent);
     return appHtml;
   } catch (err) {
     console.msg("pages.htmlGeneratingError", err);

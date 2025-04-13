@@ -44,22 +44,18 @@ const resetSubprocess = (eventType, filename, forced = false) => {
 const watchDirectory = () => {
   let debounceTimeout;
 
-  fs.watch(
-    resolvePath("@/components"),
-    { recursive: true },
-    (eventType, filename) => {
-      if (filename && filename.endsWith(".cc.html")) {
-        clearTimeout(debounceTimeout);
-        debounceTimeout = setTimeout(() => {
-          const filePath = resolvePath(`@/components/${filename}`);
-          console.msg("components.changed", filename);
-          buildComponent(filePath)
-            .catch((err) => console.msg("components.generatingError", err))
-            .then(reloadClients);
-        }, 500);
-      }
-    },
-  );
+  fs.watch(resolvePath("@/src"), { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith(".cc.html")) {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        const filePath = resolvePath(`@/src/${filename}`);
+        console.msg("components.changed", filename);
+        buildComponent(filePath)
+          .catch((err) => console.msg("components.generatingError", err))
+          .then(reloadClients);
+      }, 500);
+    }
+  });
 
   console.msg("components.watchingForChanges", resolvePath("@/components"));
 };

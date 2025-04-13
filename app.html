@@ -6,17 +6,6 @@
     <title>My app</title>
   </head>
   <body>
-    <!-- PAGE_CONTENT -->
-    <script>
-      const ws = new WebSocket("ws://" + location.host);
-
-      ws.onmessage = (event) => {
-        if (event.data === "reload") {
-          location.reload();
-        }
-      };
-    </script>
-    <script src="/core/state"></script>
-    <script src="/core/cif"></script>
+    <App />
   </body>
 </html>

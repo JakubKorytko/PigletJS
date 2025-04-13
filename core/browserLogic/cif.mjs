@@ -14,98 +14,81 @@ function getDeepValue(obj, pathParts) {
   return result;
 }
 
-class CIf extends HTMLElement {
+class CIf extends ReactiveComponent {
   static get observedAttributes() {
     return ["condition"];
   }
 
-  updateState() {
+  constructor() {
+    super();
+
+    this._condition = false;
+    this._negated = false;
+    this._parts = [];
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._updateFromAttribute();
+    this.updateVisibility();
+    super.observeState(this.__propertyName);
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (
+      name === "condition" &&
+      oldValue !== newValue &&
+      (!this._caller || this._caller.indexOf("_NOT_SETTLED") === -1)
+    ) {
+      this._updateFromAttribute();
+    }
+  }
+
+  _updateFromAttribute() {
     let conditionProperty = this.getAttribute("condition");
 
+    this._negated = false;
     if (conditionProperty.startsWith("!")) {
+      this._negated = true;
       conditionProperty = conditionProperty.substring(1);
     }
 
     const parts = conditionProperty.split(".");
 
     if (parts.length > 1) {
-      conditionProperty = parts[0];
       this._parts = parts.slice(1);
+      conditionProperty = parts[0];
+    } else {
+      this._parts = [];
     }
 
-    const [addObserver, removeObserver] = useObserver(
-      this._caller,
-      conditionProperty,
-    );
-
-    if (removeObserver) {
-      removeObserver(this);
-    }
-    this.state = useState(this._caller, conditionProperty);
-
-    addObserver(this);
+    this._state = this.state(conditionProperty);
+    this._updateCondition(this._state.value);
   }
 
-  constructor() {
-    super();
-    this._caller = this.getAttribute("host__element") ?? "global";
-    this.removeAttribute("host__element");
-    this._condition = false;
-    this.updateState();
-  }
+  _updateCondition(value) {
+    const innerValue = getDeepValue(value, this._parts);
+    this._condition = Boolean(innerValue);
 
-  connectedCallback() {
-    this.updateVisibility();
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (name === "condition") {
-      let conditionProperty = this.getAttribute("condition");
-
-      let negated = false;
-      if (conditionProperty.startsWith("!")) {
-        negated = true;
-        conditionProperty = conditionProperty.substring(1);
-      }
-
-      this.updateState();
-
-      this.setConditionFromState(conditionProperty, negated);
-    }
-  }
-
-  setConditionFromState(propertyName, negated) {
-    const stateValue = this.state.value;
-
-    this._condition = Boolean(getDeepValue(stateValue, this._parts));
-
-    if (negated) {
+    if (this._negated) {
       this._condition = !this._condition;
     }
 
     this.updateVisibility();
   }
 
-  updateVisibility() {
-    if (this._condition) {
-      this.style.display = "block";
-    } else {
-      this.style.display = "none";
-    }
+  onStateChange(newValue) {
+    this._updateCondition(newValue);
   }
 
-  update(newState) {
-    let conditionProperty = this.getAttribute("condition");
+  updateVisibility() {
+    this.style.display = this._condition ? "block" : "none";
+  }
 
-    let negated = false;
-    if (conditionProperty.startsWith("!")) {
-      negated = true;
-      conditionProperty = conditionProperty.substring(1);
-    }
-
-    this.setConditionFromState(conditionProperty, negated);
-    this.updateVisibility();
+  disconnectedCallback() {
+    super.disconnectedCallback();
   }
 }
 
+injectTreeTrackingToComponentClass(CIf);
 customElements.define("c-if", CIf);
