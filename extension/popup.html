@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stan Aplikacji</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 300px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .tab {
+      padding: 10px 16px;
+      cursor: pointer;
+      border: none;
+      background: #f4f4f4;
+      border-right: 1px solid #ccc;
+      font-weight: bold;
+    }
+
+    .tab.active {
+      background: white;
+      border-bottom: 2px solid #000;
+    }
+
+    .panel {
+      padding: 12px;
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    details {
+      margin-left: 1rem;
+      margin-bottom: 6px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .key {
+      font-weight: bold;
+    }
+
+    ul {
+      padding-left: 1rem;
+      list-style-type: none;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="tabs">
+    <button class="tab active" data-panel="tree">Drzewo</button>
+    <button class="tab" data-panel="state">Stan</button>
+  </div>
+
+  <div id="tree" class="panel active"></div>
+  <div id="state" class="panel"></div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

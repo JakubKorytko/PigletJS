@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7fc;
+      color: #333;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: stretch;
+      background-color: #fff;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .tab {
+      padding: 14px 24px;
+      cursor: pointer;
+      border: none;
+      background-color: #f4f7fc;
+      font-weight: 600;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+      flex: 1;
+      text-align: center;
+    }
+
+    .tab.active {
+      background: #0066cc;
+      color: white;
+      border-bottom: 3px solid #004bb5;
+    }
+
+    .panel {
+      padding: 20px;
+      display: none;
+      background: white;
+      border: 1px solid #ddd;
+      border-top: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    details {
+      margin-bottom: 10px;
+      padding-left: 15px;
+      background: #f9f9f9;
+      border-left: 2px solid #0066cc;
+      border-radius: 4px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background-color: #f4f7fc;
+      transition: background-color 0.3s ease;
+    }
+
+    summary:hover {
+      background-color: #e6f0ff;
+    }
+
+    .key {
+      font-weight: 600;
+      color: #0066cc;
+    }
+
+    ul {
+      padding-left: 1.5rem;
+      list-style-type: none;
+      margin-top: 8px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    li span {
+      font-weight: normal;
+    }
+
+    li.details-item {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+
+    li.details-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="tabs">
+    <button class="tab active" data-panel="tree">Drzewo</button>
+    <button class="tab" data-panel="state">Stan</button>
+  </div>
+
+  <div id="tree" class="panel active"></div>
+  <div id="state" class="panel"></div>
+
+  <script src="panel.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+const script = document.createElement("script");
+script.src = chrome.runtime.getURL("injected.js");
+script.onload = function () {
+  this.remove();
+};
+(document.head || document.documentElement).appendChild(script);
+
+let retries = 5;
+const retryDelay = 1000;
+
+function sendMessageWithRetry(message, retriesLeft) {
+  chrome.runtime.sendMessage(message, (response) => {
+    if (response && response.status === "OK") {
+      console.log("Connection successful, sending message...");
+      chrome.runtime.sendMessage({
+        type: message.type,
+        payload: message.payload,
+      });
+    } else if (retriesLeft > 0) {
+      console.log(`Retrying... (${retriesLeft} attempts left)`);
+      setTimeout(
+        () => sendMessageWithRetry(message, retriesLeft - 1),
+        retryDelay,
+      );
+    } else {
+      console.error(
+        "Failed to connect to background script after multiple retries.",
+      );
+    }
+  });
+}
+
+window.addEventListener(
+  "message",
+  function (event) {
+    if (event.source !== window || !event.data) return;
+
+    const { type, payload } = event.data;
+
+    if (type === "STATE_UPDATE" || type === "TREE_UPDATE") {
+      sendMessageWithRetry(
+        {
+          type,
+          payload,
+        },
+        retries,
+      );
+    }
+  },
+  false,
+);
