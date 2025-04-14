@@ -1,36 +1,27 @@
-let lastAppState = null;
-let lastAppComponentTree = null;
-
 function observeAppState() {
-  if (window.AppState !== lastAppState) {
-    lastAppState = window.AppState;
+  const simplifiedState = extractSimpleData(window.AppState);
 
-    const simplifiedState = extractSimpleData(window.AppState);
-
-    window.postMessage(
-      {
-        type: "STATE_UPDATE",
-        payload: simplifiedState,
-      },
-      window.location.origin,
-    );
-  }
+  window.postMessage(
+    {
+      type: "STATE_UPDATE_REQUEST",
+      payload: simplifiedState,
+      source: window.location.origin,
+    },
+    window.location.origin,
+  );
 }
 
 function observeAppComponentTree() {
-  if (window.AppComponentTree !== lastAppComponentTree) {
-    lastAppComponentTree = window.AppComponentTree;
+  const simplifiedTree = extractSimpleData(window.AppComponentTree);
 
-    const simplifiedTree = extractSimpleData(window.AppComponentTree);
-
-    window.postMessage(
-      {
-        type: "TREE_UPDATE",
-        payload: simplifiedTree,
-      },
-      window.location.origin,
-    );
-  }
+  window.postMessage(
+    {
+      type: "TREE_UPDATE_REQUEST",
+      payload: simplifiedTree,
+      source: window.location.origin,
+    },
+    window.location.origin,
+  );
 }
 
 function extractSimpleData(data) {

@@ -9,25 +9,27 @@ let retries = 5;
 const retryDelay = 1000;
 
 function sendMessageWithRetry(message, retriesLeft) {
-  chrome.runtime.sendMessage(message, (response) => {
-    if (response && response.status === "OK") {
-      console.log("Connection successful, sending message...");
-      chrome.runtime.sendMessage({
-        type: message.type,
-        payload: message.payload,
-      });
-    } else if (retriesLeft > 0) {
-      console.log(`Retrying... (${retriesLeft} attempts left)`);
-      setTimeout(
-        () => sendMessageWithRetry(message, retriesLeft - 1),
-        retryDelay,
-      );
-    } else {
-      console.error(
-        "Failed to connect to background script after multiple retries.",
-      );
-    }
-  });
+  if (chrome.runtime?.id) {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (response && response.status === "OK") {
+        console.log("Connection successful, sending message...");
+        chrome.runtime.sendMessage({
+          type: message.type,
+          payload: message.payload,
+        });
+      } else if (retriesLeft > 0) {
+        console.log(`Retrying... (${retriesLeft} attempts left)`);
+        setTimeout(
+          () => sendMessageWithRetry(message, retriesLeft - 1),
+          retryDelay,
+        );
+      } else {
+        console.error(
+          "Failed to connect to background script after multiple retries.",
+        );
+      }
+    });
+  }
 }
 
 window.addEventListener(
@@ -37,7 +39,7 @@ window.addEventListener(
 
     const { type, payload } = event.data;
 
-    if (type === "STATE_UPDATE" || type === "TREE_UPDATE") {
+    if (type === "STATE_UPDATE_REQUEST" || type === "TREE_UPDATE_REQUEST") {
       sendMessageWithRetry(
         {
           type,
