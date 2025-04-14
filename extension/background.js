@@ -26,6 +26,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ status: "OK" });
         break;
 
+      case "PIGLET_SUPPORT_UPDATE":
+        sendResponse({ status: "OK" });
+        break;
+
       case "REQUEST_CURRENT_DATA":
         console.log("Sending current data", lastState, lastTree);
         sendResponse({

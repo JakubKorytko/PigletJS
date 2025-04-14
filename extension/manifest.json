@@ -1,57 +1,36 @@
 {
-    "name": "CComponent",
-    "version": "1.0",
-    "description": "Custom tab in DevTools",
-    "manifest_version": 3,
-    "permissions": [
-        "activeTab",
-        "scripting",
-        "alarms"
-    ],
-    "host_permissions": [
-        "http://localhost/*",
-        "https://localhost/*",
-        "http://127.0.0.1/*",
-        "https://127.0.0.1/*"
-    ],
-    "background": {
-        "service_worker": "background.js"
-    },
-    "action": {
-        "default_popup": "panel.html",
-        "default_icon": {
-            "16": "icon.png",
-            "48": "icon.png",
-            "128": "icon.png"
-        }
-    },
-    "content_scripts": [
-        {
-            "matches": [
-                "http://localhost/*",
-                "https://localhost/*",
-                "http://127.0.0.1/*",
-                "https://127.0.0.1/*"
-            ],
-            "js": ["content.js"],
-            "run_at": "document_idle"
-        }
-    ],
-    "web_accessible_resources": [
-        {
-            "resources": ["injected.js"],
-            "matches": [
-                "http://localhost/*",
-                "https://localhost/*",
-                "http://127.0.0.1/*",
-                "https://127.0.0.1/*"
-            ]
-        }
-    ],
-    "devtools_page": "devtools.html",
-    "icons": {
-        "16": "icon.png",
-        "48": "icon.png",
-        "128": "icon.png"
+  "name": "PigletJS Devtools",
+  "version": "0.1",
+  "description": "Piglet debugging tools",
+  "manifest_version": 3,
+  "host_permissions": ["*://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "panel.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
     }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["*://*/*"]
+    }
+  ],
+  "devtools_page": "devtools.html",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
 }

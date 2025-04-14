@@ -1,3 +1,5 @@
+let pigletSupport = true;
+
 function renderTree(obj) {
   if (!obj || typeof obj !== "object") return "";
 
@@ -5,12 +7,22 @@ function renderTree(obj) {
   return entries
     .map(([key, value]) => {
       const label = `${value.componentName ?? "HTML"} (${key})`;
-      return `
-        <details open>
-          <summary>${label}</summary>
-          ${value.children ? renderTree(value.children) : ""}
-        </details>
-      `;
+
+      // Check if the object has children
+      const hasChildren =
+        value.children && Object.keys(value.children).length > 0;
+
+      if (hasChildren) {
+        return `
+          <details open>
+            <summary>${label}</summary>
+            ${renderTree(value.children)}
+          </details>
+        `;
+      } else {
+        // Render the final elements as plain text instead of expandable details
+        return `<div class="_details"><p class="_summary">${label}</p></div>`;
+      }
     })
     .join("");
 }
@@ -57,6 +69,7 @@ function waitForResponse() {
 }
 
 function handleData(data) {
+  if (!pigletSupport) return;
   document.getElementById("state").innerHTML = renderStateTree(data.state);
   document.getElementById("tree").innerHTML = renderTree(data.tree);
 }
@@ -77,13 +90,27 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "STATE_UPDATE" && message.payload) {
+    if (message.type === "STATE_UPDATE" && message.payload && pigletSupport) {
       document.getElementById("state").innerHTML = renderStateTree(
         message.payload,
       );
     }
 
-    if (message.type === "TREE_UPDATE" && message.payload) {
+    if (message.type === "PIGLET_SUPPORT_UPDATE") {
+      if (pigletSupport !== message.payload) {
+        pigletSupport = message.payload;
+        if (pigletSupport) {
+          document.getElementById("warning").style.display = "none";
+          waitForResponse();
+        } else {
+          document.getElementById("warning").style.display = "block";
+          document.getElementById("state").innerHTML = "";
+          document.getElementById("tree").innerHTML = "";
+        }
+      }
+    }
+
+    if (message.type === "TREE_UPDATE" && message.payload && pigletSupport) {
       document.getElementById("tree").innerHTML = renderTree(message.payload);
     }
   });

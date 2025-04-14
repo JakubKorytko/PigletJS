@@ -16,6 +16,7 @@ function sendMessageWithRetry(message, retriesLeft) {
         chrome.runtime.sendMessage({
           type: message.type,
           payload: message.payload,
+          pigletSupport: message.pigletSupport,
         });
       } else if (retriesLeft > 0) {
         console.log(`Retrying... (${retriesLeft} attempts left)`);
@@ -37,13 +38,18 @@ window.addEventListener(
   function (event) {
     if (event.source !== window || !event.data) return;
 
-    const { type, payload } = event.data;
+    const { type, payload, pigletSupport } = event.data;
 
-    if (type === "STATE_UPDATE_REQUEST" || type === "TREE_UPDATE_REQUEST") {
+    if (
+      type === "STATE_UPDATE_REQUEST" ||
+      type === "TREE_UPDATE_REQUEST" ||
+      type === "PIGLET_SUPPORT_UPDATE"
+    ) {
       sendMessageWithRetry(
         {
           type,
           payload,
+          pigletSupport,
         },
         retries,
       );

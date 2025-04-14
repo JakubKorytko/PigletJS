@@ -20,7 +20,6 @@ class ReactiveComponent extends HTMLElement {
   }
 
   observeState(property) {
-    console.warn("jakie property?", property);
     this.__propertyName = property;
     const [addObserver, removeObserver] = useObserver(
       this._caller ?? this.__componentKey,
