@@ -1,7 +1,9 @@
 <content>
-  <c-if condition="display">
-    <h3>MyBox Component</h3>
-  </c-if>
+  <div>
+    <c-if condition="display">
+      <h3>MyBox Component</h3>
+    </c-if>
+  </div>
 </content>
 
 <style>
@@ -13,6 +15,7 @@
 </style>
 
 <script>
-  const display = useState(_componentName, "display");
+  const display = component.state("display");
+
   display.value = true;
 </script>

@@ -75,6 +75,10 @@ export default {
       generatingFrom: (fileName) =>
         `⏳ Generating component from file: ${fileName}`,
       processingError: (err) => ["❌ Error while processing components:", err],
+      outputGenerationError: (err) => [
+        "❌ Error generating component, wrong number of arguments were passed to the output method",
+        err,
+      ],
       generationError: (filePath, err) => [
         `❌ Error generating component from file: ${filePath}`,
         err,

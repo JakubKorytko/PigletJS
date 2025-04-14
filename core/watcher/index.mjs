@@ -11,7 +11,13 @@ const resetServer = (eventType, filename) =>
 const resetServerOnButtonClick = () =>
   resetSubprocess(undefined, undefined, true);
 
-const directoriesToWatch = ["@/server", "@/core/watcher", "@/core/utils"];
+const directoriesToWatch = [
+  "@/server",
+  "@/core/watcher",
+  "@/core/utils",
+  "@/core/libs",
+  "@/core/controllers",
+];
 
 for (const directory of directoriesToWatch) {
   fs.watch(resolvePath(directory), { recursive: true }, resetServer);
