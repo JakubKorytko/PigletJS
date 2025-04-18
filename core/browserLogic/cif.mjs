@@ -31,7 +31,6 @@ class CIf extends ReactiveComponent {
     super.connectedCallback();
     this._updateFromAttribute();
     this.updateVisibility();
-    super.observeState(this.__propertyName);
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -77,8 +76,8 @@ class CIf extends ReactiveComponent {
     this.updateVisibility();
   }
 
-  onStateChange(newValue) {
-    this._updateCondition(newValue);
+  onStateChange(value) {
+    this._updateCondition(value);
   }
 
   updateVisibility() {

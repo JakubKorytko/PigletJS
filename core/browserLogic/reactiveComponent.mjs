@@ -20,7 +20,10 @@ class ReactiveComponent extends HTMLElement {
   }
 
   observeState(property) {
-    this.__propertyName = property;
+    const callback = {
+      stateChange: (value) => this.stateChange(value, property),
+    };
+
     const [addObserver, removeObserver] = useObserver(
       this._caller ?? this.__componentKey,
       property,
@@ -31,26 +34,27 @@ class ReactiveComponent extends HTMLElement {
       oldRemove?.(this);
     }
 
-    addObserver(this);
-    this._observers.set(property, removeObserver);
+    addObserver(callback);
+    this._observers.set(property, () => removeObserver(callback));
   }
 
   state(property, initialValue) {
-    this.observeState(property);
-    return useState(
+    const state = useState(
       this._caller ?? this.__componentKey,
       property,
       initialValue,
     );
+    this.observeState(property);
+    return state;
   }
 
-  stateChange(updatedState) {
+  stateChange(value, property) {
     if (typeof this.onStateChange === "function") {
-      this.onStateChange(updatedState);
+      this.onStateChange(value, property);
     } else {
       console.warn(
         `[${this._caller ?? this.__componentKey}] onStateChange not implemented for:`,
-        this.__propertyName,
+        property,
       );
     }
   }

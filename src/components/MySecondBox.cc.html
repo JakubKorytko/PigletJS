@@ -1,4 +1,5 @@
 <content>
+  <button id="test">Change second box visibility!</button>
   <c-if condition="display">
     <h3>MySecondBox Component</h3>
   </c-if>
@@ -16,8 +17,19 @@
 </style>
 
 <script>
-  const display = component.state("display");
-  const nested = component.state("nested");
+  const display = state("display");
+  const nested = state("nested");
+
+  onStateChange = (value, property) => {
+    console.log("State changed in MySecondBox", value, property);
+    if (property === 'display') {
+      nested.value = { object: { hide: value } };
+    }
+  }
+
+  hostElement.shadowRoot.querySelector("#test").addEventListener("click", () => {
+    display.value = !display.value;
+  })
 
   nested.value = { object: { hide: true } };
   display.value = true;

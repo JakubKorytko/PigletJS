@@ -15,7 +15,11 @@
 </style>
 
 <script>
-  const display = component.state("display");
+  const display = state("display");
+
+  onStateChange = (value, property) => {
+    console.log("State changed in MyBox", value, property);
+  }
 
   display.value = true;
 </script>

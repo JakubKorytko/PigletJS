@@ -36,10 +36,14 @@ const injectScriptToComponent = (scriptJS) => {
           id: hostElement.__componentId,
           tree: hostElement.customElementTree,
           shadowRoot: hostElement.shadowRoot,
-          key: \`\${hostElement.constructor.name}\${hostElement.__componentid}\`,
+          key: hostElement.__componentKey,
           state: hostElement.state.bind(hostElement),
         }
+        let onStateChange;
+        const {state} = component; 
         ${scriptJS}
+        hostElement.onStateChange = onStateChange;
+        onStateChange = undefined;
         })(shadowRoot, this);
       }`;
 };
