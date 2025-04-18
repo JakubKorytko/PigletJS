@@ -1,4 +1,5 @@
 let __globalComponentCounter = 0;
+window.Piglet = { allowDebugging: true };
 
 function assignComponentIdToElement(el) {
   if (!el.__componentId) {
