@@ -44,20 +44,47 @@ const resetSubprocess = (eventType, filename, forced = false) => {
 const watchDirectory = () => {
   let debounceTimeout;
 
-  fs.watch(resolvePath("@/src"), { recursive: true }, (eventType, filename) => {
-    if (filename && filename.endsWith(".cc.html")) {
-      clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
-        const filePath = resolvePath(`@/src/${filename}`);
-        console.msg("components.changed", filename);
-        buildComponent(filePath)
-          .catch((err) => console.msg("components.generatingError", err))
-          .then(reloadClients);
-      }, 500);
-    }
-  });
+  // Watch the components directory
+  fs.watch(
+    resolvePath("@/components"),
+    { recursive: true },
+    (eventType, filename) => {
+      if (filename && filename.endsWith(".pig.html")) {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          const filePath = resolvePath(`@/components/${filename}`);
+          console.msg("components.changed", filename);
+          buildComponent(filePath)
+            .catch((err) => console.msg("components.generatingError", err))
+            .then(reloadClients);
+        }, 500);
+      }
+    },
+  );
 
-  console.msg("components.watchingForChanges", resolvePath("@/components"));
+  // Watch the pages directory
+  fs.watch(
+    resolvePath("@/pages"),
+    { recursive: true },
+    (eventType, filename) => {
+      if (filename && filename.endsWith(".pig.html")) {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          const filePath = resolvePath(`@/pages/${filename}`);
+          console.msg("pages.changed", filename);
+          buildComponent(filePath) // Assuming you have a function to rebuild pages
+            .catch((err) => console.msg("pages.generatingError", err))
+            .then(reloadClients);
+        }, 500);
+      }
+    },
+  );
+
+  console.msg(
+    "components and pages watching for changes",
+    resolvePath("@/components"),
+    resolvePath("@/pages"),
+  );
 };
 
 export { watchDirectory, resetSubprocess, createSubprocess };

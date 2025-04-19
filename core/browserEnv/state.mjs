@@ -17,34 +17,35 @@ class State {
   }
 
   setState(newState) {
+    const oldState = this._state;
     this._state = newState;
-    this._notify();
+    this._notify(oldState);
   }
 
-  _notify() {
-    this._observers.forEach((observer) => observer.stateChange(this._state));
+  _notify(oldState) {
+    this._observers.forEach((observer) =>
+      observer.stateChange(this._state, oldState),
+    );
   }
 }
 
-window.AppState = {};
-
 const useState = (componentName, path, initialValue) => {
-  if (!window.AppState[componentName]) {
-    window.AppState[componentName] = {};
+  if (!window.Piglet.state[componentName]) {
+    window.Piglet.state[componentName] = {};
   }
 
   const key = Array.isArray(path) ? path.join(".") : path;
 
-  if (!window.AppState[componentName][key]) {
-    window.AppState[componentName][key] = new State(initialValue);
+  if (!window.Piglet.state[componentName][key]) {
+    window.Piglet.state[componentName][key] = new State(initialValue);
   }
 
   return {
     get value() {
-      return window.AppState[componentName][key].state;
+      return window.Piglet.state[componentName][key].state;
     },
     set value(newValue) {
-      window.AppState[componentName][key].setState(newValue);
+      window.Piglet.state[componentName][key].setState(newValue);
     },
   };
 };
@@ -52,11 +53,16 @@ const useState = (componentName, path, initialValue) => {
 function useObserver(componentName, path) {
   const key = Array.isArray(path) ? path.join(".") : path;
 
-  if (!window.AppState[componentName] || !window.AppState[componentName][key]) {
+  if (
+    !window.Piglet.state[componentName] ||
+    !window.Piglet.state[componentName][key]
+  ) {
     return [() => {}, () => {}];
   }
 
-  const state = window.AppState[componentName][key];
+  const state = window.Piglet.state[componentName][key];
 
   return [state.addObserver.bind(state), state.removeObserver.bind(state)];
 }
+
+export { useState, useObserver };
