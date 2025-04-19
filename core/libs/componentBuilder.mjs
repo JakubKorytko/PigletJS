@@ -6,6 +6,7 @@ import {
   toKebabCase,
   toPascalCase,
 } from "@/core/utils/stringUtils.mjs";
+import { parseRoutes, routes } from "@/core/libs/routes.mjs";
 
 function extractAndRemoveImports(code) {
   const importRegex = /^import\s+[\s\S]*?["'][^"']+["'];?/gm;
@@ -16,7 +17,6 @@ function extractAndRemoveImports(code) {
   while ((match = importRegex.exec(code)) !== null) {
     let importStatement = match[0];
 
-    // Zamień ścieżki aliasów na bezwzględne
     importStatement = importStatement
       .replace(/["@']@\/core\/browserLogic\//g, '"/core/')
       .replace(/["@']@\/modules\//g, '"/module/');
@@ -208,7 +208,7 @@ const generateOutput = (_, ...args) => {
   return `
   import ReactiveComponent from "/core/reactiveComponent";
   import { injectTreeTrackingToComponentClass } from "/core/treeTracking";
-  ${fullScript[1].join("\n")}
+  ${fullScript ? fullScript[1].join("\n") : ""}
 class ${className} extends ReactiveComponent {
  
       constructor() {
@@ -225,6 +225,7 @@ class ${className} extends ReactiveComponent {
 
 injectTreeTrackingToComponentClass(${className});
 customElements.define('${tagName}', ${className});
+export default ${componentName};
 `.trim();
 };
 
@@ -258,12 +259,12 @@ async function buildComponent(filePath) {
 
     // Szukamy plików .pig.css i .pig.mjs
     const externalCSSPath = await findMatchingExternalFile(
-      resolvePath("@/components"),
+      resolvePath("@/src"),
       baseName,
       ".pig.css",
     );
     const externalJSPath = await findMatchingExternalFile(
-      resolvePath("@/components"),
+      resolvePath("@/src"),
       baseName,
       ".pig.mjs",
     );
@@ -308,9 +309,14 @@ async function buildComponent(filePath) {
 async function processAllComponents(dir = resolvePath("@/components")) {
   try {
     const appPath = resolvePath("@/src/App.pig.html");
+    const pagesDir = resolvePath("@/pages");
     if (fs.existsSync(appPath)) {
       console.msg("components.generatingFrom", "App.pig.html");
-      await buildComponent(appPath);
+      const appHtml = await fs.promises.readFile(appPath, "utf-8");
+      parseRoutes(appHtml, pagesDir);
+      for (const route of Object.values(routes)) {
+        await buildComponent(route);
+      }
     }
 
     const files = await fs.promises.readdir(dir, { withFileTypes: true });

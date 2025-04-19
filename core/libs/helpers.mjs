@@ -3,6 +3,7 @@ import CONST from "@/core/CONST.mjs";
 import fs from "fs";
 import { processAllComponents } from "@/core/libs/componentBuilder.mjs";
 import { watchDirectory } from "@/core/watcher/methods.mjs";
+import { routes } from "@/core/libs/routes.mjs";
 
 const routeNames = CONST.routes.reduce((acc, route) => {
   acc[route] = Symbol(route);
@@ -10,9 +11,6 @@ const routeNames = CONST.routes.reduce((acc, route) => {
 }, {});
 
 const getRouteFromRequest = (req) => {
-  const pagePath = resolvePath(
-    `@/pages/${req.url.replace("/", "") || "home"}.html`,
-  );
   const urlStartWithComponent = req.url.startsWith(
     CONST.customRouteAliases.component,
   );
@@ -25,7 +23,7 @@ const getRouteFromRequest = (req) => {
   if (urlStartWithModule) return routeNames.module;
   if (urlStartWithComponent) return routeNames.component;
   if (urlStartWithCore) return routeNames.core;
-  if (fs.existsSync(pagePath)) return routeNames.page;
+  if (fs.existsSync(routes[req.url])) return routeNames.page;
   return routeNames.file;
 };
 

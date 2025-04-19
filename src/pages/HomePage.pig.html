@@ -1,0 +1,29 @@
+<content>
+  <h1>🌳 Root App Component</h1>
+
+  <button id="showTreeBtn">🔍 Display component tree in console</button>
+
+  <MyBox />
+  <MySecondBox />
+
+  <button id="navigate">Navigate to the other route!</button>
+
+  <c-if condition="display">
+    <p>This is rendered inside a <code>c-if</code> block!</p>
+  </c-if>
+</content>
+
+<script>
+  element("#navigate").on("click", function () {
+    navigate("/nested");
+  });
+
+  setTimeout(() => {
+    element("#showTreeBtn").on("click", () => {
+      console.groupCollapsed("🌲 Component's tree:");
+      console.log(window.AppComponentTree);
+      console.dir(window.AppComponentTree);
+      console.groupEnd();
+    });
+  }, 0);
+</script>

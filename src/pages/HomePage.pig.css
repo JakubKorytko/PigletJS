@@ -1,0 +1,35 @@
+:host {
+  display: block;
+  font-family: system-ui, sans-serif;
+  padding: 2rem;
+  background: #f9f9f9;
+  border: 2px dashed #ccc;
+  margin: 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+p {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: #555;
+}
+
+button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  background-color: #007bff;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}

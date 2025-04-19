@@ -6,7 +6,6 @@ import fs from "fs";
 export default (req, res) => {
   const pathWithoutModule = req.url.replace("/module/", "");
   const filePath = resolvePath(`@/src/modules/${pathWithoutModule}.mjs`);
-  console.log(filePath);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/javascript";
 

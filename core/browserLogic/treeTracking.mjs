@@ -12,6 +12,7 @@ function assignComponentIdToElement(el) {
 
 function buildCustomElementTree(root = document.body) {
   const tree = {};
+  console.log("root", root);
 
   function walk(node) {
     const tagName = node.tagName?.toLowerCase?.();
@@ -48,6 +49,7 @@ function buildCustomElementTree(root = document.body) {
         key: node.__componentKey ?? null,
         state,
         children,
+        element: node,
       };
     }
 
@@ -71,6 +73,7 @@ function buildCustomElementTree(root = document.body) {
 }
 
 function injectTreeTrackingToComponentClass(klass) {
+  console.log("pierwszy", klass);
   const originalConnected = klass.prototype.connectedCallback;
 
   klass.prototype.connectedCallback = function () {
@@ -79,6 +82,9 @@ function injectTreeTrackingToComponentClass(klass) {
     this.__trackCustomTree__ = () => {
       const root = this;
       this._tree = buildCustomElementTree(root);
+      if (this.constructor.name === "AppRoot") {
+        window.AppComponentTree = this._tree;
+      }
       console.log(`[${this.constructor.name}] tracking tree`);
     };
 
