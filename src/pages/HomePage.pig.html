@@ -1,24 +1,33 @@
 <content>
-  <h1>🌳 Root App Component</h1>
-  <button id="clickMe" type="button">Click me!</button><br />
-  <button id="showTreeBtn">🔍 Display component tree in console</button>
+  <div class="container">
+    <div><img src="/logo.png" /></div>
 
-  <MyBox id="myBox" />
-  <MySecondBox />
-
-  <button id="navigate">Navigate to the other route!</button>
-
-  <c-if condition="display">
-    <p>This is rendered inside a <code>c-if</code> block!</p>
-  </c-if>
+    <div class="welcomeMessage">
+      <div>
+        <h1>Welcome to PigletJS</h1>
+        <p>This is the homepage of your app.</p>
+        <p>Edit <code>src/HomePage.pig.html</code> to see changes.</p>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <button id="showTreeBtn">🔍 Display component tree in console</button>
+        <button id="clickMe" type="button">
+          Click me to increase the count below!
+        </button>
+        <ClickCounter id="clickCounter" />
+        <button id="navigate" style="margin-top: 0">
+          Navigate to the other route!
+        </button>
+      </div>
+    </div>
+  </div>
 </content>
 
 <script>
-  const { display = init(false), clickCount = init(0) } = state;
+  const { clickCount = init(0) } = state;
 
   onStateChange = (value, property) => {
     if (property === "clickCount") {
-      element("#myBox").pass("clickcount", value);
+      element("#clickCounter").pass("clickcount", value);
     }
   };
 
@@ -32,7 +41,7 @@
 
   onConnect((component) => {
     console.log("HomePage data:", component);
-    element("#myBox").pass("clickcount", clickCount.value);
+    element("#clickCounter").pass("clickcount", clickCount.value);
   });
 
   setTimeout(() => {

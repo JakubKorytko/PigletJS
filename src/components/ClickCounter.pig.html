@@ -2,7 +2,7 @@
   <div>
     <p id="clickCount">You clicked the button in my parent 0 times</p>
     <c-if condition="display">
-      <h3>MyBox Component</h3>
+      <h4>You clicked more than 5 times!</h4>
     </c-if>
   </div>
 </content>
@@ -10,22 +10,19 @@
 <style>
   h3 {
     color: blue;
-    letter-spacing: 10px;
-    word-spacing: 30px;
   }
 </style>
 
 <script>
-  const { display = init(true) } = state;
+  const { display = init(false) } = state;
 
-  onStateChange = (value, property, prevValue) => {
-    console.log("State changed in MyBox", value, property, prevValue);
-  };
-
-  onAttributeChange = (newValue, property, prevValue) => {
+  onAttributeChange = (newValue, property) => {
     if (property === "clickcount") {
       element("#clickCount").ref.innerText =
         `You clicked the button in my parent ${newValue} times`;
+      if (newValue > 5) {
+        display.value = true;
+      }
     }
   };
 </script>

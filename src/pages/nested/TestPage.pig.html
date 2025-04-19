@@ -1,5 +1,10 @@
 <content>
-  <h1>I am nested!</h1>
+  <p>
+    I am nested page, edit me in the
+    <code>pages/nested/TestPage.pig.html</code>!
+  </p>
+  <NestedComponent />
+
   <button id="navigate">Go back</button>
 </content>
 
@@ -8,3 +13,47 @@
     navigate("/");
   });
 </script>
+
+<style>
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    background-color: #ff4191;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  button:hover {
+    background-color: #ff9bc4;
+  }
+
+  :host {
+    font-family: system-ui, sans-serif;
+    padding: 2rem;
+    height: 100%;
+    width: 100%;
+    background: #f8f9fa;
+    color: #212529;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  p {
+    font-size: 1.1rem;
+    color: #555;
+  }
+
+  code {
+    background: #eee;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+</style>

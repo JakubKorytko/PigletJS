@@ -1,10 +1,13 @@
 <content>
-  <button id="test">Change second box visibility!</button>
+  <button id="test">Change nested component visibility!</button>
   <c-if condition="display">
-    <h3>MySecondBox Component</h3>
+    <p>I am visible by default</p>
   </c-if>
   <c-if condition="!nested.object.hide">
-    <h4>Im not visible by default!</h4>
+    <p>
+      If previous element is not visible, I am (and I am nested, check
+      <code>NestedComponent.pig.html</code>)!
+    </p>
   </c-if>
 </content>
 

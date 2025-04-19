@@ -4,7 +4,7 @@ const { display, nested } = state;
 externalMethod();
 
 onStateChange = (value, property, prevValue) => {
-  console.log("State changed in MySecondBox", value, property, prevValue);
+  console.log("State changed in NestedComponent", value, property, prevValue);
   if (property === "display") {
     nested.value = { object: { hide: value } };
   }
