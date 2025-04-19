@@ -1,3 +1,6 @@
+import ReactiveComponent from "@/core/browserLogic/reactiveComponent";
+import { injectTreeTrackingToComponentClass } from "@/core/browserLogic/treeTracking";
+
 function getDeepValue(obj, pathParts) {
   if (!pathParts) return obj;
 

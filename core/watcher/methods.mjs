@@ -45,7 +45,7 @@ const watchDirectory = () => {
   let debounceTimeout;
 
   fs.watch(resolvePath("@/src"), { recursive: true }, (eventType, filename) => {
-    if (filename && filename.endsWith(".cc.html")) {
+    if (filename && filename.endsWith(".pig.html")) {
       clearTimeout(debounceTimeout);
       debounceTimeout = setTimeout(() => {
         const filePath = resolvePath(`@/src/${filename}`);

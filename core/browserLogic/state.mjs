@@ -60,3 +60,5 @@ function useObserver(componentName, path) {
 
   return [state.addObserver.bind(state), state.removeObserver.bind(state)];
 }
+
+export { useState, useObserver };

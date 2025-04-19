@@ -1,7 +1,7 @@
 <content>
   <h1>🌳 Root App Component</h1>
 
-  <button id="showTreeBtn">🔍 Pokaż drzewo komponentów</button>
+  <button id="showTreeBtn">🔍 Display component tree in console</button>
 
   <MyBox />
   <MySecondBox />
@@ -13,12 +13,10 @@
 
 <script>
   setTimeout(() => {
-    const tree = hostElement.customElementTree;
+    const tree = hostElement._tree;
     window.AppComponentTree = tree;
 
-    const button = hostElement.shadowRoot.getElementById("showTreeBtn");
-
-    button?.addEventListener("click", () => {
+    element("#showTreeBtn").on("click", () => {
       console.groupCollapsed("🌲 Component's tree:");
       console.log(tree);
       console.dir(tree);

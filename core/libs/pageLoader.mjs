@@ -41,7 +41,7 @@ async function loadPage(pageName) {
 async function generateAppHtml(pageName) {
   "use strict";
 
-  const appHtmlPath = resolvePath("@/app.html");
+  const appHtmlPath = resolvePath("@/Pig.html");
   try {
     let appHtml = await fs.promises.readFile(appHtmlPath, "utf-8");
     let pageContent = await loadPage(pageName);
@@ -86,7 +86,7 @@ async function generateAppHtml(pageName) {
       "utf8",
     );
     componentTags.forEach((tag) => {
-      scriptTags += `<script src="component/${tag}"></script>\n`;
+      scriptTags += `<script type="module" src="component/${tag}"></script>\n`;
     });
 
     appHtml = appHtml.replace("</body>", `${scriptTags}</body>`);

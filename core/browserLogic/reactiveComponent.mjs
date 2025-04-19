@@ -1,3 +1,6 @@
+import { assignComponentIdToElement } from "@/core/browserLogic/treeTracking";
+import { useState, useObserver } from "@/core/browserLogic/state";
+
 class ReactiveComponent extends HTMLElement {
   constructor() {
     super();
@@ -66,3 +69,5 @@ class ReactiveComponent extends HTMLElement {
     this._observers.clear();
   }
 }
+
+export default ReactiveComponent;

@@ -15,11 +15,13 @@
 </style>
 
 <script>
-  const display = state("display");
+  const { display } = state;
 
   onStateChange = (value, property) => {
     console.log("State changed in MyBox", value, property);
-  }
+  };
+
+  console.log(component);
 
   display.value = true;
 </script>

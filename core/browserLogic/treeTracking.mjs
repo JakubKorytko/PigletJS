@@ -1,3 +1,5 @@
+import { useState } from "@/core/browserLogic/state";
+
 let __globalComponentCounter = 0;
 window.Piglet = { allowDebugging: true };
 
@@ -76,7 +78,7 @@ function injectTreeTrackingToComponentClass(klass) {
 
     this.__trackCustomTree__ = () => {
       const root = this;
-      this.customElementTree = buildCustomElementTree(root);
+      this._tree = buildCustomElementTree(root);
       console.log(`[${this.constructor.name}] tracking tree`);
     };
 
@@ -127,3 +129,5 @@ function injectTreeTrackingToComponentClass(klass) {
     }
   };
 }
+
+export { injectTreeTrackingToComponentClass, assignComponentIdToElement };

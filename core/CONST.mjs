@@ -35,8 +35,9 @@ export default {
   customRouteAliases: {
     component: "/component/",
     core: "/core/",
+    module: "/module",
   },
-  routes: ["component", "page", "file", "core"],
+  routes: ["component", "page", "file", "core", "module"],
   consoleMessages: {
     server: {
       start: '🔧 Server is starting... Press "r" to reload components.',

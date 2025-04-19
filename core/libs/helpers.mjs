@@ -16,9 +16,13 @@ const getRouteFromRequest = (req) => {
   const urlStartWithComponent = req.url.startsWith(
     CONST.customRouteAliases.component,
   );
+  const urlStartWithModule = req.url.startsWith(
+    CONST.customRouteAliases.module,
+  );
 
   const urlStartWithCore = req.url.startsWith(CONST.customRouteAliases.core);
 
+  if (urlStartWithModule) return routeNames.module;
   if (urlStartWithComponent) return routeNames.component;
   if (urlStartWithCore) return routeNames.core;
   if (fs.existsSync(pagePath)) return routeNames.page;

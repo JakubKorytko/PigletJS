@@ -7,6 +7,54 @@ import {
   toPascalCase,
 } from "@/core/utils/stringUtils.mjs";
 
+function extractAndRemoveImports(code) {
+  const importRegex = /^import\s+[\s\S]*?["'][^"']+["'];?/gm;
+  const imports = [];
+  let cleaned = code;
+
+  let match;
+  while ((match = importRegex.exec(code)) !== null) {
+    let importStatement = match[0];
+
+    // Zamień ścieżki aliasów na bezwzględne
+    importStatement = importStatement
+      .replace(/["@']@\/core\/browserLogic\//g, '"/core/')
+      .replace(/["@']@\/modules\//g, '"/module/');
+
+    imports.push(importStatement);
+  }
+
+  cleaned = code.replace(importRegex, "").trim();
+
+  return {
+    imports,
+    cleanedCode: cleaned,
+  };
+}
+
+async function findMatchingExternalFile(rootDir, baseName, extension) {
+  const files = await fs.promises.readdir(rootDir, { withFileTypes: true });
+
+  for (const file of files) {
+    const fullPath = path.join(rootDir, file.name);
+
+    if (file.isDirectory()) {
+      const found = await findMatchingExternalFile(
+        fullPath,
+        baseName,
+        extension,
+      );
+      if (found) return found;
+    }
+
+    if (file.isFile() && file.name === `${baseName}${extension}`) {
+      return fullPath;
+    }
+  }
+
+  return null;
+}
+
 const styleRegex = (html) => html.match(/<style>([\s\S]*?)<\/style>/i);
 const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
@@ -26,29 +74,67 @@ function injectHostElementAttribute(content, tagName, componentName) {
   });
 }
 
-const injectScriptToComponent = (scriptJS) => {
-  if (!scriptJS) return "";
+const injectScriptToComponent = (scriptJS, externalJS) => {
+  if (!scriptJS && !externalJS) return "";
 
-  return `runScript(shadowRoot) {
+  const destructureRegex = /const\s*{\s*([^}]+?)\s*}\s*=\s*state\s*;/g;
+
+  const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
+  // Replace it with multiple `const x = state("x");`
+  const transformedScript = fullScript.replace(destructureRegex, (_, vars) => {
+    return vars
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .map((v) => `const ${v} = state("${v}");`)
+      .join("\n");
+  });
+
+  const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
+
+  return [
+    `runScript(shadowRoot) {
         (function(shadowRoot, hostElement) {
+          const element = (selector) => {
+    const el = hostElement.shadowRoot.querySelector(selector);
+    return {
+      on: (event, callback) => {
+        el?.addEventListener(event, callback);
+        return element(selector);
+      },
+      off: (event, callback) => {
+        el?.removeEventListener(event, callback);
+        return element(selector);
+      },
+    };
+  };
+
         const component = {
           name: hostElement.constructor.name,
           id: hostElement.__componentId,
-          tree: hostElement.customElementTree,
+          tree: hostElement._tree,
           shadowRoot: hostElement.shadowRoot,
           key: hostElement.__componentKey,
           state: hostElement.state.bind(hostElement),
         }
         let onStateChange;
         const {state} = component; 
-        ${scriptJS}
+        
+        ${cleanedCode}
         hostElement.onStateChange = onStateChange;
         onStateChange = undefined;
         })(shadowRoot, this);
-      }`;
+      }`,
+    imports,
+  ];
 };
 
-const injectInnerHTMLToComponent = (html, content, componentName) => {
+const injectInnerHTMLToComponent = (
+  html,
+  content,
+  componentName,
+  externalCSS,
+) => {
   let modifiedContent = injectHostElementAttribute(
     content,
     "c-if",
@@ -85,7 +171,9 @@ const injectInnerHTMLToComponent = (html, content, componentName) => {
   });
 
   const styleMatch = styleRegex(html);
-  const styleCSS = styleMatch ? styleMatch[1].trim() : "";
+  const styleCSS = [externalCSS, styleMatch ? styleMatch[1].trim() : ""]
+    .filter(Boolean)
+    .join("\n\n");
 
   const innerHTML = `
   <style>
@@ -99,13 +187,15 @@ const injectInnerHTMLToComponent = (html, content, componentName) => {
 };
 
 const generateOutput = (_, ...args) => {
-  if (args.length !== 3) {
+  if (args.length !== 5) {
     throw Error("components.outputGenerationError");
   }
 
   const componentName = args[0];
   const html = args[1];
   const content = args[2];
+  const externalCSS = args[3];
+  const externalJS = args[4];
 
   const isAppComponent = componentName === "App";
   const className = isAppComponent ? "AppRoot" : componentName;
@@ -113,20 +203,24 @@ const generateOutput = (_, ...args) => {
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
+  const fullScript = injectScriptToComponent(scriptJS, externalJS);
 
   return `
+  import ReactiveComponent from "/core/reactiveComponent";
+  import { injectTreeTrackingToComponentClass } from "/core/treeTracking";
+  ${fullScript[1].join("\n")}
 class ${className} extends ReactiveComponent {
  
       constructor() {
         super();
         const shadow = this.attachShadow({ mode: 'open' });
-        shadow.innerHTML = ${injectInnerHTMLToComponent(html, content, componentName)};
+        shadow.innerHTML = ${injectInnerHTMLToComponent(html, content, componentName, externalCSS)};
         const componentKey = \`\${this.constructor.name}\${this.__componentId ?? __globalComponentCounter+1}\`
 
         ${scriptJS ? `this.runScript(shadow);` : ""}
       }
 
-      ${injectScriptToComponent(scriptJS)}
+      ${fullScript[0]}
     }
 
 injectTreeTrackingToComponentClass(${className});
@@ -144,7 +238,7 @@ const getContentTag = (html) => {
 };
 
 /**
- * Builds a web component from a .cc.html file.
+ * Builds a web component from a .pig.html file.
  *
  * @param {string} filePath - Path to the component source file.
  */
@@ -159,17 +253,41 @@ async function buildComponent(filePath) {
       console.msg("components.missingContent", filePath);
     }
 
-    const baseName = path.basename(filePath, ".cc.html");
+    const baseName = path.basename(filePath, ".pig.html");
     const componentName = toPascalCase(baseName);
 
+    // Szukamy plików .pig.css i .pig.mjs
+    const externalCSSPath = await findMatchingExternalFile(
+      resolvePath("@/components"),
+      baseName,
+      ".pig.css",
+    );
+    const externalJSPath = await findMatchingExternalFile(
+      resolvePath("@/components"),
+      baseName,
+      ".pig.mjs",
+    );
+
+    let externalCSS = "";
+    let externalJS = "";
+
+    if (fs.existsSync(externalCSSPath)) {
+      externalCSS = await fs.promises.readFile(externalCSSPath, "utf-8");
+    }
+
+    if (fs.existsSync(externalJSPath)) {
+      externalJS = await fs.promises.readFile(externalJSPath, "utf-8");
+    }
+
+    // Generowanie wynikowego kodu komponentu
     const output = generateOutput`
     Component name: ${componentName}
-    Component content: ${html}${content}`;
+    Component content: ${html}${content}
+    External data: ${externalCSS}${externalJS}`;
 
     await fs.promises.mkdir(resolvePath("@/builtComponents"), {
       recursive: true,
     });
-
     const outputPath = resolvePath(`@/builtComponents/${componentName}.mjs`);
     await fs.promises.writeFile(outputPath, output);
     console.msg("components.generated", outputPath);
@@ -183,15 +301,15 @@ async function buildComponent(filePath) {
 }
 
 /**
- * Recursively processes all .cc.html files in a given directory.
+ * Recursively processes all .pig.html files in a given directory.
  *
  * @param {string} [dir=resolvePath("@/components")] - Directory to scan.
  */
 async function processAllComponents(dir = resolvePath("@/components")) {
   try {
-    const appPath = resolvePath("@/src/App.cc.html");
+    const appPath = resolvePath("@/src/App.pig.html");
     if (fs.existsSync(appPath)) {
-      console.msg("components.generatingFrom", "App.cc.html");
+      console.msg("components.generatingFrom", "App.pig.html");
       await buildComponent(appPath);
     }
 
@@ -201,7 +319,7 @@ async function processAllComponents(dir = resolvePath("@/components")) {
       const filePath = path.join(dir, file.name);
       if (file.isDirectory()) {
         await processAllComponents(filePath);
-      } else if (file.name.endsWith(".cc.html")) {
+      } else if (file.name.endsWith(".pig.html")) {
         console.msg("components.generatingFrom", file.name);
         await buildComponent(filePath);
       }
