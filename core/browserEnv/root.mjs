@@ -1,11 +1,7 @@
-import { injectTreeTrackingToComponentClass } from "@/core/browserLogic/treeTracking";
-import ReactiveComponent from "@/core/browserLogic/reactiveComponent";
-function toPascalCase(str) {
-  return str
-    .split(/[-_]/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-}
+import { injectTreeTrackingToComponentClass } from "@/core/browserEnv/treeTracking";
+import ReactiveComponent from "@/core/browserEnv/reactiveComponent";
+import { resetGlobalPigletData, toPascalCase } from "@/core/browserEnv/helpers";
+
 class AppRoot extends ReactiveComponent {
   constructor() {
     super();
@@ -63,10 +59,9 @@ class AppRoot extends ReactiveComponent {
 
       const pascalTags = Array.from(tags).map(toPascalCase);
 
-      console.log("xd", tagRegex.exec(pageSource), pageSource);
-
       await Promise.all(
         Array.from(pascalTags).map(async (tag) => {
+          if (tag === "CIf") return;
           try {
             await import(`/component/${tag}`);
           } catch (e) {
@@ -76,6 +71,8 @@ class AppRoot extends ReactiveComponent {
       );
 
       this.shadowRoot.innerHTML = "";
+
+      resetGlobalPigletData();
 
       if (
         module.default instanceof HTMLElement ||
@@ -120,9 +117,3 @@ class AppRoot extends ReactiveComponent {
 // Define the custom element
 injectTreeTrackingToComponentClass(AppRoot);
 customElements.define("app-root", AppRoot);
-
-import "@/core/browserLogic/reactiveComponent";
-import "@/core/browserLogic/treeTracking";
-import "@/core/browserLogic/state";
-import "@/core/browserLogic/cif";
-import "@/core/browserLogic/navigate";

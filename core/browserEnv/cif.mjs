@@ -1,21 +1,6 @@
-import ReactiveComponent from "@/core/browserLogic/reactiveComponent";
-import { injectTreeTrackingToComponentClass } from "@/core/browserLogic/treeTracking";
-
-function getDeepValue(obj, pathParts) {
-  if (!pathParts) return obj;
-
-  let result = obj;
-
-  for (let i = 0; i < pathParts.length; i++) {
-    if (result && result.hasOwnProperty(pathParts[i])) {
-      result = result[pathParts[i]];
-    } else {
-      return undefined;
-    }
-  }
-
-  return result;
-}
+import ReactiveComponent from "@/core/browserEnv/reactiveComponent";
+import { injectTreeTrackingToComponentClass } from "@/core/browserEnv/treeTracking";
+import { getDeepValue } from "@/core/browserEnv/helpers";
 
 class CIf extends ReactiveComponent {
   static get observedAttributes() {
@@ -55,6 +40,15 @@ class CIf extends ReactiveComponent {
       conditionProperty = conditionProperty.substring(1);
     }
 
+    if (
+      /^true$/i.test(conditionProperty) ||
+      /^false$/i.test(conditionProperty)
+    ) {
+      this._condition = /^true$/i.test(conditionProperty);
+      this.updateVisibility();
+      return;
+    }
+
     const parts = conditionProperty.split(".");
 
     if (parts.length > 1) {
@@ -80,6 +74,7 @@ class CIf extends ReactiveComponent {
   }
 
   onStateChange(value) {
+    if (["true", "false"].includes(this.getAttribute("condition"))) return;
     this._updateCondition(value);
   }
 

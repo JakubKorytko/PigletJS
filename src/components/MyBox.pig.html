@@ -1,5 +1,6 @@
 <content>
   <div>
+    <p id="clickCount">You clicked the button in my parent 0 times</p>
     <c-if condition="display">
       <h3>MyBox Component</h3>
     </c-if>
@@ -15,13 +16,16 @@
 </style>
 
 <script>
-  const { display } = state;
+  const { display = init(true) } = state;
 
-  onStateChange = (value, property) => {
-    console.log("State changed in MyBox", value, property);
+  onStateChange = (value, property, prevValue) => {
+    console.log("State changed in MyBox", value, property, prevValue);
   };
 
-  console.log(component);
-
-  display.value = true;
+  onAttributeChange = (newValue, property, prevValue) => {
+    if (property === "clickcount") {
+      element("#clickCount").ref.innerText =
+        `You clicked the button in my parent ${newValue} times`;
+    }
+  };
 </script>

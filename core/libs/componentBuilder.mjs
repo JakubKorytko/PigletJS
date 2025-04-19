@@ -18,7 +18,7 @@ function extractAndRemoveImports(code) {
     let importStatement = match[0];
 
     importStatement = importStatement
-      .replace(/["@']@\/core\/browserLogic\//g, '"/core/')
+      .replace(/["@']@\/core\/browserEnv\//g, '"/core/')
       .replace(/["@']@\/modules\//g, '"/module/');
 
     imports.push(importStatement);
@@ -86,7 +86,25 @@ const injectScriptToComponent = (scriptJS, externalJS) => {
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean)
-      .map((v) => `const ${v} = state("${v}");`)
+      .map((v) => {
+        // Rozdziel zmienną na nazwę i domyślną wartość
+        const [namePart, defaultPart] = v.split("=").map((s) => s.trim());
+        const name = namePart.replace(/[{}]/g, "").trim();
+
+        let secondArg = "";
+
+        if (defaultPart) {
+          // Używamy prostej metody do wyciągnięcia zawartości z init()
+          const initMatch = defaultPart.match(/^init\((.*)\)$/);
+
+          // Jeśli defaultPart jest w formacie init(...), przekaż tylko zawartość
+          if (initMatch) {
+            secondArg = `, ${initMatch[1]}`;
+          }
+        }
+
+        return `const ${name} = state("${name}"${secondArg});`;
+      })
       .join("\n");
   });
 
@@ -95,34 +113,39 @@ const injectScriptToComponent = (scriptJS, externalJS) => {
   return [
     `runScript(shadowRoot) {
         (function(shadowRoot, hostElement) {
-          const element = (selector) => {
-    const el = hostElement.shadowRoot.querySelector(selector);
-    return {
-      on: (event, callback) => {
-        el?.addEventListener(event, callback);
-        return element(selector);
-      },
-      off: (event, callback) => {
-        el?.removeEventListener(event, callback);
-        return element(selector);
-      },
-    };
+const element = (selector) => {
+  const el = hostElement.shadowRoot.querySelector(selector);
+  return {
+    on: (event, callback) => {
+      el?.addEventListener(event, callback);
+      return element(selector);
+    },
+    off: (event, callback) => {
+      el?.removeEventListener(event, callback);
+      return element(selector);
+    },
+    pass: (attrName, value) => {
+      el?.setAttribute(attrName, value);
+      return element(selector);
+    },
+    get ref() {
+      return el;
+    }
   };
+};
 
-        const component = {
-          name: hostElement.constructor.name,
-          id: hostElement.__componentId,
-          tree: hostElement._tree,
-          shadowRoot: hostElement.shadowRoot,
-          key: hostElement.__componentKey,
-          state: hostElement.state.bind(hostElement),
-        }
+   
         let onStateChange;
-        const {state} = component; 
-        
+        let onAttributeChange;
+
+        const state =  hostElement.state.bind(hostElement); 
+        const attributes = hostElement._attrs;
+        const onConnect = getComponentDataMethod(hostElement); 
         ${cleanedCode}
         hostElement.onStateChange = onStateChange;
+         hostElement.onAttributeChange = onAttributeChange;
         onStateChange = undefined;
+        onAttributeChange = undefined;
         })(shadowRoot, this);
       }`,
     imports,
@@ -208,6 +231,7 @@ const generateOutput = (_, ...args) => {
   return `
   import ReactiveComponent from "/core/reactiveComponent";
   import { injectTreeTrackingToComponentClass } from "/core/treeTracking";
+  import { getComponentDataMethod } from "/core/helpers";
   ${fullScript ? fullScript[1].join("\n") : ""}
 class ${className} extends ReactiveComponent {
  
@@ -215,7 +239,7 @@ class ${className} extends ReactiveComponent {
         super();
         const shadow = this.attachShadow({ mode: 'open' });
         shadow.innerHTML = ${injectInnerHTMLToComponent(html, content, componentName, externalCSS)};
-        const componentKey = \`\${this.constructor.name}\${this.__componentId ?? __globalComponentCounter+1}\`
+        const componentKey = \`\${this.constructor.name}\${this.__componentId ?? window.Piglet.componentCounter+1}\`
 
         ${scriptJS ? `this.runScript(shadow);` : ""}
       }

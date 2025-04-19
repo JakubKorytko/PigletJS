@@ -17,7 +17,7 @@ export default {
     builtComponents: path.resolve(rootDir, "build", "components"),
     pages: path.resolve(rootDir, "src", "pages"),
     public: path.resolve(rootDir, "src", "public"),
-    coreBrowserLogic: path.resolve(rootDir, "core", "browserLogic"),
+    corebrowserEnv: path.resolve(rootDir, "core", "browserEnv"),
   },
   mimeTypes: {
     ".html": "text/html",

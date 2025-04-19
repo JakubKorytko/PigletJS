@@ -31,8 +31,6 @@ async function loadPage(fullPath) {
 async function generateAppHtml(route, fullPath) {
   "use strict";
 
-  console.log("fullPath", fullPath);
-
   const appHtmlPath = resolvePath("@/Pig.html");
   try {
     let appHtml = await fs.promises.readFile(appHtmlPath, "utf-8");
@@ -85,8 +83,6 @@ async function generateAppHtml(route, fullPath) {
       resolvePath("@/core/scripts.html"),
       "utf8",
     );
-
-    console.log("");
 
     appHtml = appHtml.replace("</body>", `${scriptTags}</body>`);
 

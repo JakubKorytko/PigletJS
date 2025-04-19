@@ -6,7 +6,7 @@ import { routeAliases } from "@/core/libs/routes.mjs";
 
 export default (req, res) => {
   const pathWithoutCore = req.url.replace("/core/", "");
-  const filePath = resolvePath(`@/coreBrowserLogic/${pathWithoutCore}.mjs`);
+  const filePath = resolvePath(`@/corebrowserEnv/${pathWithoutCore}.mjs`);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/javascript";
 
@@ -19,7 +19,7 @@ export default (req, res) => {
 
       // Replace core imports
       code = code
-        .replace(/(["'])@\/core\/browserLogic\//g, "$1/core/")
+        .replace(/(["'])@\/core\/browserEnv\//g, "$1/core/")
         .replace(/["@']@\/modules\//g, '"/module/');
 
       // Inject routes into root.mjs

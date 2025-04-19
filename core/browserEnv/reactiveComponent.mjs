@@ -1,5 +1,5 @@
-import { assignComponentIdToElement } from "@/core/browserLogic/treeTracking";
-import { useState, useObserver } from "@/core/browserLogic/state";
+import { assignComponentIdToElement } from "@/core/browserEnv/treeTracking";
+import { useState, useObserver } from "@/core/browserEnv/state";
 
 class ReactiveComponent extends HTMLElement {
   constructor() {
@@ -10,8 +10,43 @@ class ReactiveComponent extends HTMLElement {
 
     this._componentName = this.constructor.name;
     this._observers = new Map();
+    this._attrs = {};
 
-    assignComponentIdToElement(this);
+    this._mutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes") {
+          const name = mutation.attributeName;
+          const oldValue = mutation.oldValue;
+          const newValue = this.getAttribute(name);
+
+          this._attrs[name] = newValue;
+
+          if (typeof this.onAttributeChange === "function") {
+            this.onAttributeChange(newValue, name, oldValue);
+          } else {
+            console.warn(
+              `[${this.__componentKey}] onAttributeChange not implemented for:`,
+              name,
+            );
+          }
+        }
+      }
+    });
+
+    this._mutationObserver.observe(this, {
+      attributes: true,
+      attributeOldValue: true,
+    });
+
+    for (const attr of this.attributes) {
+      this._attrs[attr.name] = attr.value;
+    }
+
+    if (this.constructor.name === "AppRoot") {
+      this.__componentId = 0;
+    } else {
+      assignComponentIdToElement(this);
+    }
 
     this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
   }
@@ -24,7 +59,8 @@ class ReactiveComponent extends HTMLElement {
 
   observeState(property) {
     const callback = {
-      stateChange: (value) => this.stateChange(value, property),
+      stateChange: (value, prevValue) =>
+        this.stateChange(value, property, prevValue),
     };
 
     const [addObserver, removeObserver] = useObserver(
@@ -51,9 +87,9 @@ class ReactiveComponent extends HTMLElement {
     return state;
   }
 
-  stateChange(value, property) {
+  stateChange(value, property, prevValue) {
     if (typeof this.onStateChange === "function") {
-      this.onStateChange(value, property);
+      this.onStateChange(value, property, prevValue);
     } else {
       console.warn(
         `[${this._caller ?? this.__componentKey}] onStateChange not implemented for:`,

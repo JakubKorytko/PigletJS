@@ -1,5 +1,5 @@
-const testujemy = () => {
-  console.log("testujemy");
+const externalMethod = () => {
+  console.log("I am working!");
 };
 
-export { testujemy };
+export { externalMethod };

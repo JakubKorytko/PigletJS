@@ -39,8 +39,6 @@ export function parseRoutes(html, pagesDir) {
   const routeRegex = /<route\s+value="([^"]+)">[^<]*<(\w+) \/>[^<]*<\/route>/g;
   let match;
 
-  console.log(pagesDir);
-
   // Find all component files in the pages directory and subdirectories
   const componentFiles = findComponentFiles(pagesDir);
 
@@ -57,8 +55,6 @@ export function parseRoutes(html, pagesDir) {
       const routeAlias = path
         .basename(componentFile)
         .replace(/\.pig\.html$/, "");
-
-      console.log(path.basename(componentFile));
 
       routes[pathValue] = componentFile; // Map route path to component file
       routeAliases[pathValue] = routeAlias;

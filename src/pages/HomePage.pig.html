@@ -1,9 +1,9 @@
 <content>
   <h1>🌳 Root App Component</h1>
-
+  <button id="clickMe" type="button">Click me!</button><br />
   <button id="showTreeBtn">🔍 Display component tree in console</button>
 
-  <MyBox />
+  <MyBox id="myBox" />
   <MySecondBox />
 
   <button id="navigate">Navigate to the other route!</button>
@@ -14,15 +14,32 @@
 </content>
 
 <script>
+  const { display = init(false), clickCount = init(0) } = state;
+
+  onStateChange = (value, property) => {
+    if (property === "clickCount") {
+      element("#myBox").pass("clickcount", value);
+    }
+  };
+
   element("#navigate").on("click", function () {
     navigate("/nested");
+  });
+
+  element("#clickMe").on("click", function () {
+    clickCount.value += 1;
+  });
+
+  onConnect((component) => {
+    console.log("HomePage data:", component);
+    element("#myBox").pass("clickcount", clickCount.value);
   });
 
   setTimeout(() => {
     element("#showTreeBtn").on("click", () => {
       console.groupCollapsed("🌲 Component's tree:");
-      console.log(window.AppComponentTree);
-      console.dir(window.AppComponentTree);
+      console.log(window.Piglet.tree);
+      console.dir(window.Piglet.tree);
       console.groupEnd();
     });
   }, 0);

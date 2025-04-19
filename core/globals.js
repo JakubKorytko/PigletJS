@@ -30,10 +30,10 @@ var state;
 
 /**
  * Selects an element inside the component's shadow DOM and provides
- * a fluent API for managing event listeners.
+ * a fluent API for managing event listeners and passing attributes or reactive references.
  *
  * @param {string} selector - A CSS selector for the target element inside shadow DOM.
- * @returns {ElementWrapper} An object with `.on` and `.off` methods for managing listeners.
+ * @returns {ElementWrapper} An object with `.on`, `.off`, and `.pass` methods.
  *
  * @example
  * // Basic usage
@@ -47,16 +47,16 @@ var state;
  * element("#btn").on("click", handler).off("click", handler);
  *
  * @example
- * // Chaining calls
- * element("#btn")
- *   .on("mouseenter", () => console.log("hovered"))
- *   .on("mouseleave", () => console.log("unhovered"));
+ * // Passing attribute
+ * element("#box").pass("title", "Tooltip text");
+ *
  */
 
 /**
  * @typedef {Object} ElementWrapper
  * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} on - Attaches an event listener.
  * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} off - Removes an event listener.
+ * @property {(attrName: string, value: any) => ElementWrapper} pass - Passes a static value  an attribute/property.
  */
 var element;
 
@@ -67,3 +67,27 @@ var element;
  * @param {string} property - The name of the property whose state has changed.
  */
 var onStateChange;
+
+/**
+ * Asynchronously executes a callback once the host component is connected and available.
+ * Uses `queueMicrotask` to ensure DOM setup is completed before executing the callback.
+ *
+ * @param {function(Object): void} callback - A function that receives the connected component's metadata.
+ *   The `component` object passed to the callback contains:
+ *   @property {string} name - The component's constructor name.
+ *   @property {number|string} id - The component's internal ID (`__componentId`).
+ *   @property {Object} tree - The component's tracked tree structure (`__tree`).
+ *   @property {ShadowRoot|null} shadowRoot - The component's shadow root, if present.
+ *   @property {string} key - Unique component key (`__componentKey`).
+ *   @property {Function} state - Bound `state` method of the component (for accessing reactive state).
+ *   @property {HTMLElement} element - The actual host element instance.
+ *   @property {HTMLElement|null} parent - The parent custom element hosting this component, if any.
+ */
+var onConnect;
+
+/**
+ * Initializes the state with a default value.
+ * @param {any} value - The default value for the state.
+ * @returns {any} The initialized state.
+ */
+var init;

@@ -1,10 +1,10 @@
-import { testujemy } from "@/modules/testExternal.pig";
+import { externalMethod } from "@/modules/testExternal.pig";
 const { display, nested } = state;
 
-testujemy();
+externalMethod();
 
-onStateChange = (value, property) => {
-  console.log("State changed in MySecondBox", value, property);
+onStateChange = (value, property, prevValue) => {
+  console.log("State changed in MySecondBox", value, property, prevValue);
   if (property === "display") {
     nested.value = { object: { hide: value } };
   }

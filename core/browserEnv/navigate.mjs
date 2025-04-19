@@ -1,7 +1,7 @@
 const navigate = (route) => {
-  if (!window.AppComponentTree) return;
+  if (!window.Piglet.tree) return;
 
-  const root = Object.values(window.AppComponentTree)[0];
+  const root = Object.values(window.Piglet.tree)[0];
 
   if (root.componentName !== "AppRoot") return;
 

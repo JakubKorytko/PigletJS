@@ -29,7 +29,7 @@ function transformComponentState(input) {
 }
 
 function observeAppState() {
-  const simplifiedState = extractSimpleData(window.AppState);
+  const simplifiedState = extractSimpleData(window.Piglet.state);
   const transformedState = transformComponentState(simplifiedState);
 
   window.postMessage(
@@ -43,7 +43,7 @@ function observeAppState() {
 }
 
 function observeAppComponentTree() {
-  const simplifiedTree = extractSimpleData(window.AppComponentTree);
+  const simplifiedTree = extractSimpleData(window.Piglet.tree);
 
   window.postMessage(
     {

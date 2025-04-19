@@ -1,18 +1,15 @@
-import { useState } from "@/core/browserLogic/state";
-
-let __globalComponentCounter = 0;
-window.Piglet = { allowDebugging: true };
+import { useState } from "@/core/browserEnv/state";
+import Piglet from "@/core/browserEnv/config";
 
 function assignComponentIdToElement(el) {
   if (!el.__componentId) {
-    el.__componentId = ++__globalComponentCounter;
+    el.__componentId = ++Piglet.componentCounter;
   }
   return el.__componentId;
 }
 
 function buildCustomElementTree(root = document.body) {
   const tree = {};
-  console.log("root", root);
 
   function walk(node) {
     const tagName = node.tagName?.toLowerCase?.();
@@ -30,7 +27,11 @@ function buildCustomElementTree(root = document.body) {
     }
 
     if (isCustom) {
-      assignComponentIdToElement(node);
+      if (node.constructor.name === "AppRoot") {
+        node.__componentId = 0;
+      } else {
+        assignComponentIdToElement(node);
+      }
 
       let state = {};
       if (node._observers && node.__componentKey) {
@@ -73,7 +74,6 @@ function buildCustomElementTree(root = document.body) {
 }
 
 function injectTreeTrackingToComponentClass(klass) {
-  console.log("pierwszy", klass);
   const originalConnected = klass.prototype.connectedCallback;
 
   klass.prototype.connectedCallback = function () {
@@ -81,9 +81,9 @@ function injectTreeTrackingToComponentClass(klass) {
 
     this.__trackCustomTree__ = () => {
       const root = this;
-      this._tree = buildCustomElementTree(root);
+      this.__tree = buildCustomElementTree(root);
       if (this.constructor.name === "AppRoot") {
-        window.AppComponentTree = this._tree;
+        Piglet.tree = this.__tree;
       }
       console.log(`[${this.constructor.name}] tracking tree`);
     };
