@@ -8,7 +8,6 @@ function renderTree(obj) {
     .map(([key, value]) => {
       const label = `${value.componentName ?? "HTML"} (${key})`;
 
-      // Check if the object has children
       const hasChildren =
         value.children && Object.keys(value.children).length > 0;
 
@@ -20,7 +19,6 @@ function renderTree(obj) {
           </details>
         `;
       } else {
-        // Render the final elements as plain text instead of expandable details
         return `<div class="_details"><p class="_summary">${label}</p></div>`;
       }
     })

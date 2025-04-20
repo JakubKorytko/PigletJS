@@ -42,14 +42,7 @@ export default {
   routes: ["component", "page", "file", "core", "module", "api"],
   consoleMessages: {
     server: {
-      start: '🔧 Server is starting... Press "r" to reload components.',
       shuttingDown: "\n👋 Shutting down the server...",
-      reloading: "\n🔁 Reloading all components...",
-      regenerated: "✅ Components have been successfully regenerated.",
-      regeneratingError: (err) => [
-        "❌ Error while regenerating components:",
-        err,
-      ],
       restarting: "\n🔁 Restarting server...",
       restarted: "\n🔁 Server restarted",
       running: (port) =>
@@ -58,9 +51,7 @@ export default {
       pressRestart: '🔁 Press "s" to restart server.\n',
       initError: (err) => ["❌ Error during server initialization:", err],
       missingComponentName: "❌ Component name is missing",
-      componentNotFound: "❌ Component not found",
-      notFound: "Not found",
-      error: (err) => err,
+      controllerError: (err) => err,
     },
     consoleMsg: {
       invalidMessageType: (path) =>
@@ -130,17 +121,12 @@ export default {
       createdFolder: (folder) => `📁 Created: ${folder}`,
       existsFolder: (folder) => `📁 Exists: ${folder}`,
       applyingTemplate: (template) => `🛠  Applying "${template}" template...`,
-      structureCreated: "📦 Created structure only (minimal setup)",
-      fullTemplateCreated: "📦 Created full template (structure + sample app)",
-      missingTemplate: (template) =>
-        `⚠️ Template directory for "${template}" does not exist.`,
-      missingExtension: "⚠️ 'extension/' directory does not exist.",
-      failedToAddHost:
-        "⚠️ Failed to update hosts file. Try running this script as administrator.",
-      addedToHosts: "✅ Successfully added piglet.js to hosts!",
       skipTemplate: "⚠️ Skipping template initialization.",
-      noHostPermission:
-        "🔧 You need admin privileges to add piglet.js to your hosts.",
+      templatesRemoved: "🗑️ Removed 'core/templates' directory.",
+      templatesDoNotExists: "⚠️ 'core/templates' directory does not exist.",
+      extensionRemoved: "🗑️ Removed 'core/extension' directory.",
+      extensionDoNotExists: "⚠️ 'core/extension' directory does not exist.",
+      errorRemoving: (err) => ["❌ Error removing directories:", err],
     },
   },
 };

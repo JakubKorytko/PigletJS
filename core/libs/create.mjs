@@ -7,6 +7,29 @@ import runApplication from "../spawn.mjs";
 import CONST from "../CONST.mjs";
 import "../utils/console.mjs";
 
+async function clearTemplates(dirname) {
+  const templatesPath = path.join(dirname, "core", "templates");
+  const extensionPath = path.join(dirname, "core", "extension");
+
+  try {
+    if (fs.existsSync(templatesPath)) {
+      await fsp.rm(templatesPath, { recursive: true, force: true });
+      console.msg("template.templatesRemoved");
+    } else {
+      console.msg("template.templatesDoNotExists");
+    }
+
+    if (fs.existsSync(extensionPath)) {
+      await fsp.rm(extensionPath, { recursive: true, force: true });
+      console.msg("template.extensionRemoved");
+    } else {
+      console.msg("template.extensionDoNotExists");
+    }
+  } catch (err) {
+    console.msg("template.errorRemoving", err);
+  }
+}
+
 function askYesNo(question) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -135,6 +158,11 @@ function runAddHostAndStartApp(dirname) {
 }
 
 async function start(dirname, create, host, clear) {
+  if (clear) {
+    await clearTemplates(dirname);
+    return;
+  }
+
   if (create) {
     await maybeUseTemplate(dirname);
 

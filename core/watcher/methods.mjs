@@ -45,7 +45,6 @@ const resetSubprocess = (eventType, filename, forced = false) => {
 const watchDirectory = () => {
   let debounceTimeout;
 
-  // Watch the components directory
   fs.watch(
     resolvePath("@/components"),
     { recursive: true },
@@ -56,7 +55,6 @@ const watchDirectory = () => {
           base: "",
           ext: ".html",
         });
-        // path.format({ ...path.parse(filename), base: '', ext: '.html' })
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/components/${htmlFilename}`);
@@ -71,7 +69,6 @@ const watchDirectory = () => {
 
   console.msg("components.watchingForChanges", resolvePath("@/components"));
 
-  // Watch the pages directory
   fs.watch(
     resolvePath("@/pages"),
     { recursive: true },
@@ -87,7 +84,7 @@ const watchDirectory = () => {
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/pages/${htmlFilename}`);
           console.msg("components.changed", htmlFilename);
-          buildComponent(filePath) // Assuming you have a function to rebuild pages
+          buildComponent(filePath)
             .catch((err) => console.msg("pages.generatingError", err))
             .then(reloadClients);
         }, 500);

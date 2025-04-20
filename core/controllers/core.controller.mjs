@@ -17,15 +17,12 @@ export default (req, res) => {
     } else {
       let code = data.toString();
 
-      // Replace core imports
       code = code
         .replace(/(["'])@\/core\/browserEnv\//g, "$1/core/")
         .replace(/["@']@\/modules\//g, '"/module/');
 
-      // Inject routes into root.mjs
       const routesInjection = `const routes = ${JSON.stringify(routeAliases)};\n`;
 
-      // Inject routes at the beginning of the code
       code = routesInjection + code;
 
       res.writeHead(200, { "Content-Type": contentType });

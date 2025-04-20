@@ -3,11 +3,9 @@ import { routes } from "@/core/libs/routes.mjs";
 import notFound from "@/core/libs/notfound.mjs";
 
 export default async (req, res) => {
-  // const pageName = req.url.replace("/", "") || "home"; // Get the path from the request URL
-  const componentPath = routes[req.url]; // Look up the component from the routes object
+  const componentPath = routes[req.url];
 
   if (componentPath) {
-    // Generate HTML content based on the component name
     const htmlContent = await generateAppHtml(req.url, componentPath);
 
     if (htmlContent) {

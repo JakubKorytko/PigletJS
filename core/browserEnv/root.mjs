@@ -41,7 +41,6 @@ class AppRoot extends ReactiveComponent {
     this._route = route;
 
     try {
-      // Dynamically import the page
       const routePath = routes[route];
       const module = await import(`/component/${routePath}`);
 
@@ -118,6 +117,5 @@ class AppRoot extends ReactiveComponent {
   }
 }
 
-// Define the custom element
 injectTreeTrackingToComponentClass(AppRoot);
 customElements.define("app-root", AppRoot);

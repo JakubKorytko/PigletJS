@@ -12,11 +12,10 @@ async function loadPage(fullPath) {
   "use strict";
 
   try {
-    // Try to read the file from the resolved path
     return await fs.promises.readFile(fullPath, "utf-8");
   } catch (err) {
     console.msg("pages.failedToLoad", fullPath, err);
-    return false; // Return false if the file couldn't be loaded
+    return false;
   }
 }
 
@@ -40,7 +39,7 @@ async function generateAppHtml(route, fullPath) {
       return false;
     }
 
-    const componentTags = new Set(["App"]); // zawsze dołącz App jako komponent bazowy
+    const componentTags = new Set(["App"]);
     const tagRegex =
       /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
     let match;
@@ -51,7 +50,7 @@ async function generateAppHtml(route, fullPath) {
     }
 
     componentTags.forEach((tag) => {
-      const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag); // specjalny przypadek dla App
+      const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag);
 
       const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
       appHtml = appHtml.replace(
@@ -66,13 +65,9 @@ async function generateAppHtml(route, fullPath) {
       appHtml = appHtml.replace(new RegExp(`</${tag}>`, "g"), `</${kebabTag}>`);
     });
 
-    // Dynamically add route to <app-root> tag
-    appHtml = appHtml.replace(
-      /<app-root([^>]*)>/g, // Match <app-root> with optional attributes
-      (match, attributes) => {
-        return `<app-root${attributes} route="${route}">`; // Add route attribute
-      },
-    );
+    appHtml = appHtml.replace(/<app-root([^>]*)>/g, (match, attributes) => {
+      return `<app-root${attributes} route="${route}">`;
+    });
 
     appHtml = appHtml.replace(
       /<app([^>]*)>(.*?)<\/app>/is,

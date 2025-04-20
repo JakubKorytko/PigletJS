@@ -11,14 +11,12 @@ function transformComponentState(input) {
     for (const stateKey in componentData) {
       const stateData = componentData[stateKey];
 
-      // Collect the state
       if (stateData._state !== undefined) {
         result[component].state[stateKey] = stateData._state;
       } else if (stateData._state?.object) {
         result[component].state[stateKey] = stateData._state.object;
       }
 
-      // Collect the observers
       if (stateData._observers) {
         result[component].observers.push(...stateData._observers);
       }

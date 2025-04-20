@@ -25,7 +25,7 @@ export default async (req, res) => {
       res.end("Controller must export a default function");
     }
   } catch (err) {
-    console.msg("server.error", err);
+    console.msg("server.controllerError", err);
     await notFound(res);
   }
 };

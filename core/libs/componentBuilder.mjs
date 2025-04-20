@@ -60,9 +60,9 @@ const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
 function escapeTemplateLiteral(str) {
   return str
-    .replace(/\\/g, "\\\\") // backslash → podwójny backslash
-    .replace(/`/g, "\\`") // backtick → escaped backtick
-    .replace(/\$\{/g, "\\${"); // interpolacje → literalna forma
+    .replace(/\\/g, "\\\\")
+    .replace(/`/g, "\\`")
+    .replace(/\$\{/g, "\\${");
 }
 
 function injectHostElementAttribute(content, tagName, componentName) {
@@ -83,17 +83,14 @@ const transformScript = (fullScript) => {
       .map((v) => v.trim())
       .filter(Boolean)
       .map((v) => {
-        // Rozdziel zmienną na nazwę i domyślną wartość
         const [namePart, defaultPart] = v.split("=").map((s) => s.trim());
         const name = namePart.replace(/[{}]/g, "").trim();
 
         let secondArg = "";
 
         if (defaultPart) {
-          // Używamy prostej metody do wyciągnięcia zawartości z init()
           const initMatch = defaultPart.match(/^init\((.*)\)$/);
 
-          // Jeśli defaultPart jest w formacie init(...), przekaż tylko zawartość
           if (initMatch) {
             secondArg = `, ${initMatch[1]}`;
           }
@@ -109,7 +106,6 @@ const injectScriptToComponent = (scriptJS, externalJS) => {
   if (!scriptJS && !externalJS) return "";
 
   const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
-  // Replace it with multiple `const x = state("x");`
   const transformedScript = transformScript(fullScript);
 
   const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
@@ -272,7 +268,7 @@ const injectInnerHTMLToComponent = (
 
 const generateOutput = (_, ...args) => {
   if (args.length !== 5) {
-    throw Error("components.outputGenerationError");
+    console.msg("components.outputGenerationError", new Error());
   }
 
   const componentName = args[0];
@@ -342,7 +338,6 @@ async function buildComponent(filePath) {
     const baseName = path.basename(filePath, ".pig.html");
     const componentName = toPascalCase(baseName);
 
-    // Szukamy plików .pig.css i .pig.mjs
     const externalCSSPath = await findMatchingExternalFile(
       resolvePath("@/src"),
       baseName,
@@ -365,7 +360,6 @@ async function buildComponent(filePath) {
       externalJS = await fs.promises.readFile(externalJSPath, "utf-8");
     }
 
-    // Generowanie wynikowego kodu komponentu
     const output = generateOutput`
     Component name: ${componentName}
     Component content: ${html}${content}

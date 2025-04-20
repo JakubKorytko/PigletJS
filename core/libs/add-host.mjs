@@ -27,7 +27,7 @@ function modifyHosts() {
   try {
     hosts = fs.readFileSync(hostsPath, "utf8");
   } catch (err) {
-    console.msg("hosts.couldntReadtHostFile", err.message);
+    console.msg("hosts.couldntReadHostFile", err.message);
     return;
   }
 
