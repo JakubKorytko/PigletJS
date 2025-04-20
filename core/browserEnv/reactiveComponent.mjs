@@ -11,6 +11,7 @@ class ReactiveComponent extends HTMLElement {
     this._componentName = this.constructor.name;
     this._observers = new Map();
     this._attrs = {};
+    this._forwarded = {};
 
     this._mutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
@@ -23,6 +24,9 @@ class ReactiveComponent extends HTMLElement {
 
           if (typeof this.onAttributeChange === "function") {
             this.onAttributeChange(newValue, name, oldValue);
+            if (typeof this.reactive === "function") {
+              this.reactive();
+            }
           } else {
             console.warn(
               `[${this.__componentKey}] onAttributeChange not implemented for:`,
@@ -90,6 +94,9 @@ class ReactiveComponent extends HTMLElement {
   stateChange(value, property, prevValue) {
     if (typeof this.onStateChange === "function") {
       this.onStateChange(value, property, prevValue);
+      if (typeof this.reactive === "function") {
+        this.reactive();
+      }
     } else {
       console.warn(
         `[${this._caller ?? this.__componentKey}] onStateChange not implemented for:`,

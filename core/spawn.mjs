@@ -7,12 +7,12 @@ const runApplication = (rootDir) => {
     "node",
     [
       "--import",
-      `data:text/javascript,${encodeURIComponent(
+      `"data:text/javascript,${encodeURIComponent(
         fs
           .readFileSync("./core/watcher/loader-arg.mjs", "utf8")
           .toString()
           .replace("__dirname", "./core/watcher/loader.mjs"),
-      )}`,
+      )}"`,
       "./core/watcher/index.mjs",
       `--rootDir="${pathToFileURL(rootDir)}"`,
     ],

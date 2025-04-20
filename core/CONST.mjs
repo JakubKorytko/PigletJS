@@ -7,7 +7,7 @@ const rootDir = rootDirArg
   ? fileURLToPath(rootDirArg.replace("--rootDir=", ""))
   : process.cwd();
 
-const PORT = 3000;
+const PORT = 2137;
 
 export default {
   PORT,
@@ -50,7 +50,8 @@ export default {
       ],
       restarting: "\n🔁 Restarting server...",
       restarted: "\n🔁 Server restarted",
-      running: (port) => `\n🚀 Server running at http://localhost:${port}`,
+      running: (port) =>
+        `\n🚀 Server running at http://piglet.js:${port} if host exists and on http://localhost:${port}`,
       pressReload: '🔁 Press "r" to reload components.',
       pressRestart: '🔁 Press "s" to restart server.\n',
       initError: (err) => ["❌ Error during server initialization:", err],

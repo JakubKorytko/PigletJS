@@ -61,10 +61,25 @@ var state;
 var element;
 
 /**
- * Called when the component's state changes.
+ * Handler for reacting to state changes in a component.
  *
- * @param {*} value - The new value of the state that was changed.
- * @param {string} property - The name of the property whose state has changed.
+ * This is a Proxy function that routes changes to specific state key handlers.
+ * You can register handlers using bracket notation:
+ *
+ * @example
+ * onStateChange['display'] = (newValue, prevValue) => {
+ *   nested.value = { object: { hide: newValue } };
+ * };
+ *
+ * When a state change occurs, call:
+ *
+ * @example
+ * onStateChange(newValue, stateKey, prevValue);
+ *
+ * @param {any} newValue - The new value of the state.
+ * @param {any} prevValue - The previous value of that state key.
+ *
+ * @property {(newValue: any, prevValue: any) => void} [stateKey] - Assignable handler for a specific state key.
  */
 var onStateChange;
 
@@ -91,3 +106,31 @@ var onConnect;
  * @returns {any} The initialized state.
  */
 var init;
+
+/**
+ * Callback for state or attributes change.
+ */
+var onUpdate;
+
+/**
+ * Handler for reacting to attribute changes on a custom element.
+ *
+ * This is a Proxy function that dispatches changes to per-attribute callbacks.
+ * You can assign handlers using bracket notation:
+ *
+ * @example
+ * onAttributeChange['clickcount'] = (newValue, prevValue) => {
+ *   display.value = newValue > 5;
+ * };
+ *
+ * Internally, when the host element detects an attribute change, it should call:
+ *
+ * @example
+ * onAttributeChange(newValue, attributeName, prevValue);
+ *
+ * @param {any} newValue - The new value of the attribute.
+ * @param {any} prevValue - The previous value of the attribute.
+ *
+ * @property {(newValue: any, prevValue: any) => void} [attributeName] - Assignable handler for a specific attribute.
+ */
+var onAttributeChange;

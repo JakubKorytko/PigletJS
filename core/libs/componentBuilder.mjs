@@ -74,14 +74,10 @@ function injectHostElementAttribute(content, tagName, componentName) {
   });
 }
 
-const injectScriptToComponent = (scriptJS, externalJS) => {
-  if (!scriptJS && !externalJS) return "";
+const transformScript = (fullScript) => {
+  const destructureRegex = /const\s*{\s*(.*?)\s*}\s*=\s*state\s*;/g;
 
-  const destructureRegex = /const\s*{\s*([^}]+?)\s*}\s*=\s*state\s*;/g;
-
-  const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
-  // Replace it with multiple `const x = state("x");`
-  const transformedScript = fullScript.replace(destructureRegex, (_, vars) => {
+  return fullScript.replace(destructureRegex, (_, vars) => {
     return vars
       .split(",")
       .map((v) => v.trim())
@@ -107,6 +103,14 @@ const injectScriptToComponent = (scriptJS, externalJS) => {
       })
       .join("\n");
   });
+};
+
+const injectScriptToComponent = (scriptJS, externalJS) => {
+  if (!scriptJS && !externalJS) return "";
+
+  const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
+  // Replace it with multiple `const x = state("x");`
+  const transformedScript = transformScript(fullScript);
 
   const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
 
@@ -125,7 +129,16 @@ const element = (selector) => {
       return element(selector);
     },
     pass: (attrName, value) => {
-      el?.setAttribute(attrName, value);
+      if (el && typeof value === "function") {
+         if (!el._forwarded) {
+          el._forwarded = {};
+         }
+         el._forwarded[attrName] = value;
+         if (el.onAttributeChange) el.onAttributeChange("forwarded", el._forwarded);
+         if (el.reactive) el.reactive();
+      } else {
+         el?.setAttribute(attrName, value);
+      }
       return element(selector);
     },
     get ref() {
@@ -134,16 +147,64 @@ const element = (selector) => {
   };
 };
 
+const stateHandlers = {};
    
-        let onStateChange;
-        let onAttributeChange;
+let onStateChange = new Proxy(
+  (value, property, prevValue) => {
+    const handler = stateHandlers[property];
+    if (typeof handler === 'function') {
+      handler(value, prevValue);
+    }
+  },
+  {
+    get(target, prop) {
+      return stateHandlers[prop];
+    },
+    set(target, prop, value) {
+      if (typeof value === 'function') {
+        stateHandlers[prop] = value;
+        return true;
+      }
+      return false;
+    }
+  }
+);
+const attributeHandlers = {};
+
+let onAttributeChange = new Proxy(
+  (newValue, property, prevValue) => {
+    const handler = attributeHandlers[property];
+    if (typeof handler === 'function') {
+      handler(newValue, prevValue);
+    }
+  },
+  {
+    get(target, prop) {
+      return attributeHandlers[prop];
+    },
+    set(target, prop, value) {
+      if (typeof value === 'function') {
+        attributeHandlers[prop] = value;
+        return true;
+      }
+      return false;
+    }
+  }
+);
+        let reactive = () => {};
+        let onUpdate = (callback) => {
+          reactive = callback;
+        };
 
         const state =  hostElement.state.bind(hostElement); 
         const attributes = hostElement._attrs;
-        const onConnect = getComponentDataMethod(hostElement); 
+        const forwarded = hostElement._forwarded;
+        const onConnect = getComponentDataMethod(hostElement);
         ${cleanedCode}
+        hostElement.reactive = reactive;
         hostElement.onStateChange = onStateChange;
-         hostElement.onAttributeChange = onAttributeChange;
+        hostElement.onAttributeChange = onAttributeChange;
+        reactive();
         onStateChange = undefined;
         onAttributeChange = undefined;
         })(shadowRoot, this);

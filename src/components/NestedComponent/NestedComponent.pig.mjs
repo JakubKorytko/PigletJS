@@ -1,15 +1,10 @@
-import { externalMethod } from "@/modules/testExternal.pig";
-const { display, nested } = state;
+const { display = init(true) } = state;
+const { nested = init({ object: { hide: true } }) } = state;
 
-externalMethod();
-
-onStateChange = (value, property, prevValue) => {
-  console.log("State changed in NestedComponent", value, property, prevValue);
-  if (property === "display") {
-    nested.value = { object: { hide: value } };
-  }
+onStateChange["display"] = (value) => {
+  nested.value = { object: { hide: value } };
 };
 
-element("#test").on("click", () => {
+element("#hide").on("click", () => {
   display.value = !display.value;
 });

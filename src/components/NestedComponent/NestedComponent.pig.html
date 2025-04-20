@@ -1,18 +1,24 @@
 <content>
-  <button id="test">Change nested component visibility!</button>
-  <c-if condition="display">
-    <p>I am visible by default</p>
-  </c-if>
-  <c-if condition="!nested.object.hide">
-    <p>
-      If previous element is not visible, I am (and I am nested, check
-      <code>NestedComponent.pig.html</code>)!
-    </p>
-  </c-if>
+  <div class="d-flex f-column gap-1 align-center">
+    <button id="hide" class="w-fit-content">
+      Change nested component visibility!
+    </button>
+    <c-if condition="display">
+      <p>I am visible by default</p>
+    </c-if>
+    <c-if condition="!nested.object.hide">
+      <p>
+        If previous element is not visible, I am<br />
+        (and I am nested, check <code>NestedComponent.pig.html</code>)!
+      </p>
+    </c-if>
+  </div>
 </content>
 
 <script>
-  nested.value = { object: { hide: true } };
-  display.value = true;
-  console.log("Internal script runs after external");
+  console.log("Internal script runs after external!");
 </script>
+
+<style>
+  @import "globals.css";
+</style>

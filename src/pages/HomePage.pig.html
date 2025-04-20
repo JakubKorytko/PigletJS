@@ -1,35 +1,45 @@
 <content>
   <div class="container">
-    <div><img src="/logo.png" /></div>
-
+    <img src="/logo.png" />
     <div class="welcomeMessage">
       <div>
         <h1>Welcome to PigletJS</h1>
         <p>This is the homepage of your app.</p>
+        <br />
         <p>Edit <code>src/HomePage.pig.html</code> to see changes.</p>
       </div>
-      <div style="display: flex; flex-direction: column">
+      <div class="d-flex f-column">
         <button id="showTreeBtn">🔍 Display component tree in console</button>
         <button id="clickMe" type="button">
           Click me to increase the count below!
         </button>
         <ClickCounter id="clickCounter" />
-        <button id="navigate" style="margin-top: 0">
-          Navigate to the other route!
-        </button>
+        <button id="navigate" class="mt-0">Navigate to the other route!</button>
       </div>
     </div>
   </div>
 </content>
 
 <script>
-  const { clickCount = init(0) } = state;
+  import consoleTree from "@/modules/consoleTree.pig";
 
-  onStateChange = (value, property) => {
-    if (property === "clickCount") {
-      element("#clickCounter").pass("clickcount", value);
-    }
+  const { clickCount = init(0) } = state;
+  const clickCounter = element("#clickCounter");
+
+  onStateChange["clickCount"] = (value) => {
+    clickCounter.pass("clickcount", value);
   };
+
+  clickCounter.pass("parentMethod", () => {
+    console.log("I was called in my child!", clickCount.value);
+  });
+
+  onConnect((component) => {
+    console.log("HomePage data:", component);
+    clickCounter.pass("clickcount", clickCount.value);
+  });
+
+  element("#showTreeBtn").on("click", consoleTree);
 
   element("#navigate").on("click", function () {
     navigate("/nested");
@@ -38,18 +48,4 @@
   element("#clickMe").on("click", function () {
     clickCount.value += 1;
   });
-
-  onConnect((component) => {
-    console.log("HomePage data:", component);
-    element("#clickCounter").pass("clickcount", clickCount.value);
-  });
-
-  setTimeout(() => {
-    element("#showTreeBtn").on("click", () => {
-      console.groupCollapsed("🌲 Component's tree:");
-      console.log(window.Piglet.tree);
-      console.dir(window.Piglet.tree);
-      console.groupEnd();
-    });
-  }, 0);
 </script>

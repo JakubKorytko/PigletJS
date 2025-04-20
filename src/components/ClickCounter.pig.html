@@ -7,22 +7,19 @@
   </div>
 </content>
 
-<style>
-  h3 {
-    color: blue;
-  }
-</style>
-
 <script>
   const { display = init(false) } = state;
 
-  onAttributeChange = (newValue, property) => {
-    if (property === "clickcount") {
-      element("#clickCount").ref.innerText =
-        `You clicked the button in my parent ${newValue} times`;
-      if (newValue > 5) {
-        display.value = true;
-      }
-    }
+  onAttributeChange["clickcount"] = (newValue) => {
+    display.value = newValue > 5;
   };
+
+  onUpdate(() => {
+    element("#clickCount").ref.innerText =
+      `You clicked the button in my parent ${attributes.clickcount} times`;
+  });
+
+  onConnect(() => {
+    forwarded.parentMethod();
+  });
 </script>

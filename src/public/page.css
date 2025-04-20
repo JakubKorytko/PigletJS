@@ -1,0 +1,13 @@
+:host {
+  font-family: system-ui, sans-serif;
+  padding: 2rem;
+  height: 100%;
+  width: 100%;
+  background: #ffb8b8;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+}
