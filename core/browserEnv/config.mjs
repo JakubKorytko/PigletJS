@@ -1,11 +1,15 @@
 export default {
   allowDebugging: true,
-  enableCoreLogs: false,
+  enableCoreLogs: {
+    info: false,
+    warn: true,
+    error: true,
+  },
   componentCounter: 0,
   state: {},
   tree: {},
   log(message, severity = "info", ...args) {
-    if (!this.enableCoreLogs) return;
+    if (!this.enableCoreLogs[severity]) return;
     const levels = ["info", "warn", "error"];
 
     if (!levels.includes(severity)) {

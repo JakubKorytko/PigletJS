@@ -115,6 +115,32 @@ export default {
         message,
       ],
       unsupportedOS: (platform) => ["❌ Unsupported OS:", platform],
+      doYouWantToAdd:
+        "🔧 Do you want to add piglet.js to your hosts file? (Requires admin privileges)",
+      adding: "➕ Adding piglet.js to your hosts...",
+    },
+    template: {
+      doYouWantExtension:
+        "🧩 Do you want to include the browser extension for development tools?",
+      copyExtension: "🧩 Copying browser extension...",
+      skipExtension:
+        "⚠️ Skipping browser extension: 'extension/' already exists.",
+      copiedFile: (fileName) => `✅ Copied: ${fileName}`,
+      skipExistingFile: (fileName) => `⚠️ Skipping existing file: ${fileName}`,
+      createdFolder: (folder) => `📁 Created: ${folder}`,
+      existsFolder: (folder) => `📁 Exists: ${folder}`,
+      applyingTemplate: (template) => `🛠  Applying "${template}" template...`,
+      structureCreated: "📦 Created structure only (minimal setup)",
+      fullTemplateCreated: "📦 Created full template (structure + sample app)",
+      missingTemplate: (template) =>
+        `⚠️ Template directory for "${template}" does not exist.`,
+      missingExtension: "⚠️ 'extension/' directory does not exist.",
+      failedToAddHost:
+        "⚠️ Failed to update hosts file. Try running this script as administrator.",
+      addedToHosts: "✅ Successfully added piglet.js to hosts!",
+      skipTemplate: "⚠️ Skipping template initialization.",
+      noHostPermission:
+        "🔧 You need admin privileges to add piglet.js to your hosts.",
     },
   },
 };

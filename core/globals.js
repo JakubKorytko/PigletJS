@@ -185,3 +185,22 @@ var attributes;
  * @type {Record<string, Function>}
  */
 var forwarded;
+
+/**
+ * Fetches data from a given API path and parses the response into the expected format.
+ *
+ * @async
+ * @function
+ * @param {string} path - The relative API endpoint (e.g., "users/1").
+ * @param {"json"|"text"|"blob"|"arrayBuffer"|"formData"} [expect="json"] - The expected response type.
+ * @returns {Promise<any>} - The parsed response data. If parsing fails, may return plain text as a fallback.
+ * @throws {Error} - Throws if fetch fails, if an unsupported `expect` type is provided,
+ *                   or if parsing fails entirely.
+ *
+ * @example
+ * const user = await api("users/1"); // parses JSON by default
+ *
+ * @example
+ * const rawText = await
+ */
+var api;
