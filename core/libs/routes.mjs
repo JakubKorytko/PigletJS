@@ -1,8 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-// routes.js - Global Route Storage
-export const routes = {}; // Global object to store routes
+export const routes = {};
 export const routeAliases = {};
 
 /**
@@ -18,9 +17,9 @@ function findComponentFiles(dir, componentFiles = []) {
     const filePath = path.join(dir, file.name);
 
     if (file.isDirectory()) {
-      findComponentFiles(filePath, componentFiles); // Recurse into subdirectories
+      findComponentFiles(filePath, componentFiles);
     } else if (file.name.endsWith(".pig.html")) {
-      componentFiles.push(filePath); // Add the component file path
+      componentFiles.push(filePath);
     }
   }
 
@@ -39,16 +38,14 @@ export function parseRoutes(html, pagesDir) {
   const routeRegex = /<route\s+value="([^"]+)">[^<]*<(\w+) \/>[^<]*<\/route>/g;
   let match;
 
-  // Find all component files in the pages directory and subdirectories
   const componentFiles = findComponentFiles(pagesDir);
 
   while ((match = routeRegex.exec(html)) !== null) {
-    const pathValue = match[1]; // Route path (e.g., "/")
-    const componentName = match[2]; // Component name (e.g., "Homepage")
+    const pathValue = match[1];
+    const componentName = match[2];
 
-    // Find the component file matching the component name
-    const componentFile = componentFiles.find(
-      (file) => file.toLowerCase().includes(componentName.toLowerCase()), // Match by name
+    const componentFile = componentFiles.find((file) =>
+      file.toLowerCase().includes(componentName.toLowerCase()),
     );
 
     if (componentFile) {
@@ -56,10 +53,10 @@ export function parseRoutes(html, pagesDir) {
         .basename(componentFile)
         .replace(/\.pig\.html$/, "");
 
-      routes[pathValue] = componentFile; // Map route path to component file
+      routes[pathValue] = componentFile;
       routeAliases[pathValue] = routeAlias;
     } else {
-      console.log(`Component file for "${componentName}" not found.`);
+      console.msg("components.notFound", componentName);
     }
   }
 }

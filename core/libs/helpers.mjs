@@ -11,6 +11,7 @@ const routeNames = CONST.routes.reduce((acc, route) => {
 }, {});
 
 const getRouteFromRequest = (req) => {
+  const urlStartWithApi = req.url.startsWith(CONST.customRouteAliases.api);
   const urlStartWithComponent = req.url.startsWith(
     CONST.customRouteAliases.component,
   );
@@ -19,7 +20,7 @@ const getRouteFromRequest = (req) => {
   );
 
   const urlStartWithCore = req.url.startsWith(CONST.customRouteAliases.core);
-
+  if (urlStartWithApi) return routeNames.api;
   if (urlStartWithModule) return routeNames.module;
   if (urlStartWithComponent) return routeNames.component;
   if (urlStartWithCore) return routeNames.core;

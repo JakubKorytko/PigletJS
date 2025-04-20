@@ -7,7 +7,7 @@ const rootDir = rootDirArg
   ? fileURLToPath(rootDirArg.replace("--rootDir=", ""))
   : process.cwd();
 
-const PORT = 3000;
+const PORT = 2137;
 
 export default {
   PORT,
@@ -36,27 +36,22 @@ export default {
     component: "/component/",
     core: "/core/",
     module: "/module",
+    api: "/api",
+    public: "/public",
   },
-  routes: ["component", "page", "file", "core", "module"],
+  routes: ["component", "page", "file", "core", "module", "api"],
   consoleMessages: {
     server: {
-      start: '🔧 Server is starting... Press "r" to reload components.',
       shuttingDown: "\n👋 Shutting down the server...",
-      reloading: "\n🔁 Reloading all components...",
-      regenerated: "✅ Components have been successfully regenerated.",
-      regeneratingError: (err) => [
-        "❌ Error while regenerating components:",
-        err,
-      ],
       restarting: "\n🔁 Restarting server...",
       restarted: "\n🔁 Server restarted",
-      running: (port) => `\n🚀 Server running at http://localhost:${port}`,
+      running: (port) =>
+        `\n🚀 Server running at http://piglet.js:${port} if host exists and on http://localhost:${port}`,
       pressReload: '🔁 Press "r" to reload components.',
       pressRestart: '🔁 Press "s" to restart server.\n',
       initError: (err) => ["❌ Error during server initialization:", err],
       missingComponentName: "❌ Component name is missing",
-      componentNotFound: "❌ Component not found",
-      notFound: "Not found",
+      controllerError: (err) => err,
     },
     consoleMsg: {
       invalidMessageType: (path) =>
@@ -88,6 +83,8 @@ export default {
         `👀 Watching for changes in directory: ${path}`,
       generatingError: (err) => ["❌ Error while generating component:", err],
       changed: (filename) => `✅ File changed: ${filename}`,
+      notFound: (componentName) =>
+        `Component file for "${componentName}" not found.`,
     },
     pages: {
       failedToLoad: (pageName, err) => [
@@ -98,6 +95,38 @@ export default {
         `❌ Error generating HTML: ${err.message}`,
         err,
       ],
+    },
+    hosts: {
+      addedToHosts: "✅ Added piglet.js to hosts!",
+      failedToAddHost:
+        "❌ Failed to write to hosts file. Try running with elevated permissions.",
+      hostExists: "✔️ Hosts entry already exists.",
+      couldntReadHostFile: (message) => [
+        "❌ Could not read hosts file:",
+        message,
+      ],
+      unsupportedOS: (platform) => ["❌ Unsupported OS:", platform],
+      doYouWantToAdd:
+        "🔧 Do you want to add piglet.js to your hosts file? (Requires admin privileges)",
+      adding: "➕ Adding piglet.js to your hosts...",
+    },
+    template: {
+      doYouWantExtension:
+        "🧩 Do you want to include the browser extension for development tools?",
+      copyExtension: "🧩 Copying browser extension...",
+      skipExtension:
+        "⚠️ Skipping browser extension: 'extension/' already exists.",
+      copiedFile: (fileName) => `✅ Copied: ${fileName}`,
+      skipExistingFile: (fileName) => `⚠️ Skipping existing file: ${fileName}`,
+      createdFolder: (folder) => `📁 Created: ${folder}`,
+      existsFolder: (folder) => `📁 Exists: ${folder}`,
+      applyingTemplate: (template) => `🛠  Applying "${template}" template...`,
+      skipTemplate: "⚠️ Skipping template initialization.",
+      templatesRemoved: "🗑️ Removed 'core/templates' directory.",
+      templatesDoNotExists: "⚠️ 'core/templates' directory does not exist.",
+      extensionRemoved: "🗑️ Removed 'core/extension' directory.",
+      extensionDoNotExists: "⚠️ 'core/extension' directory does not exist.",
+      errorRemoving: (err) => ["❌ Error removing directories:", err],
     },
   },
 };

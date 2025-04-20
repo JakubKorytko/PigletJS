@@ -1,3 +1,10 @@
-import runApplication from "./core/spawn.mjs";
+import createApp from "./core/libs/create.mjs";
 
-runApplication(import.meta.dirname);
+const args = process.argv.slice(2);
+
+createApp(
+  import.meta.dirname,
+  args.includes("--create"),
+  args.includes("--add-host"),
+  args.includes("--clear-templates"),
+);

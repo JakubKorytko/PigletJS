@@ -4,6 +4,7 @@ import { getRootDirFromArgv, resolvePath } from "@/core/utils/paths.mjs";
 import { buildComponent } from "@/core/libs/componentBuilder.mjs";
 import { subprocessRef } from "@/core/watcher/subprocessRef.mjs";
 import { reloadClients } from "@/core/libs/socket.mjs";
+import path from "path";
 
 /**
  * Creates a subprocess for running the server.
@@ -44,16 +45,20 @@ const resetSubprocess = (eventType, filename, forced = false) => {
 const watchDirectory = () => {
   let debounceTimeout;
 
-  // Watch the components directory
   fs.watch(
     resolvePath("@/components"),
     { recursive: true },
     (eventType, filename) => {
-      if (filename && filename.endsWith(".pig.html")) {
+      if (filename && filename.includes(".pig.")) {
+        const htmlFilename = path.format({
+          ...path.parse(filename),
+          base: "",
+          ext: ".html",
+        });
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
-          const filePath = resolvePath(`@/components/${filename}`);
-          console.msg("components.changed", filename);
+          const filePath = resolvePath(`@/components/${htmlFilename}`);
+          console.msg("components.changed", htmlFilename);
           buildComponent(filePath)
             .catch((err) => console.msg("components.generatingError", err))
             .then(reloadClients);
@@ -62,17 +67,24 @@ const watchDirectory = () => {
     },
   );
 
-  // Watch the pages directory
+  console.msg("components.watchingForChanges", resolvePath("@/components"));
+
   fs.watch(
     resolvePath("@/pages"),
     { recursive: true },
     (eventType, filename) => {
-      if (filename && filename.endsWith(".pig.html")) {
+      if (filename && filename.includes(".pig.")) {
+        const htmlFilename = path.format({
+          ...path.parse(filename),
+          base: "",
+          ext: ".html",
+        });
+
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
-          const filePath = resolvePath(`@/pages/${filename}`);
-          console.msg("pages.changed", filename);
-          buildComponent(filePath) // Assuming you have a function to rebuild pages
+          const filePath = resolvePath(`@/pages/${htmlFilename}`);
+          console.msg("components.changed", htmlFilename);
+          buildComponent(filePath)
             .catch((err) => console.msg("pages.generatingError", err))
             .then(reloadClients);
         }, 500);
@@ -80,11 +92,7 @@ const watchDirectory = () => {
     },
   );
 
-  console.msg(
-    "components and pages watching for changes",
-    resolvePath("@/components"),
-    resolvePath("@/pages"),
-  );
+  console.msg("components.watchingForChanges", resolvePath("@/pages"));
 };
 
 export { watchDirectory, resetSubprocess, createSubprocess };
