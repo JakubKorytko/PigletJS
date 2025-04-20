@@ -1,8 +1,12 @@
 <content>
   <div class="d-flex f-column gap-1 align-center">
-    <button id="hide" class="w-fit-content">
-      Change nested component visibility!
-    </button>
+    <div class="d-flex f-column">
+      <button id="callApi">Call api to get current time!</button>
+      <p id="apiResult" class="mt-1">Not clicked yet :(</p>
+      <button id="hide" class="w-fit-content">
+        Change nested component visibility!
+      </button>
+    </div>
     <c-if condition="display">
       <p>I am visible by default</p>
     </c-if>
@@ -16,9 +20,13 @@
 </content>
 
 <script>
-  console.log("Internal script runs after external!");
+  element("#callApi").on("click", function () {
+    api("/time").then((value) => {
+      element("#apiResult").ref.innerText = value.time;
+    });
+  });
 </script>
 
 <style>
-  @import "globals.css";
+  @import "/public/globals.css";
 </style>

@@ -1,5 +1,6 @@
 import os from "os";
 import fs from "fs";
+import "../utils/console.mjs";
 
 const HOST_ENTRY = "127.0.0.1 piglet.js";
 const COMMENT_TAG = "# added by piglet script";
@@ -17,7 +18,7 @@ switch (platform) {
     hostsPath = "/etc/hosts";
     break;
   default:
-    console.error("❌ Unsupported OS:", platform);
+    console.msg("hosts.unsupportedOS", platform);
     process.exit(1);
 }
 
@@ -26,12 +27,12 @@ function modifyHosts() {
   try {
     hosts = fs.readFileSync(hostsPath, "utf8");
   } catch (err) {
-    console.error("❌ Could not read hosts file:", err.message);
+    console.msg("hosts.couldntReadtHostFile", err.message);
     return;
   }
 
   if (hosts.includes(HOST_ENTRY)) {
-    console.log("✔️ Hosts entry already exists.");
+    console.msg("hosts.hostExists");
     return;
   }
 
@@ -39,11 +40,9 @@ function modifyHosts() {
 
   try {
     fs.writeFileSync(hostsPath, updated, { encoding: "utf8" });
-    console.log("✅ Added piglet.js to hosts!");
+    console.msg("hosts.addedToHosts");
   } catch (err) {
-    console.error(
-      "❌ Failed to write to hosts file. Try running with elevated permissions.",
-    );
+    console.msg("hosts.failedToAddHost");
     console.error(err.message);
   }
 }

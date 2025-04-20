@@ -85,7 +85,7 @@ function injectTreeTrackingToComponentClass(klass) {
       if (this.constructor.name === "AppRoot") {
         Piglet.tree = this.__tree;
       }
-      console.log(`[${this.constructor.name}] tracking tree`);
+      Piglet.log(`[${this.constructor.name}] tracking tree`);
     };
 
     this.__trackCustomTree__();

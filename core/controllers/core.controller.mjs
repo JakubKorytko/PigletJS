@@ -3,6 +3,7 @@ import path from "path";
 import CONST from "@/core/CONST.mjs";
 import fs from "fs";
 import { routeAliases } from "@/core/libs/routes.mjs";
+import notFound from "@/core/libs/notfound.mjs";
 
 export default (req, res) => {
   const pathWithoutCore = req.url.replace("/core/", "");
@@ -12,8 +13,7 @@ export default (req, res) => {
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end(CONST.consoleMessages.server.notFound);
+      notFound(res);
     } else {
       let code = data.toString();
 

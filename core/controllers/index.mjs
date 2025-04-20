@@ -4,8 +4,9 @@ import PageController from "@/core/controllers/page.controller.mjs";
 import CoreController from "@/core/controllers/core.controller.mjs";
 import ModuleController from "@/core/controllers/module.controller.mjs";
 import { routeNames } from "@/core/libs/helpers.mjs";
+import ApiController from "@/core/controllers/api.controller.mjs";
 
-const { component, page, file, core, module } = routeNames;
+const { component, page, file, core, module, api } = routeNames;
 
 export default {
   [component]: ComponentController,
@@ -13,4 +14,5 @@ export default {
   [page]: PageController,
   [core]: CoreController,
   [module]: ModuleController,
+  [api]: ApiController,
 };

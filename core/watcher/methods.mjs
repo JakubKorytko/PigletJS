@@ -69,6 +69,8 @@ const watchDirectory = () => {
     },
   );
 
+  console.msg("components.watchingForChanges", resolvePath("@/components"));
+
   // Watch the pages directory
   fs.watch(
     resolvePath("@/pages"),
@@ -84,7 +86,7 @@ const watchDirectory = () => {
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/pages/${htmlFilename}`);
-          console.msg("pages.changed", htmlFilename);
+          console.msg("components.changed", htmlFilename);
           buildComponent(filePath) // Assuming you have a function to rebuild pages
             .catch((err) => console.msg("pages.generatingError", err))
             .then(reloadClients);
@@ -93,11 +95,7 @@ const watchDirectory = () => {
     },
   );
 
-  console.msg(
-    "components and pages watching for changes",
-    resolvePath("@/components"),
-    resolvePath("@/pages"),
-  );
+  console.msg("components.watchingForChanges", resolvePath("@/pages"));
 };
 
 export { watchDirectory, resetSubprocess, createSubprocess };

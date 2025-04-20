@@ -36,8 +36,10 @@ export default {
     component: "/component/",
     core: "/core/",
     module: "/module",
+    api: "/api",
+    public: "/public",
   },
-  routes: ["component", "page", "file", "core", "module"],
+  routes: ["component", "page", "file", "core", "module", "api"],
   consoleMessages: {
     server: {
       start: '🔧 Server is starting... Press "r" to reload components.',
@@ -58,6 +60,7 @@ export default {
       missingComponentName: "❌ Component name is missing",
       componentNotFound: "❌ Component not found",
       notFound: "Not found",
+      error: (err) => err,
     },
     consoleMsg: {
       invalidMessageType: (path) =>
@@ -89,6 +92,8 @@ export default {
         `👀 Watching for changes in directory: ${path}`,
       generatingError: (err) => ["❌ Error while generating component:", err],
       changed: (filename) => `✅ File changed: ${filename}`,
+      notFound: (componentName) =>
+        `Component file for "${componentName}" not found.`,
     },
     pages: {
       failedToLoad: (pageName, err) => [
@@ -99,6 +104,17 @@ export default {
         `❌ Error generating HTML: ${err.message}`,
         err,
       ],
+    },
+    hosts: {
+      addedToHosts: "✅ Added piglet.js to hosts!",
+      failedToAddHost:
+        "❌ Failed to write to hosts file. Try running with elevated permissions.",
+      hostExists: "✔️ Hosts entry already exists.",
+      couldntReadHostFile: (message) => [
+        "❌ Could not read hosts file:",
+        message,
+      ],
+      unsupportedOS: (platform) => ["❌ Unsupported OS:", platform],
     },
   },
 };

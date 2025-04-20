@@ -108,7 +108,20 @@ var onConnect;
 var init;
 
 /**
- * Callback for state or attributes change.
+ * Registers a callback to be executed whenever there is an update to the component's state or attributes.
+ * This function typically updates the DOM or performs some side-effect based on the current state or attributes.
+ *
+ * @param {Function} callback - The callback function to be executed on each update.
+ * The callback will be invoked with no arguments and should contain logic for handling state changes.
+ *
+ * @example
+ * onUpdate(() => {
+ *   element("#clickCount").ref.innerText =
+ *     `You clicked the button in my parent ${attributes.clickcount} times`;
+ * });
+ *
+ * In this example, the element with the ID `clickCount` is updated with a message
+ * that reflects the current value of the `clickcount` attribute.
  */
 var onUpdate;
 
@@ -134,3 +147,41 @@ var onUpdate;
  * @property {(newValue: any, prevValue: any) => void} [attributeName] - Assignable handler for a specific attribute.
  */
 var onAttributeChange;
+
+/**
+ * An object that contains attributes assigned to the component. The `attributes` object
+ * is dynamic and can hold any key-value pair representing the attributes passed to the component.
+ * These attributes are typically set by the parent component or dynamically assigned.
+ * The values can be of any type, including strings, numbers, booleans, or objects.
+ *
+ * @typedef {Object} Attributes
+ * @property {any} [attribute] - A dynamic attribute that can be set by the parent component
+ * or modified within the component itself. The key can be any valid attribute name, and the value
+ * can be any type.
+ * @example
+ *
+ * console.log(attributes.someAttribute); // Logs the value of the dynamic attribute
+ */
+var attributes;
+
+/**
+ * An object that contains methods forwarded from the parent component.
+ * The `forwarded` object exclusively contains methods that are made available
+ * by the parent component for the child component to invoke. This allows the
+ * child component to call functions or interact with the parent component's behavior
+ * or state without directly accessing the parent component.
+ *
+ * @typedef {Object} ForwardedMethods
+ * @property {Function}  - A method forwarded from the parent component.
+ * This method can be called by the child component to perform actions in the parent
+ * or retrieve data. The exact methods available depend on the parent component's implementation.
+ *
+ * @example
+ *
+ * forwarded.someMethod(); // Calls the `someMethod` function defined in the parent component
+ */
+
+/**
+ * @type {Record<string, Function>}
+ */
+var forwarded;

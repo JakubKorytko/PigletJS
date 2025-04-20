@@ -292,7 +292,7 @@ const generateOutput = (_, ...args) => {
   return `
   import ReactiveComponent from "/core/reactiveComponent";
   import { injectTreeTrackingToComponentClass } from "/core/treeTracking";
-  import { getComponentDataMethod } from "/core/helpers";
+  import { getComponentDataMethod, api } from "/core/helpers";
   ${fullScript ? fullScript[1].join("\n") : ""}
 class ${className} extends ReactiveComponent {
  

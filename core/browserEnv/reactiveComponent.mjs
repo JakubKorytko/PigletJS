@@ -28,9 +28,9 @@ class ReactiveComponent extends HTMLElement {
               this.reactive();
             }
           } else {
-            console.warn(
-              `[${this.__componentKey}] onAttributeChange not implemented for:`,
-              name,
+            Piglet.log(
+              `[${this.__componentKey}] onAttributeChange not implemented for: ${name}`,
+              "warn",
             );
           }
         }
@@ -56,7 +56,7 @@ class ReactiveComponent extends HTMLElement {
   }
 
   connectedCallback() {
-    console.log(`${this._componentName} connected`);
+    Piglet.log(`${this._componentName} connected`);
     this.__root = this.shadowRoot ?? this.getRootNode();
     if (this._caller) this._caller = this.__root.host.__componentKey;
   }
@@ -98,9 +98,9 @@ class ReactiveComponent extends HTMLElement {
         this.reactive();
       }
     } else {
-      console.warn(
-        `[${this._caller ?? this.__componentKey}] onStateChange not implemented for:`,
-        property,
+      Piglet.log(
+        `[${this._caller ?? this.__componentKey}] onStateChange not implemented for: ${property}`,
+        "warn",
       );
     }
   }

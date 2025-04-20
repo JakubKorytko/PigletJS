@@ -64,3 +64,7 @@ code {
 .w-fit-content {
   width: fit-content;
 }
+
+.mt-1 {
+  margin-top: 1rem;
+}

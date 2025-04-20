@@ -59,7 +59,7 @@ export function parseRoutes(html, pagesDir) {
       routes[pathValue] = componentFile; // Map route path to component file
       routeAliases[pathValue] = routeAlias;
     } else {
-      console.log(`Component file for "${componentName}" not found.`);
+      console.msg("components.notFound", componentName);
     }
   }
 }

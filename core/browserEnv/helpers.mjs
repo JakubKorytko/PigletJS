@@ -21,12 +21,6 @@ function toPascalCase(str) {
     .join("");
 }
 
-function resetGlobalPigletData() {
-  window.Piglet.tree = {};
-  window.Piglet.state = {};
-  window.Piglet.componentCounter = 0;
-}
-
 function getComponentDataMethod(hostElement) {
   return async (callback) => {
     new Promise((resolve) => {
@@ -50,9 +44,54 @@ function getComponentDataMethod(hostElement) {
   };
 }
 
-export {
-  toPascalCase,
-  getDeepValue,
-  resetGlobalPigletData,
-  getComponentDataMethod,
-};
+async function api(path, expect = "json") {
+  const url = `/api/${path.replace(/^\/+/, "")}`;
+
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    throw new Error(`Failed to fetch ${url}: ${err.message}`);
+  }
+
+  const contentType = res.headers.get("Content-Type") || "";
+  const expected = expect.toLowerCase();
+
+  const parsers = {
+    json: () => res.json(),
+    text: () => res.text(),
+    blob: () => res.blob(),
+    arrayBuffer: () => res.arrayBuffer(),
+    formData: () => res.formData(),
+  };
+
+  const parse = parsers[expected];
+
+  if (!parse) {
+    throw new Error(`Unsupported expect type: "${expect}"`);
+  }
+
+  try {
+    const data = await parse();
+    if (!contentType.includes(expected)) {
+      Piglet.log(
+        `Warning: Expected response type "${expected}", but got "${contentType}".`,
+        "warn",
+      );
+    }
+    return data;
+  } catch (err) {
+    try {
+      const fallback = await res.text();
+      Piglet.log(
+        `Warning: Failed to parse as "${expected}". Response returned as plain text.`,
+        "warn",
+      );
+      return fallback;
+    } catch {
+      throw new Error(`Failed to parse response as "${expected}" from ${url}`);
+    }
+  }
+}
+
+export { toPascalCase, getDeepValue, getComponentDataMethod, api };

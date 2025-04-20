@@ -1,6 +1,6 @@
 import { injectTreeTrackingToComponentClass } from "@/core/browserEnv/treeTracking";
 import ReactiveComponent from "@/core/browserEnv/reactiveComponent";
-import { resetGlobalPigletData, toPascalCase } from "@/core/browserEnv/helpers";
+import { toPascalCase } from "@/core/browserEnv/helpers";
 
 class AppRoot extends ReactiveComponent {
   constructor() {
@@ -65,14 +65,18 @@ class AppRoot extends ReactiveComponent {
           try {
             await import(`/component/${tag}`);
           } catch (e) {
-            console.warn(`Nie udało się załadować komponentu <${tag}>`, e);
+            Piglet.log(
+              `Nie udało się załadować komponentu <${tag}>`,
+              "warn",
+              e,
+            );
           }
         }),
       );
 
       this.shadowRoot.innerHTML = "";
 
-      resetGlobalPigletData();
+      window.Piglet.reset();
 
       if (
         module.default instanceof HTMLElement ||
@@ -85,9 +89,9 @@ class AppRoot extends ReactiveComponent {
         this.shadowRoot.appendChild(wrapper);
       }
 
-      console.log(`Route '${route}' loaded successfully.`);
+      Piglet.log(`Route '${route}' loaded successfully.`, "info");
     } catch (err) {
-      console.error(`Error loading route '${route}':`, err);
+      Piglet.log(`Error loading route '${route}':`, "error", err);
       this.shadowRoot.innerHTML = "<h1>Page Not Found</h1>";
     }
   }
