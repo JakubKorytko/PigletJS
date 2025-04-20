@@ -6,15 +6,63 @@ import {
   toKebabCase,
   toPascalCase,
 } from "@/core/utils/stringUtils.mjs";
+import { parseRoutes, routes } from "@/core/libs/routes.mjs";
+
+function extractAndRemoveImports(code) {
+  const importRegex = /^import\s+[\s\S]*?["'][^"']+["'];?/gm;
+  const imports = [];
+  let cleaned = code;
+
+  let match;
+  while ((match = importRegex.exec(code)) !== null) {
+    let importStatement = match[0];
+
+    importStatement = importStatement
+      .replace(/["@']@\/core\/browserEnv\//g, '"/core/')
+      .replace(/["@']@\/modules\//g, '"/module/');
+
+    imports.push(importStatement);
+  }
+
+  cleaned = code.replace(importRegex, "").trim();
+
+  return {
+    imports,
+    cleanedCode: cleaned,
+  };
+}
+
+async function findMatchingExternalFile(rootDir, baseName, extension) {
+  const files = await fs.promises.readdir(rootDir, { withFileTypes: true });
+
+  for (const file of files) {
+    const fullPath = path.join(rootDir, file.name);
+
+    if (file.isDirectory()) {
+      const found = await findMatchingExternalFile(
+        fullPath,
+        baseName,
+        extension,
+      );
+      if (found) return found;
+    }
+
+    if (file.isFile() && file.name === `${baseName}${extension}`) {
+      return fullPath;
+    }
+  }
+
+  return null;
+}
 
 const styleRegex = (html) => html.match(/<style>([\s\S]*?)<\/style>/i);
 const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
 function escapeTemplateLiteral(str) {
   return str
-    .replace(/\\/g, "\\\\") // backslash → podwójny backslash
-    .replace(/`/g, "\\`") // backtick → escaped backtick
-    .replace(/\$\{/g, "\\${"); // interpolacje → literalna forma
+    .replace(/\\/g, "\\\\")
+    .replace(/`/g, "\\`")
+    .replace(/\$\{/g, "\\${");
 }
 
 function injectHostElementAttribute(content, tagName, componentName) {
@@ -26,25 +74,147 @@ function injectHostElementAttribute(content, tagName, componentName) {
   });
 }
 
-const injectScriptToComponent = (scriptJS) => {
-  if (!scriptJS) return "";
+const transformScript = (fullScript) => {
+  const destructureRegex = /const\s*{\s*(.*?)\s*}\s*=\s*state\s*;/g;
 
-  return `runScript(shadowRoot) {
-        (function(shadowRoot, hostElement) {
-        const component = {
-          name: hostElement.constructor.name,
-          id: hostElement.__componentId,
-          tree: hostElement.customElementTree,
-          shadowRoot: hostElement.shadowRoot,
-          key: \`\${hostElement.constructor.name}\${hostElement.__componentid}\`,
-          state: hostElement.state.bind(hostElement),
+  return fullScript.replace(destructureRegex, (_, vars) => {
+    return vars
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .map((v) => {
+        const [namePart, defaultPart] = v.split("=").map((s) => s.trim());
+        const name = namePart.replace(/[{}]/g, "").trim();
+
+        let secondArg = "";
+
+        if (defaultPart) {
+          const initMatch = defaultPart.match(/^init\((.*)\)$/);
+
+          if (initMatch) {
+            secondArg = `, ${initMatch[1]}`;
+          }
         }
-        ${scriptJS}
-        })(shadowRoot, this);
-      }`;
+
+        return `const ${name} = state("${name}"${secondArg});`;
+      })
+      .join("\n");
+  });
 };
 
-const injectInnerHTMLToComponent = (html, content, componentName) => {
+const injectScriptToComponent = (scriptJS, externalJS) => {
+  if (!scriptJS && !externalJS) return "";
+
+  const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
+  const transformedScript = transformScript(fullScript);
+
+  const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
+
+  return [
+    `runScript(shadowRoot) {
+        (function(shadowRoot, hostElement) {
+const element = (selector) => {
+  const el = hostElement.shadowRoot.querySelector(selector);
+  return {
+    on: (event, callback) => {
+      el?.addEventListener(event, callback);
+      return element(selector);
+    },
+    off: (event, callback) => {
+      el?.removeEventListener(event, callback);
+      return element(selector);
+    },
+    pass: (attrName, value) => {
+      if (el && typeof value === "function") {
+         if (!el._forwarded) {
+          el._forwarded = {};
+         }
+         el._forwarded[attrName] = value;
+         if (el.onAttributeChange) el.onAttributeChange("forwarded", el._forwarded);
+         if (el.reactive) el.reactive();
+      } else {
+         el?.setAttribute(attrName, value);
+      }
+      return element(selector);
+    },
+    get ref() {
+      return el;
+    }
+  };
+};
+
+const stateHandlers = {};
+   
+let onStateChange = new Proxy(
+  (value, property, prevValue) => {
+    const handler = stateHandlers[property];
+    if (typeof handler === 'function') {
+      handler(value, prevValue);
+    }
+  },
+  {
+    get(target, prop) {
+      return stateHandlers[prop];
+    },
+    set(target, prop, value) {
+      if (typeof value === 'function') {
+        stateHandlers[prop] = value;
+        return true;
+      }
+      return false;
+    }
+  }
+);
+const attributeHandlers = {};
+
+let onAttributeChange = new Proxy(
+  (newValue, property, prevValue) => {
+    const handler = attributeHandlers[property];
+    if (typeof handler === 'function') {
+      handler(newValue, prevValue);
+    }
+  },
+  {
+    get(target, prop) {
+      return attributeHandlers[prop];
+    },
+    set(target, prop, value) {
+      if (typeof value === 'function') {
+        attributeHandlers[prop] = value;
+        return true;
+      }
+      return false;
+    }
+  }
+);
+        let reactive = () => {};
+        let onUpdate = (callback) => {
+          reactive = callback;
+        };
+
+        const state =  hostElement.state.bind(hostElement); 
+        const attributes = hostElement._attrs;
+        const forwarded = hostElement._forwarded;
+        const onConnect = getComponentDataMethod(hostElement);
+        ${cleanedCode}
+        hostElement.reactive = reactive;
+        hostElement.onStateChange = onStateChange;
+        hostElement.onAttributeChange = onAttributeChange;
+        reactive();
+        onStateChange = undefined;
+        onAttributeChange = undefined;
+        })(shadowRoot, this);
+      }`,
+    imports,
+  ];
+};
+
+const injectInnerHTMLToComponent = (
+  html,
+  content,
+  componentName,
+  externalCSS,
+) => {
   let modifiedContent = injectHostElementAttribute(
     content,
     "c-if",
@@ -81,7 +251,9 @@ const injectInnerHTMLToComponent = (html, content, componentName) => {
   });
 
   const styleMatch = styleRegex(html);
-  const styleCSS = styleMatch ? styleMatch[1].trim() : "";
+  const styleCSS = [externalCSS, styleMatch ? styleMatch[1].trim() : ""]
+    .filter(Boolean)
+    .join("\n\n");
 
   const innerHTML = `
   <style>
@@ -95,13 +267,15 @@ const injectInnerHTMLToComponent = (html, content, componentName) => {
 };
 
 const generateOutput = (_, ...args) => {
-  if (args.length !== 3) {
-    throw Error("components.outputGenerationError");
+  if (args.length !== 5) {
+    console.msg("components.outputGenerationError", new Error());
   }
 
   const componentName = args[0];
   const html = args[1];
   const content = args[2];
+  const externalCSS = args[3];
+  const externalJS = args[4];
 
   const isAppComponent = componentName === "App";
   const className = isAppComponent ? "AppRoot" : componentName;
@@ -109,24 +283,30 @@ const generateOutput = (_, ...args) => {
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
+  const fullScript = injectScriptToComponent(scriptJS, externalJS);
 
   return `
+  import ReactiveComponent from "/core/reactiveComponent";
+  import { injectTreeTrackingToComponentClass } from "/core/treeTracking";
+  import { getComponentDataMethod, api } from "/core/helpers";
+  ${fullScript ? fullScript[1].join("\n") : ""}
 class ${className} extends ReactiveComponent {
  
       constructor() {
         super();
         const shadow = this.attachShadow({ mode: 'open' });
-        shadow.innerHTML = ${injectInnerHTMLToComponent(html, content, componentName)};
-        const componentKey = \`\${this.constructor.name}\${this.__componentId ?? __globalComponentCounter+1}\`
+        shadow.innerHTML = ${injectInnerHTMLToComponent(html, content, componentName, externalCSS)};
+        const componentKey = \`\${this.constructor.name}\${this.__componentId ?? window.Piglet.componentCounter+1}\`
 
         ${scriptJS ? `this.runScript(shadow);` : ""}
       }
 
-      ${injectScriptToComponent(scriptJS)}
+      ${fullScript[0]}
     }
 
 injectTreeTrackingToComponentClass(${className});
 customElements.define('${tagName}', ${className});
+export default ${componentName};
 `.trim();
 };
 
@@ -140,7 +320,7 @@ const getContentTag = (html) => {
 };
 
 /**
- * Builds a web component from a .cc.html file.
+ * Builds a web component from a .pig.html file.
  *
  * @param {string} filePath - Path to the component source file.
  */
@@ -155,17 +335,39 @@ async function buildComponent(filePath) {
       console.msg("components.missingContent", filePath);
     }
 
-    const baseName = path.basename(filePath, ".cc.html");
+    const baseName = path.basename(filePath, ".pig.html");
     const componentName = toPascalCase(baseName);
+
+    const externalCSSPath = await findMatchingExternalFile(
+      resolvePath("@/src"),
+      baseName,
+      ".pig.css",
+    );
+    const externalJSPath = await findMatchingExternalFile(
+      resolvePath("@/src"),
+      baseName,
+      ".pig.mjs",
+    );
+
+    let externalCSS = "";
+    let externalJS = "";
+
+    if (fs.existsSync(externalCSSPath)) {
+      externalCSS = await fs.promises.readFile(externalCSSPath, "utf-8");
+    }
+
+    if (fs.existsSync(externalJSPath)) {
+      externalJS = await fs.promises.readFile(externalJSPath, "utf-8");
+    }
 
     const output = generateOutput`
     Component name: ${componentName}
-    Component content: ${html}${content}`;
+    Component content: ${html}${content}
+    External data: ${externalCSS}${externalJS}`;
 
     await fs.promises.mkdir(resolvePath("@/builtComponents"), {
       recursive: true,
     });
-
     const outputPath = resolvePath(`@/builtComponents/${componentName}.mjs`);
     await fs.promises.writeFile(outputPath, output);
     console.msg("components.generated", outputPath);
@@ -179,16 +381,21 @@ async function buildComponent(filePath) {
 }
 
 /**
- * Recursively processes all .cc.html files in a given directory.
+ * Recursively processes all .pig.html files in a given directory.
  *
  * @param {string} [dir=resolvePath("@/components")] - Directory to scan.
  */
 async function processAllComponents(dir = resolvePath("@/components")) {
   try {
-    const appPath = resolvePath("@/src/App.cc.html");
+    const appPath = resolvePath("@/src/App.pig.html");
+    const pagesDir = resolvePath("@/pages");
     if (fs.existsSync(appPath)) {
-      console.msg("components.generatingFrom", "App.cc.html");
-      await buildComponent(appPath);
+      console.msg("components.generatingFrom", "App.pig.html");
+      const appHtml = await fs.promises.readFile(appPath, "utf-8");
+      parseRoutes(appHtml, pagesDir);
+      for (const route of Object.values(routes)) {
+        await buildComponent(route);
+      }
     }
 
     const files = await fs.promises.readdir(dir, { withFileTypes: true });
@@ -197,7 +404,7 @@ async function processAllComponents(dir = resolvePath("@/components")) {
       const filePath = path.join(dir, file.name);
       if (file.isDirectory()) {
         await processAllComponents(filePath);
-      } else if (file.name.endsWith(".cc.html")) {
+      } else if (file.name.endsWith(".pig.html")) {
         console.msg("components.generatingFrom", file.name);
         await buildComponent(filePath);
       }

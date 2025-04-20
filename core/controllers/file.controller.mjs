@@ -2,16 +2,20 @@ import { resolvePath } from "@/core/utils/paths.mjs";
 import path from "path";
 import CONST from "@/core/CONST.mjs";
 import fs from "fs";
+import notFound from "@/core/libs/notfound.mjs";
 
 export default (req, res) => {
-  const filePath = resolvePath(`@/public/${req.url}`);
+  if (!req.url.startsWith(CONST.customRouteAliases.public)) {
+    notFound(res);
+    return;
+  }
+  const filePath = resolvePath(`@${req.url}`);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/octet-stream";
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end(CONST.consoleMessages.server.notFound);
+      notFound(res);
     } else {
       res.writeHead(200, { "Content-Type": contentType });
       res.end(data);

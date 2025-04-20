@@ -4,6 +4,7 @@ import { getRootDirFromArgv, resolvePath } from "@/core/utils/paths.mjs";
 import { buildComponent } from "@/core/libs/componentBuilder.mjs";
 import { subprocessRef } from "@/core/watcher/subprocessRef.mjs";
 import { reloadClients } from "@/core/libs/socket.mjs";
+import path from "path";
 
 /**
  * Creates a subprocess for running the server.
@@ -44,20 +45,54 @@ const resetSubprocess = (eventType, filename, forced = false) => {
 const watchDirectory = () => {
   let debounceTimeout;
 
-  fs.watch(resolvePath("@/src"), { recursive: true }, (eventType, filename) => {
-    if (filename && filename.endsWith(".cc.html")) {
-      clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
-        const filePath = resolvePath(`@/src/${filename}`);
-        console.msg("components.changed", filename);
-        buildComponent(filePath)
-          .catch((err) => console.msg("components.generatingError", err))
-          .then(reloadClients);
-      }, 500);
-    }
-  });
+  fs.watch(
+    resolvePath("@/components"),
+    { recursive: true },
+    (eventType, filename) => {
+      if (filename && filename.includes(".pig.")) {
+        const htmlFilename = path.format({
+          ...path.parse(filename),
+          base: "",
+          ext: ".html",
+        });
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          const filePath = resolvePath(`@/components/${htmlFilename}`);
+          console.msg("components.changed", htmlFilename);
+          buildComponent(filePath)
+            .catch((err) => console.msg("components.generatingError", err))
+            .then(reloadClients);
+        }, 500);
+      }
+    },
+  );
 
   console.msg("components.watchingForChanges", resolvePath("@/components"));
+
+  fs.watch(
+    resolvePath("@/pages"),
+    { recursive: true },
+    (eventType, filename) => {
+      if (filename && filename.includes(".pig.")) {
+        const htmlFilename = path.format({
+          ...path.parse(filename),
+          base: "",
+          ext: ".html",
+        });
+
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          const filePath = resolvePath(`@/pages/${htmlFilename}`);
+          console.msg("components.changed", htmlFilename);
+          buildComponent(filePath)
+            .catch((err) => console.msg("pages.generatingError", err))
+            .then(reloadClients);
+        }, 500);
+      }
+    },
+  );
+
+  console.msg("components.watchingForChanges", resolvePath("@/pages"));
 };
 
 export { watchDirectory, resetSubprocess, createSubprocess };

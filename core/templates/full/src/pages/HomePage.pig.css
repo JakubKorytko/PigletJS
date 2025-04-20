@@ -1,0 +1,42 @@
+@import "/public/globals.css";
+@import "/public//page.css";
+
+@keyframes move {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(10px);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.container img {
+  width: 200px;
+  animation: move 3s ease-in-out infinite;
+}
+
+.welcomeMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #ff61a6;
+}
+
+p {
+  font-size: 1.1rem;
+  color: #555;
+}

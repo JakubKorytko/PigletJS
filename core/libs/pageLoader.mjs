@@ -5,29 +5,18 @@ import { toKebabCase } from "@/core/utils/stringUtils.mjs";
 /**
  * Loads the HTML content of a specific page.
  *
- * @param {string} pageName - The name of the page to load.
+ * @param {string} fullPath - The name of the page to load.
  * @returns {Promise<string|false>} - The HTML content or false on failure.
  */
-async function loadPage(pageName) {
+async function loadPage(fullPath) {
   "use strict";
 
-  const pathSegments = pageName.split("/");
-
-  for (let i = 1; i <= pathSegments.length; i++) {
-    const subPath = pathSegments.slice(0, i).join("/");
-    const pagePath = resolvePath(`@/pages/${subPath}.html`);
-
-    try {
-      return await fs.promises.readFile(pagePath, "utf-8");
-    } catch (err) {
-      if (i === pathSegments.length) {
-        console.msg("pages.failedToLoad", pageName, err);
-        return false;
-      }
-    }
+  try {
+    return await fs.promises.readFile(fullPath, "utf-8");
+  } catch (err) {
+    console.msg("pages.failedToLoad", fullPath, err);
+    return false;
   }
-
-  return false;
 }
 
 /**
@@ -35,22 +24,22 @@ async function loadPage(pageName) {
  * replacing PascalCase component tags with kebab-case,
  * and adding script tags for components.
  *
- * @param {string} pageName - The name of the page to render.
+ * @param {string} fullPath - The name of the page to render.
  * @returns {Promise<string|false>} - The full HTML content or false on failure.
  */
-async function generateAppHtml(pageName) {
+async function generateAppHtml(route, fullPath) {
   "use strict";
 
-  const appHtmlPath = resolvePath("@/app.html");
+  const appHtmlPath = resolvePath("@/Pig.html");
   try {
     let appHtml = await fs.promises.readFile(appHtmlPath, "utf-8");
-    let pageContent = await loadPage(pageName);
+    let pageContent = await loadPage(fullPath);
 
     if (!pageContent) {
       return false;
     }
 
-    const componentTags = new Set(["App"]); // zawsze dołącz App jako komponent bazowy
+    const componentTags = new Set(["App"]);
     const tagRegex =
       /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
     let match;
@@ -61,7 +50,7 @@ async function generateAppHtml(pageName) {
     }
 
     componentTags.forEach((tag) => {
-      const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag); // specjalny przypadek dla App
+      const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag);
 
       const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
       appHtml = appHtml.replace(
@@ -76,6 +65,10 @@ async function generateAppHtml(pageName) {
       appHtml = appHtml.replace(new RegExp(`</${tag}>`, "g"), `</${kebabTag}>`);
     });
 
+    appHtml = appHtml.replace(/<app-root([^>]*)>/g, (match, attributes) => {
+      return `<app-root${attributes} route="${route}">`;
+    });
+
     appHtml = appHtml.replace(
       /<app([^>]*)>(.*?)<\/app>/is,
       `<app$1>${pageContent}</app>`,
@@ -85,9 +78,6 @@ async function generateAppHtml(pageName) {
       resolvePath("@/core/scripts.html"),
       "utf8",
     );
-    componentTags.forEach((tag) => {
-      scriptTags += `<script src="component/${tag}"></script>\n`;
-    });
 
     appHtml = appHtml.replace("</body>", `${scriptTags}</body>`);
 
