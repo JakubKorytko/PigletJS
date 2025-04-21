@@ -33,6 +33,19 @@ function sendMessageWithRetry(message, retriesLeft) {
   }
 }
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "EXT_SET_STATE") {
+    window.postMessage(
+      {
+        source: "PIGLET_DEVTOOLS",
+        type: "EXT_SET_STATE",
+        payload: message.payload,
+      },
+      "*",
+    );
+  }
+});
+
 window.addEventListener(
   "message",
   function (event) {

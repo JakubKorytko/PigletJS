@@ -25,30 +25,77 @@ function renderTree(obj) {
     .join("");
 }
 
-function renderStateTree(obj) {
+const addStateListeners = () => {
+  document.querySelectorAll(".state-input").forEach((input) => {
+    input.addEventListener("blur", () => {
+      const key = input.dataset.key;
+      const parent = input.dataset.parent || null;
+      const value = input.value;
+
+      sendStateUpdateToPage(key, value, parent);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") input.blur();
+    });
+  });
+};
+
+function sendStateUpdateToPage(key, value, stateName) {
+  let parsedValue;
+
+  if (/^true$/i.test(value) || /^false$/i.test(value)) {
+    parsedValue = /^true$/i.test(value);
+  } else {
+    parsedValue = value;
+  }
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      type: "EXT_SET_STATE",
+      payload: { key, stateName, value: parsedValue },
+    });
+  });
+}
+
+function renderStateTree(obj, parentKey = null) {
   if (typeof obj !== "object" || obj === null)
     return `<span>${String(obj)}</span>`;
 
   return `
-      <ul>
-        ${Object.entries(obj)
-          .map(([key, value]) => {
-            if (typeof value === "object" && value !== null) {
-              return `
-                <li>
-                  <details>
-                    <summary class="key">${key}</summary>
-                    ${renderStateTree(value)}
-                  </details>
-                </li>
-              `;
-            } else {
-              return `<li><span class="key">${key}:</span> ${String(value)}</li>`;
-            }
-          })
-          .join("")}
-      </ul>
-    `;
+    <ul>
+      ${Object.entries(obj)
+        .map(([key, value]) => {
+          const encodedKey = key.replace(/"/g, "&quot;");
+          const encodedParent = parentKey
+            ? parentKey.replace(/"/g, "&quot;")
+            : "";
+
+          if (typeof value === "object" && value !== null) {
+            return `
+              <li>
+                <details>
+                  <summary class="key">${key}</summary>
+                  ${renderStateTree(value, key)}
+                </details>
+              </li>
+            `;
+          } else {
+            return `
+              <li>
+                <span class="key">${key}:</span>
+                <input
+                  class="state-input"
+                  data-key="${encodedKey}"
+                  data-parent="${encodedParent}"
+                  value="${String(value)}"
+                />
+              </li>
+            `;
+          }
+        })
+        .join("")}
+    </ul>
+  `;
 }
 
 function waitForResponse() {
@@ -69,6 +116,7 @@ function waitForResponse() {
 function handleData(data) {
   if (!pigletSupport) return;
   document.getElementById("state").innerHTML = renderStateTree(data.state);
+  addStateListeners();
   document.getElementById("tree").innerHTML = renderTree(data.tree);
 }
 
@@ -92,6 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("state").innerHTML = renderStateTree(
         message.payload,
       );
+      addStateListeners();
     }
 
     if (message.type === "PIGLET_SUPPORT_UPDATE") {

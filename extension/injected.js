@@ -3,28 +3,37 @@ function transformComponentState(input) {
 
   for (const component in input) {
     const componentData = input[component];
-    result[component] = {
-      state: {},
-      observers: [],
-    };
+    const state = {};
 
     for (const stateKey in componentData) {
       const stateData = componentData[stateKey];
 
       if (stateData._state !== undefined) {
-        result[component].state[stateKey] = stateData._state;
+        state[stateKey] = stateData._state;
       } else if (stateData._state?.object) {
-        result[component].state[stateKey] = stateData._state.object;
-      }
-
-      if (stateData._observers) {
-        result[component].observers.push(...stateData._observers);
+        state[stateKey] = stateData._state.object;
       }
     }
+
+    result[component] = state;
   }
 
   return result;
 }
+
+window._extSetState = (key, stateName, value) => {
+  window.Piglet.state[stateName][key].setState(value);
+};
+
+window.addEventListener("message", (event) => {
+  if (event.source !== window) return;
+  const { type, payload } = event.data || {};
+
+  if (type === "EXT_SET_STATE") {
+    const { key, stateName, value } = payload;
+    window._extSetState(key, stateName, value);
+  }
+});
 
 function observeAppState() {
   const simplifiedState = extractSimpleData(window.Piglet.state);
