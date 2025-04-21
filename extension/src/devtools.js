@@ -1,6 +1,6 @@
 chrome.devtools.panels.create(
   "🐷 PigletJS",
-  "icon.png",
+  "assets/icon.png",
   "panel.html",
   function (panel) {
     console.log("Components panel created.");

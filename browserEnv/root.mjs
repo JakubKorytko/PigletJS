@@ -64,11 +64,7 @@ class AppRoot extends ReactiveComponent {
           try {
             await import(`/component/${tag}`);
           } catch (e) {
-            Piglet.log(
-              `Nie udało się załadować komponentu <${tag}>`,
-              "warn",
-              e,
-            );
+            Piglet.log(`Unable to load component <${tag}>`, "warn", e);
           }
         }),
       );
@@ -88,8 +84,7 @@ class AppRoot extends ReactiveComponent {
         this.shadowRoot.appendChild(wrapper);
       }
 
-      window.Piglet?.extension?.sendTreeUpdate();
-      window.Piglet?.extension?.sendStateUpdate();
+      window.Piglet?.extension?.sendInitialData();
 
       Piglet.log(`Route '${route}' loaded successfully.`, "info");
     } catch (err) {

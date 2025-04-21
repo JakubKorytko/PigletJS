@@ -67,11 +67,19 @@ function sendTreeUpdate() {
   );
 }
 
-function sendPigletConfig() {
+function sendInitialData() {
+  const simplifiedState = extractSimpleData(window.Piglet.state);
+  const transformedState = transformComponentState(simplifiedState);
+  const simplifiedTree = extractSimpleData(window.Piglet.tree);
+
   window.postMessage(
     {
-      type: "PIGLET_CONFIG",
-      payload: window.Piglet?.allowDebugging,
+      type: "INITIAL_DATA",
+      payload: {
+        state: transformedState,
+        tree: simplifiedTree,
+        allowDebugging: window.Piglet?.allowDebugging,
+      },
       source: "PIGLET_INJECTED",
     },
     window.location.origin,
@@ -80,19 +88,16 @@ function sendPigletConfig() {
 
 if (window.Piglet) {
   window.Piglet.extension = {
-    sendPigletConfig,
+    sendInitialData,
     sendTreeUpdate,
     sendStateUpdate,
-    updateState,
   };
 }
 
 window.addEventListener("message", (event) => {
   if (!event.data?.source === "PIGLET_CONTENT") return;
   if (event.data.type === "INITIAL_REQUEST") {
-    sendPigletConfig();
-    sendStateUpdate();
-    sendTreeUpdate();
+    sendInitialData();
   }
   if (event.data.type === "MODIFY_STATE") {
     const { key, stateName, value } = event.data.payload;

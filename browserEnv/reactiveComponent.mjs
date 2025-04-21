@@ -28,10 +28,12 @@ class ReactiveComponent extends HTMLElement {
               this.reactive();
             }
           } else {
-            Piglet.log(
-              `[${this.__componentKey}] onAttributeChange not implemented for: ${name}`,
-              "warn",
-            );
+            if (name !== "style" && name !== "route") {
+              Piglet.log(
+                `[${this.__componentKey}] onAttributeChange not implemented for: ${name}`,
+                "warn",
+              );
+            }
           }
         }
       }

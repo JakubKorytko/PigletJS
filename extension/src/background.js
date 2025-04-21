@@ -11,7 +11,8 @@ chrome.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener((msg) => {
     if (msg.type === "INITIAL_REQUEST") {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {
+        const tabId = tabs[0]?.id ?? msg.payload;
+        chrome.tabs.sendMessage(tabId, {
           type: "INITIAL_REQUEST",
           source: "PIGLET_BACKGROUND",
         });
@@ -20,7 +21,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
     if (msg.type === "MODIFY_STATE" && msg.payload) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {
+        const tabId = tabs[0]?.id ?? msg.tabId;
+        chrome.tabs.sendMessage(tabId, {
           type: "MODIFY_STATE",
           source: "PIGLET_BACKGROUND",
           payload: msg.payload,
