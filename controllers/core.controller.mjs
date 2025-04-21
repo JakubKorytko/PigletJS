@@ -1,0 +1,32 @@
+import { resolvePath } from "@Piglet/utils/paths.mjs";
+import path from "path";
+import CONST from "@Piglet/CONST.mjs";
+import fs from "fs";
+import { routeAliases } from "@Piglet/libs/routes.mjs";
+import notFound from "@Piglet/libs/notfound.mjs";
+
+export default (req, res) => {
+  const pathWithoutPiglet = req.url.replace("/Piglet/", "");
+  const filePath = resolvePath(`@/pigletbrowserEnv/${pathWithoutPiglet}.mjs`);
+  const ext = path.extname(filePath);
+  const contentType = CONST.mimeTypes[ext] || "application/javascript";
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      notFound(res);
+    } else {
+      let code = data.toString();
+
+      code = code
+        .replace(/(["'])@Piglet\/browserEnv\//g, "$1/Piglet/")
+        .replace(/["@']@\/modules\//g, '"/module/');
+
+      const routesInjection = `const routes = ${JSON.stringify(routeAliases)};\n`;
+
+      code = routesInjection + code;
+
+      res.writeHead(200, { "Content-Type": contentType });
+      res.end(code);
+    }
+  });
+};
