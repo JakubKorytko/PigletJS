@@ -1,4 +1,4 @@
-import createApp from "./core/libs/create.mjs";
+import createApp from "./PigletJS/libs/create.mjs";
 
 const args = process.argv.slice(2);
 
