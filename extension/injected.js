@@ -21,58 +21,6 @@ function transformComponentState(input) {
   return result;
 }
 
-window._extSetState = (key, stateName, value) => {
-  window.Piglet.state[stateName][key].setState(value);
-};
-
-window.addEventListener("message", (event) => {
-  if (event.source !== window) return;
-  const { type, payload } = event.data || {};
-
-  if (type === "EXT_SET_STATE") {
-    const { key, stateName, value } = payload;
-    window._extSetState(key, stateName, value);
-  }
-});
-
-function observeAppState() {
-  const simplifiedState = extractSimpleData(window.Piglet.state);
-  const transformedState = transformComponentState(simplifiedState);
-
-  window.postMessage(
-    {
-      type: "STATE_UPDATE_REQUEST",
-      payload: transformedState,
-      source: window.location.origin,
-    },
-    window.location.origin,
-  );
-}
-
-function observeAppComponentTree() {
-  const simplifiedTree = extractSimpleData(window.Piglet.tree);
-
-  window.postMessage(
-    {
-      type: "TREE_UPDATE_REQUEST",
-      payload: simplifiedTree,
-      source: window.location.origin,
-    },
-    window.location.origin,
-  );
-}
-
-function observePigletStatus() {
-  window.postMessage(
-    {
-      type: "PIGLET_SUPPORT_UPDATE",
-      payload: window.Piglet?.allowDebugging,
-      source: window.location.origin,
-    },
-    window.location.origin,
-  );
-}
-
 function extractSimpleData(data) {
   if (data && typeof data === "object") {
     const cleanedData = JSON.parse(
@@ -88,8 +36,66 @@ function extractSimpleData(data) {
   return data;
 }
 
-setInterval(() => {
-  observeAppState();
-  observeAppComponentTree();
-  observePigletStatus();
-}, 1000);
+function updateState(key, stateName, value) {
+  window.Piglet.state[stateName][key].setState(value);
+}
+
+function sendStateUpdate() {
+  const simplifiedState = extractSimpleData(window.Piglet.state);
+  const transformedState = transformComponentState(simplifiedState);
+
+  window.postMessage(
+    {
+      type: "STATE_UPDATE",
+      payload: transformedState,
+      source: "PIGLET_INJECTED",
+    },
+    window.location.origin,
+  );
+}
+
+function sendTreeUpdate() {
+  const simplifiedTree = extractSimpleData(window.Piglet.tree);
+
+  window.postMessage(
+    {
+      type: "TREE_UPDATE",
+      payload: simplifiedTree,
+      source: "PIGLET_INJECTED",
+    },
+    window.location.origin,
+  );
+}
+
+function sendPigletConfig() {
+  window.postMessage(
+    {
+      type: "PIGLET_CONFIG",
+      payload: window.Piglet?.allowDebugging,
+      source: "PIGLET_INJECTED",
+    },
+    window.location.origin,
+  );
+}
+
+if (window.Piglet) {
+  window.Piglet.extension = {
+    sendPigletConfig,
+    sendTreeUpdate,
+    sendStateUpdate,
+    updateState,
+  };
+}
+
+window.addEventListener("message", (event) => {
+  if (!event.data?.source === "PIGLET_CONTENT") return;
+  if (event.data.type === "INITIAL_REQUEST") {
+    sendPigletConfig();
+    sendStateUpdate();
+    sendTreeUpdate();
+  }
+  if (event.data.type === "MODIFY_STATE") {
+    const { key, stateName, value } = event.data.payload;
+    updateState(key, stateName, value);
+  }
+});

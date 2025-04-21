@@ -86,6 +86,7 @@ function injectTreeTrackingToComponentClass(klass) {
         Piglet.tree = this.__tree;
       }
       Piglet.log(`[${this.constructor.name}] tracking tree`);
+      window.Piglet?.extension?.sendTreeUpdate();
     };
 
     this.__trackCustomTree__();
@@ -128,6 +129,7 @@ function injectTreeTrackingToComponentClass(klass) {
   klass.prototype.disconnectedCallback = function () {
     if (this.__customTreeObserver__) {
       this.__customTreeObserver__.disconnect();
+      window.Piglet?.extension?.sendTreeUpdate();
     }
 
     if (typeof originalDisconnected === "function") {

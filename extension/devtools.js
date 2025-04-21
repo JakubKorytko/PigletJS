@@ -1,5 +1,5 @@
 chrome.devtools.panels.create(
-  "🌿 CComponents",
+  "🐷 PigletJS",
   "icon.png",
   "panel.html",
   function (panel) {

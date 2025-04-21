@@ -4,8 +4,10 @@
   "description": "Piglet debugging tools",
   "manifest_version": 3,
   "host_permissions": ["*://*/*"],
+  "permissions": ["tabs", "activeTab", "debugger"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "persistent": false
   },
   "action": {
     "default_popup": "panel.html",

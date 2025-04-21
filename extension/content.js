@@ -5,68 +5,44 @@ script.onload = function () {
 };
 (document.head || document.documentElement).appendChild(script);
 
-let retries = 5;
-const retryDelay = 1000;
+window.addEventListener(
+  "message",
+  function (event) {
+    if (event.source !== window || event.data?.source !== "PIGLET_INJECTED")
+      return;
 
-function sendMessageWithRetry(message, retriesLeft) {
-  if (chrome.runtime?.id) {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (response && response.status === "OK") {
-        console.log("Connection successful, sending message...");
-        chrome.runtime.sendMessage({
-          type: message.type,
-          payload: message.payload,
-          pigletSupport: message.pigletSupport,
-        });
-      } else if (retriesLeft > 0) {
-        console.log(`Retrying... (${retriesLeft} attempts left)`);
-        setTimeout(
-          () => sendMessageWithRetry(message, retriesLeft - 1),
-          retryDelay,
-        );
-      } else {
-        console.error(
-          "Failed to connect to background script after multiple retries.",
-        );
-      }
+    const { type, payload } = event.data;
+
+    chrome.runtime.sendMessage({
+      type,
+      payload,
+      source: "PIGLET_CONTENT",
     });
-  }
-}
+  },
+  false,
+);
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "EXT_SET_STATE") {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.source !== "PIGLET_BACKGROUND") return;
+
+  if (msg.type === "INITIAL_REQUEST") {
     window.postMessage(
       {
-        source: "PIGLET_DEVTOOLS",
-        type: "EXT_SET_STATE",
-        payload: message.payload,
+        source: "PIGLET_CONTENT",
+        type: "INITIAL_REQUEST",
+      },
+      "*",
+    );
+  }
+
+  if (msg.type === "MODIFY_STATE") {
+    window.postMessage(
+      {
+        source: "PIGLET_CONTENT",
+        type: "MODIFY_STATE",
+        payload: msg.payload,
       },
       "*",
     );
   }
 });
-
-window.addEventListener(
-  "message",
-  function (event) {
-    if (event.source !== window || !event.data) return;
-
-    const { type, payload, pigletSupport } = event.data;
-
-    if (
-      type === "STATE_UPDATE_REQUEST" ||
-      type === "TREE_UPDATE_REQUEST" ||
-      type === "PIGLET_SUPPORT_UPDATE"
-    ) {
-      sendMessageWithRetry(
-        {
-          type,
-          payload,
-          pigletSupport,
-        },
-        retries,
-      );
-    }
-  },
-  false,
-);

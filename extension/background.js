@@ -1,52 +1,51 @@
-let lastState = null;
-let lastTree = null;
+const ports = new Set();
+
+const sendToPorts = (type, payload) => {
+  ports.forEach((port) => {
+    port.postMessage({ type, payload, source: "PIGLET_BACKGROUND" });
+  });
+};
+
+chrome.runtime.onConnect.addListener((port) => {
+  ports.add(port);
+  port.onMessage.addListener((msg) => {
+    if (msg.type === "INITIAL_REQUEST") {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          type: "INITIAL_REQUEST",
+          source: "PIGLET_BACKGROUND",
+        });
+      });
+    }
+
+    if (msg.type === "MODIFY_STATE" && msg.payload) {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          type: "MODIFY_STATE",
+          source: "PIGLET_BACKGROUND",
+          payload: msg.payload,
+        });
+      });
+    }
+  });
+
+  port.onDisconnect.addListener(() => ports.delete(port));
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
-    switch (message.type) {
-      case "STATE_UPDATE_REQUEST":
-        if (JSON.stringify(lastState) !== JSON.stringify(message.payload)) {
-          lastState = message.payload;
-          chrome.runtime.sendMessage({
-            type: "STATE_UPDATE",
-            payload: lastState,
-          });
-        }
-        sendResponse({ status: "OK" });
-        break;
+    const { type, payload, source } = message;
 
-      case "TREE_UPDATE_REQUEST":
-        if (JSON.stringify(lastTree) !== JSON.stringify(message.payload)) {
-          lastTree = message.payload;
-          chrome.runtime.sendMessage({
-            type: "TREE_UPDATE",
-            payload: lastTree,
-          });
-        }
-        sendResponse({ status: "OK" });
-        break;
-
-      case "PIGLET_SUPPORT_UPDATE":
-        sendResponse({ status: "OK" });
-        break;
-
-      case "REQUEST_CURRENT_DATA":
-        console.log("Sending current data", lastState, lastTree);
-        sendResponse({
-          type: "CURRENT_DATA",
-          state: lastState,
-          tree: lastTree,
-        });
-        break;
-
-      case "PING":
-        sendResponse({ status: "OK" });
-        break;
-
-      default:
-        console.warn("Unknown message type received:", message.type);
-        sendResponse({ status: "BAD_REQUEST", error: "Unknown message type" });
-        break;
+    if (source === "PIGLET_CONTENT") {
+      sendToPorts(type, payload);
+      sendResponse({ status: "OK", source: "PIGLET_BACKGROUND" });
+    } else {
+      console.warn("Unknown message type received:", message.type);
+      sendResponse({
+        status: "BAD_REQUEST",
+        error: "Unknown message type",
+        source: "PIGLET_BACKGROUND",
+      });
     }
   } catch (error) {
     console.error("Error handling message:", error);

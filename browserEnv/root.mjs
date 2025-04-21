@@ -88,6 +88,9 @@ class AppRoot extends ReactiveComponent {
         this.shadowRoot.appendChild(wrapper);
       }
 
+      window.Piglet?.extension?.sendTreeUpdate();
+      window.Piglet?.extension?.sendStateUpdate();
+
       Piglet.log(`Route '${route}' loaded successfully.`, "info");
     } catch (err) {
       Piglet.log(`Error loading route '${route}':`, "error", err);

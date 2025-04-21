@@ -45,6 +45,7 @@ const useState = (componentName, path, initialValue) => {
       return window.Piglet.state[componentName][key].state;
     },
     set value(newValue) {
+      window.Piglet?.extension?.sendStateUpdate();
       window.Piglet.state[componentName][key].setState(newValue);
     },
   };

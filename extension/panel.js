@@ -25,14 +25,42 @@ function renderTree(obj) {
     .join("");
 }
 
-const addStateListeners = () => {
+function parseValue(value) {
+  if (value === "true") {
+    return true;
+  } else if (value === "false") {
+    return false;
+  }
+
+  const numValue = Number(value);
+  if (!isNaN(numValue)) {
+    return numValue;
+  }
+
+  try {
+    const parsedValue = JSON.parse(value);
+    if (typeof parsedValue === "object") {
+      return parsedValue;
+    }
+  } catch (e) {
+    return value;
+  }
+
+  return value;
+}
+
+const addStateListeners = (port) => {
   document.querySelectorAll(".state-input").forEach((input) => {
     input.addEventListener("blur", () => {
       const key = input.dataset.key;
-      const parent = input.dataset.parent || null;
-      const value = input.value;
+      const stateName = input.dataset.parent || null;
+      const value = parseValue(input.value);
 
-      sendStateUpdateToPage(key, value, parent);
+      port.postMessage({
+        type: "MODIFY_STATE",
+        payload: { key, stateName, value },
+        source: "PIGLET_PANEL",
+      });
     });
 
     input.addEventListener("keydown", (e) => {
@@ -40,22 +68,6 @@ const addStateListeners = () => {
     });
   });
 };
-
-function sendStateUpdateToPage(key, value, stateName) {
-  let parsedValue;
-
-  if (/^true$/i.test(value) || /^false$/i.test(value)) {
-    parsedValue = /^true$/i.test(value);
-  } else {
-    parsedValue = value;
-  }
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    chrome.tabs.sendMessage(tabs[0].id, {
-      type: "EXT_SET_STATE",
-      payload: { key, stateName, value: parsedValue },
-    });
-  });
-}
 
 function renderStateTree(obj, parentKey = null) {
   if (typeof obj !== "object" || obj === null)
@@ -98,26 +110,18 @@ function renderStateTree(obj, parentKey = null) {
   `;
 }
 
-function waitForResponse() {
-  const interval = setInterval(() => {
-    chrome.runtime.sendMessage({ type: "REQUEST_CURRENT_DATA" }, (response) => {
-      if (chrome.runtime.lastError) {
-        return;
-      }
-
-      if (response && response.type === "CURRENT_DATA") {
-        clearInterval(interval);
-        handleData(response);
-      }
-    });
-  }, 1000);
-}
-
-function handleData(data) {
-  if (!pigletSupport) return;
-  document.getElementById("state").innerHTML = renderStateTree(data.state);
-  addStateListeners();
-  document.getElementById("tree").innerHTML = renderTree(data.tree);
+function updateDOM(type, payload, port) {
+  if (!pigletSupport) {
+    document.getElementById("warning").style.display = "block";
+    document.getElementById("state").innerHTML = "";
+    document.getElementById("tree").innerHTML = "";
+    return;
+  }
+  const id = type === "STATE_UPDATE" ? "state" : "tree";
+  const html = id === "state" ? renderStateTree(payload) : renderTree(payload);
+  document.getElementById("warning").style.display = "none";
+  document.getElementById(id).innerHTML = html;
+  addStateListeners(port);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -135,32 +139,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }),
   );
 
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "STATE_UPDATE" && message.payload && pigletSupport) {
-      document.getElementById("state").innerHTML = renderStateTree(
-        message.payload,
-      );
-      addStateListeners();
-    }
+  const port = chrome.runtime.connect();
 
-    if (message.type === "PIGLET_SUPPORT_UPDATE") {
-      if (pigletSupport !== message.payload) {
-        pigletSupport = message.payload;
-        if (pigletSupport) {
-          document.getElementById("warning").style.display = "none";
-          waitForResponse();
-        } else {
-          document.getElementById("warning").style.display = "block";
-          document.getElementById("state").innerHTML = "";
-          document.getElementById("tree").innerHTML = "";
-        }
-      }
-    }
-
-    if (message.type === "TREE_UPDATE" && message.payload && pigletSupport) {
-      document.getElementById("tree").innerHTML = renderTree(message.payload);
-    }
+  port.postMessage({
+    type: "INITIAL_REQUEST",
+    source: "PIGLET_PANEL",
   });
 
-  waitForResponse();
+  port.onMessage.addListener((msg) => {
+    if (msg.source === "PIGLET_BACKGROUND") {
+      if (msg.type === "PIGLET_CONFIG") {
+        pigletSupport = msg.payload;
+      }
+      updateDOM(msg.type, msg.payload, port);
+    }
+  });
 });
