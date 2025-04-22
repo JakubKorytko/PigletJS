@@ -24,6 +24,7 @@ async function loadPage(fullPath) {
  * replacing PascalCase component tags with kebab-case,
  * and adding script tags for components.
  *
+ * @param {string} route - Route path
  * @param {string} fullPath - The name of the page to render.
  * @returns {Promise<string|false>} - The full HTML content or false on failure.
  */

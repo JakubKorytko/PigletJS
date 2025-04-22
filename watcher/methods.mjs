@@ -10,7 +10,7 @@ import path from "path";
  * Creates a subprocess for running the server.
  *
  * @param {Array<string>} [args=[]] - Optional arguments to pass to the server subprocess.
- * @returns {ChildProcess} - The forked subprocess.
+ * @returns {typeof ChildProcess} - The forked subprocess.
  */
 const createSubprocess = (args = []) => {
   try {

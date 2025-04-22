@@ -1,3 +1,5 @@
+// noinspection JSUnresolvedReference
+
 const ports = new Set();
 
 const sendToPorts = (type, payload) => {

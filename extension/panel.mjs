@@ -1,3 +1,5 @@
+// noinspection JSUnresolvedReference
+
 import { updateDOM } from "./src/helpers.mjs";
 
 let port;

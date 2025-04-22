@@ -1,15 +1,27 @@
-import { resolvePath } from "@Piglet/utils/paths.mjs";
 import CONST from "@Piglet/CONST.mjs";
 import fs from "fs";
 import { processAllComponents } from "@Piglet/libs/componentBuilder.mjs";
 import { watchDirectory } from "@Piglet/watcher/methods.mjs";
 import { routes } from "@Piglet/libs/routes.mjs";
+import { mergeWebTypes } from "@Piglet/web-types.mjs";
 
+/**
+ * Symbolic representation of route names defined in the application.
+ * Used to safely identify routes without name collisions.
+ *
+ * @type {Record<string, symbol>}
+ */
 const routeNames = CONST.routes.reduce((acc, route) => {
   acc[route] = Symbol(route);
   return acc;
 }, {});
 
+/**
+ * Determines the route type based on the incoming HTTP request.
+ *
+ * @param {import("http").IncomingMessage} req - The HTTP request object.
+ * @returns {symbol} One of the symbols from `routeNames` representing the route type.
+ */
 const getRouteFromRequest = (req) => {
   const urlStartWithApi = req.url.startsWith(CONST.customRouteAliases.api);
   const urlStartWithComponent = req.url.startsWith(
@@ -30,6 +42,14 @@ const getRouteFromRequest = (req) => {
   return routeNames.file;
 };
 
+/**
+ * Runs the component watcher. It compiles all components,
+ * merges web types, and watches for file system changes.
+ *
+ * Also handles restart logs and error reporting.
+ *
+ * @returns {Promise<void>}
+ */
 async function runWatcher() {
   if ([...process.argv].includes("--restart")) {
     console.msg("server.restarted");
@@ -40,13 +60,18 @@ async function runWatcher() {
   }
 
   try {
-    await processAllComponents();
+    const descriptions = await processAllComponents();
+    await mergeWebTypes(descriptions);
     watchDirectory();
   } catch (err) {
     console.msg("server.initError", err);
   }
 }
 
+/**
+ * Proxy handler that dynamically routes requests
+ * to the appropriate handler based on custom route symbols.
+ */
 const proxyHandler = {
   customRoutes: {},
 
@@ -56,7 +81,7 @@ const proxyHandler = {
       this.customRoutes = newValue;
       return Reflect.set(target, "customRoutes", newValue, receiver);
     } else {
-      return Reflect.set(...arguments);
+      return Reflect.set(target, prop, value, receiver);
     }
   },
 
@@ -80,7 +105,16 @@ const proxyHandler = {
   },
 };
 
+/**
+ * HTTP server request handler that dispatches
+ * to the appropriate custom route handler.
+ *
+ * @param {import("http").IncomingMessage} req - The HTTP request object.
+ * @param {import("http").ServerResponse} res - The HTTP response object.
+ * @returns {*}
+ */
 const serverHandler = async (req, res) => {
+  // noinspection JSUnresolvedReference
   return req.socket.server.customRoutes[getRouteFromRequest(req)](req, res);
 };
 

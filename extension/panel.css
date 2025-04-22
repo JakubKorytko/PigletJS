@@ -125,7 +125,7 @@ li {
 
 input {
   border: 0;
-  border-bottom: 0.5px black dashed;
+  border-bottom: 1px black dashed;
   background: none;
   outline: none;
   margin-left: 0.5rem;

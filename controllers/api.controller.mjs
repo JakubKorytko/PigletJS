@@ -4,7 +4,7 @@ import { resolvePath } from "@Piglet/utils/paths.mjs";
 import notFound from "@Piglet/libs/notfound.mjs";
 
 export default async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  const url = new URL(req.url, `https://${req.headers.host}`);
   const segments = url.pathname
     .replace(/^\/api\/?/, "")
     .split("/")
