@@ -1,3 +1,5 @@
+// noinspection JSUnresolvedReference
+
 let pigletSupport = true;
 
 function renderTree(obj) {

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json.schemastore.org/web-types",
+  "js-types-syntax": "typescript",
+  "description-markup": "markdown",
+  "name": "@piglet/components",
+  "version": "1.0.0",
+  "contributions": {
+    "html": {
+      "elements": [
+        {
+          "name": "c-if",
+          "description": "Conditional rendering component that shows or hides its content based on the `condition` attribute. Supports boolean values, state keys, or nested paths (e.g., `user.loggedIn`). Negation is supported using the `!` prefix.",
+          "attributes": [
+            {
+              "name": "condition",
+              "description": "Boolean expression or state path to evaluate. Supports negation with `!`, e.g., `!user.loggedIn`.",
+              "value": {
+                "kind": "expression",
+                "type": "boolean | string"
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "App",
+          "description": "Top-level application router component. Dynamically loads pages based on the current route and injects them into its shadow DOM.",
+          "attributes": [
+            {
+              "name": "route",
+              "description": "Current route value. Determines which page component should be dynamically loaded and rendered.",
+              "value": {
+                "kind": "expression",
+                "type": "string"
+              }
+            }
+          ],
+          "js": {
+            "properties": [
+              {
+                "name": "route",
+                "description": "Current route string. Changing it updates the URL and re-renders the corresponding component.",
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "slots": []
+          }
+        },
+        {
+          "name": "routes",
+          "description": "Container for multiple <route> elements. Should be placed inside <app-root> to define routing table."
+        },
+        {
+          "name": "route",
+          "description": "Defines a single route entry. Must have a 'value' attribute and a page component as its child.",
+          "attributes": [
+            {
+              "name": "value",
+              "description": "Path for this route (e.g., '/', '/about', '/notfound').",
+              "value": {
+                "kind": "expression",
+                "type": "string"
+              },
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "content",
+          "description": "Wrapper component used to structure page content. Typically used inside route components to group page layout and elements."
+        },
+        {
+          "name": "HomePage",
+          "description": "Home page"
+        },
+        {
+          "name": "SecondPage",
+          "description": "Second Page"
+        },
+        {
+          "name": "NotFound",
+          "description": "Not found page"
+        },
+        {
+          "name": "ClickCounter",
+          "description": "Click counter"
+        },
+        {
+          "name": "NestedComponent",
+          "description": "Nested Component"
+        }
+      ]
+    }
+  }
+}

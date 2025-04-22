@@ -1,4 +1,4 @@
-import Piglet from "/Piglet/config";
+import Piglet from "@Piglet/browserEnv/config";
 
 const ws = new WebSocket("ws://" + location.host);
 

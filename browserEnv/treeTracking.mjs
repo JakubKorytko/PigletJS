@@ -1,6 +1,11 @@
 import { useState } from "@Piglet/browserEnv/state";
 import Piglet from "@Piglet/browserEnv/config";
 
+/**
+ * Assigns a unique component ID to a custom element if it doesn't already have one.
+ * @param {typeof ReactiveComponent} el - The custom element to which the component ID will be assigned.
+ * @returns {number} The assigned component ID.
+ */
 function assignComponentIdToElement(el) {
   if (!el.__componentId) {
     el.__componentId = ++Piglet.componentCounter;
@@ -8,9 +13,22 @@ function assignComponentIdToElement(el) {
   return el.__componentId;
 }
 
+/**
+ * Recursively builds a tree structure representing the custom elements in the DOM.
+ * The tree includes custom elements and their state, children, and key information.
+ *
+ * @param {typeof ReactiveComponent} [root=document.body] - The root element to start building the tree from.
+ * @returns {Object} The custom element tree structure.
+ */
 function buildCustomElementTree(root = document.body) {
   const tree = {};
 
+  /**
+   * Walks through a node and its children to collect relevant data.
+   *
+   * @param {ReactiveComponent} node - The DOM node to inspect.
+   * @returns {Object|null} Data about the node or null if not relevant.
+   */
   function walk(node) {
     const tagName = node.tagName?.toLowerCase?.();
     const isCustom = tagName?.includes("-");
@@ -73,10 +91,19 @@ function buildCustomElementTree(root = document.body) {
   return tree;
 }
 
-function injectTreeTrackingToComponentClass(klass) {
-  const originalConnected = klass.prototype.connectedCallback;
+/**
+ * Injects tree tracking functionality into a custom component class.
+ * This enables the component to track its custom element tree and notify when changes occur.
+ *
+ * @param {typeof ReactiveComponent} targetClass - The custom component class to augment with tree tracking.
+ */
+function injectTreeTrackingToComponentClass(targetClass) {
+  const originalConnected = targetClass.prototype.connectedCallback;
 
-  klass.prototype.connectedCallback = function () {
+  /**
+   * @this {ReactiveComponent}
+   */
+  targetClass.prototype.connectedCallback = function () {
     assignComponentIdToElement(this);
 
     this.__trackCustomTree__ = () => {
@@ -125,8 +152,12 @@ function injectTreeTrackingToComponentClass(klass) {
     }
   };
 
-  const originalDisconnected = klass.prototype.disconnectedCallback;
-  klass.prototype.disconnectedCallback = function () {
+  const originalDisconnected = targetClass.prototype.disconnectedCallback;
+
+  /**
+   * @this {ReactiveComponent}
+   */
+  targetClass.prototype.disconnectedCallback = function () {
     if (this.__customTreeObserver__) {
       this.__customTreeObserver__.disconnect();
       window.Piglet?.extension?.sendTreeUpdate();

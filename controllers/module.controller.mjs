@@ -12,6 +12,7 @@ export default (req, res) => {
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
+      // noinspection JSIgnoredPromiseFromCall
       notFound(res);
     } else {
       res.writeHead(200, { "Content-Type": contentType });

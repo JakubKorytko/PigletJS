@@ -26,7 +26,7 @@
  */
 
 /** @type {StateProxy} */
-var state;
+let state;
 
 /**
  * Selects an element inside the component's shadow DOM and provides
@@ -58,7 +58,7 @@ var state;
  * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} off - Removes an event listener.
  * @property {(attrName: string, value: any) => ElementWrapper} pass - Passes a static value  an attribute/property.
  */
-var element;
+let element;
 
 /**
  * Handler for reacting to state changes in a component.
@@ -81,7 +81,7 @@ var element;
  *
  * @property {(newValue: any, prevValue: any) => void} [stateKey] - Assignable handler for a specific state key.
  */
-var onStateChange;
+let onStateChange;
 
 /**
  * Asynchronously executes a callback once the host component is connected and available.
@@ -98,14 +98,14 @@ var onStateChange;
  *   @property {HTMLElement} element - The actual host element instance.
  *   @property {HTMLElement|null} parent - The parent custom element hosting this component, if any.
  */
-var onConnect;
+let onConnect;
 
 /**
  * Initializes the state with a default value.
  * @param {any} value - The default value for the state.
  * @returns {any} The initialized state.
  */
-var init;
+let init;
 
 /**
  * Registers a callback to be executed whenever there is an update to the component's state or attributes.
@@ -123,7 +123,7 @@ var init;
  * In this example, the element with the ID `clickCount` is updated with a message
  * that reflects the current value of the `clickcount` attribute.
  */
-var onUpdate;
+let onUpdate;
 
 /**
  * Handler for reacting to attribute changes on a custom element.
@@ -146,7 +146,7 @@ var onUpdate;
  *
  * @property {(newValue: any, prevValue: any) => void} [attributeName] - Assignable handler for a specific attribute.
  */
-var onAttributeChange;
+let onAttributeChange;
 
 /**
  * An object that contains attributes assigned to the component. The `attributes` object
@@ -162,7 +162,7 @@ var onAttributeChange;
  *
  * console.log(attributes.someAttribute); // Logs the value of the dynamic attribute
  */
-var attributes;
+let attributes;
 
 /**
  * An object that contains methods forwarded from the parent component.
@@ -184,7 +184,7 @@ var attributes;
 /**
  * @type {Record<string, Function>}
  */
-var forwarded;
+let forwarded;
 
 /**
  * Fetches data from a given API path and parses the response into the expected format.
@@ -203,4 +203,20 @@ var forwarded;
  * @example
  * const rawText = await
  */
-var api;
+let api;
+
+/**
+ * An object to store the route-to-component mappings.
+ * Each key is a route path, and each value is the file path to the corresponding component.
+ *
+ * @type {Object<string, string>}
+ */
+let routes;
+
+/**
+ * An object to store route aliases.
+ * Each key is a route path, and each value is the alias for the route (usually the component's file name).
+ *
+ * @type {Object<string, string>}
+ */
+let routeAliases;

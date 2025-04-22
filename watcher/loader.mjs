@@ -17,6 +17,8 @@ let projectRoot = path.join(
  * @param {Function} nextResolve - The function to call to continue resolving the specifier.
  * @returns {Promise<string>} - A promise resolving to the resolved file URL.
  */
+
+// noinspection JSUnusedGlobalSymbols
 export async function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith("@/") || specifier.startsWith("@Piglet/")) {
     const modifiedSpecifier = specifier.replace("@Piglet/", "@/PigletJS/");

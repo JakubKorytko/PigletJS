@@ -7,12 +7,13 @@ import notFound from "@Piglet/libs/notfound.mjs";
 
 export default (req, res) => {
   const pathWithoutPiglet = req.url.replace("/Piglet/", "");
-  const filePath = resolvePath(`@/pigletbrowserEnv/${pathWithoutPiglet}.mjs`);
+  const filePath = resolvePath(`@/pigletBrowserEnv/${pathWithoutPiglet}.mjs`);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/javascript";
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
+      // noinspection JSIgnoredPromiseFromCall
       notFound(res);
     } else {
       let code = data.toString();

@@ -1,4 +1,5 @@
 import fs from "fs";
+import fsp from "fs/promises";
 import path from "path";
 import { resolvePath } from "@Piglet/utils/paths.mjs";
 import {
@@ -8,10 +9,16 @@ import {
 } from "@Piglet/utils/stringUtils.mjs";
 import { parseRoutes, routes } from "@Piglet/libs/routes.mjs";
 
+/**
+ * Extracts import statements from JavaScript code and returns the cleaned code.
+ *
+ * @param {string} code - The JavaScript source code.
+ * @returns {{ imports: string[], cleanedCode: string }}
+ */
 function extractAndRemoveImports(code) {
   const importRegex = /^import\s+[\s\S]*?["'][^"']+["'];?/gm;
   const imports = [];
-  let cleaned = code;
+  let cleaned;
 
   let match;
   while ((match = importRegex.exec(code)) !== null) {
@@ -55,9 +62,36 @@ async function findMatchingExternalFile(rootDir, baseName, extension) {
   return null;
 }
 
+/**
+ * Extracts the contents of the first <style> tag from the given HTML string.
+ *
+ * @param {string} html - The HTML string to search within.
+ * @returns {RegExpMatchArray|null} The RegExp match array or null if not found.
+ */
 const styleRegex = (html) => html.match(/<style>([\s\S]*?)<\/style>/i);
+
+/**
+ * Extracts the contents of the first <content> tag from the given HTML string.
+ *
+ * @param {string} html - The HTML string to search within.
+ * @returns {RegExpMatchArray|null} The RegExp match array or null if not found.
+ */
 const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
+
+/**
+ * Extracts the contents of the first <script> tag from the given HTML string.
+ *
+ * @param {string} html - The HTML string to search within.
+ * @returns {RegExpMatchArray|null} The RegExp match array or null if not found.
+ */
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
+
+/**
+ * Escapes backticks and `${}` placeholders in a string to safely include it in a template literal.
+ *
+ * @param {string} str - The string to escape.
+ * @returns {string} The escaped string.
+ */
 function escapeTemplateLiteral(str) {
   return str
     .replace(/\\/g, "\\\\")
@@ -65,6 +99,15 @@ function escapeTemplateLiteral(str) {
     .replace(/\$\{/g, "\\${");
 }
 
+/**
+ * Injects a `host__element` attribute into all occurrences of a given tag in the HTML content,
+ * unless the attribute is already present.
+ *
+ * @param {string} content - The HTML content.
+ * @param {string} tagName - The tag name to target (e.g. "div", "span").
+ * @param {string} componentName - The name of the component to use in the attribute value.
+ * @returns {string} The modified HTML content.
+ */
 function injectHostElementAttribute(content, tagName, componentName) {
   const regex = new RegExp(`<${tagName}([^>]*)>`, "g");
 
@@ -74,6 +117,19 @@ function injectHostElementAttribute(content, tagName, componentName) {
   });
 }
 
+/**
+ * Transforms destructuring of the `state` object into individual state declarations.
+ *
+ * Example:
+ * `const { count = init(0), name } = state;` becomes:
+ * ```
+ * const count = state("count", 0);
+ * const name = state("name");
+ * ```
+ *
+ * @param {string} fullScript - The original JavaScript code.
+ * @returns {string} The transformed JavaScript code.
+ */
 const transformScript = (fullScript) => {
   const destructureRegex = /const\s*{\s*(.*?)\s*}\s*=\s*state\s*;/g;
 
@@ -102,113 +158,55 @@ const transformScript = (fullScript) => {
   });
 };
 
-const injectScriptToComponent = (scriptJS, externalJS) => {
-  if (!scriptJS && !externalJS) return "";
+/**
+ * Injects transformed component code into the runScript template.
+ *
+ * @param {string} componentScript - The transformed component logic.
+ * @returns {Promise<string>} - The final script to be injected.
+ */
+async function injectIntoRunScript(componentScript) {
+  const filePath = resolvePath("@Piglet/libs/runScript.mjs");
+  let fileContent = await fsp.readFile(filePath, "utf-8");
+
+  fileContent = fileContent.replace(/^\/\/ noinspection.*\n?/gm, "");
+
+  return fileContent.replace("/* COMPONENT CODE */", componentScript).trim();
+}
+
+/**
+ * Combines external and internal scripts, transforms them,
+ * and prepares the final executable component logic.
+ *
+ * @param {string} scriptJS - The internal script from the .pig.html file.
+ * @param {string} externalJS - The external .pig.mjs script content.
+ * @returns {Promise<[string, string[]]>} - The final script and its imports.
+ */
+const injectScriptToComponent = async (scriptJS, externalJS) => {
+  if (!scriptJS && !externalJS) return ["", [""]];
 
   const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
   const transformedScript = transformScript(fullScript);
 
   const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
 
-  return [
-    `runScript(shadowRoot) {
-        (function(shadowRoot, hostElement) {
-const element = (selector) => {
-  const el = hostElement.shadowRoot.querySelector(selector);
-  return {
-    on: (event, callback) => {
-      el?.addEventListener(event, callback);
-      return element(selector);
-    },
-    off: (event, callback) => {
-      el?.removeEventListener(event, callback);
-      return element(selector);
-    },
-    pass: (attrName, value) => {
-      if (el && typeof value === "function") {
-         if (!el._forwarded) {
-          el._forwarded = {};
-         }
-         el._forwarded[attrName] = value;
-         if (el.onAttributeChange) el.onAttributeChange("forwarded", el._forwarded);
-         if (el.reactive) el.reactive();
-      } else {
-         el?.setAttribute(attrName, value);
-      }
-      return element(selector);
-    },
-    get ref() {
-      return el;
-    }
-  };
+  const script = await injectIntoRunScript(cleanedCode);
+
+  return [`runScript(shadowRoot) ${script}`, imports];
 };
 
-const stateHandlers = {};
-   
-let onStateChange = new Proxy(
-  (value, property, prevValue) => {
-    const handler = stateHandlers[property];
-    if (typeof handler === 'function') {
-      handler(value, prevValue);
-    }
-  },
-  {
-    get(target, prop) {
-      return stateHandlers[prop];
-    },
-    set(target, prop, value) {
-      if (typeof value === 'function') {
-        stateHandlers[prop] = value;
-        return true;
-      }
-      return false;
-    }
-  }
-);
-const attributeHandlers = {};
-
-let onAttributeChange = new Proxy(
-  (newValue, property, prevValue) => {
-    const handler = attributeHandlers[property];
-    if (typeof handler === 'function') {
-      handler(newValue, prevValue);
-    }
-  },
-  {
-    get(target, prop) {
-      return attributeHandlers[prop];
-    },
-    set(target, prop, value) {
-      if (typeof value === 'function') {
-        attributeHandlers[prop] = value;
-        return true;
-      }
-      return false;
-    }
-  }
-);
-        let reactive = () => {};
-        let onUpdate = (callback) => {
-          reactive = callback;
-        };
-
-        const state =  hostElement.state.bind(hostElement); 
-        const attributes = hostElement._attrs;
-        const forwarded = hostElement._forwarded;
-        const onConnect = getComponentDataMethod(hostElement);
-        ${cleanedCode}
-        hostElement.reactive = reactive;
-        hostElement.onStateChange = onStateChange;
-        hostElement.onAttributeChange = onAttributeChange;
-        reactive();
-        onStateChange = undefined;
-        onAttributeChange = undefined;
-        })(shadowRoot, this);
-      }`,
-    imports,
-  ];
-};
-
+/**
+ * Injects transformed inner HTML content into a web component.
+ * This includes:
+ * - Injecting `host__element` attributes for `<c-if>` tags.
+ * - Converting PascalCase component tags to kebab-case.
+ * - Combining inline and external CSS styles.
+ *
+ * @param {string} html - Full original HTML string of the component.
+ * @param {string} content - Content extracted from the `<content>` tag.
+ * @param {string} componentName - The name of the component.
+ * @param {string} externalCSS - Optional external CSS to include in the output.
+ * @returns {string} The transformed innerHTML string, escaped and indented.
+ */
 const injectInnerHTMLToComponent = (
   html,
   content,
@@ -266,7 +264,57 @@ const injectInnerHTMLToComponent = (
   return `\`${indent(escapeTemplateLiteral(innerHTML), 8)}\``;
 };
 
-const generateOutput = (_, ...args) => {
+/**
+ * Injects all component data (class name, tag, HTML, script) into a shared template file.
+ * Replaces placeholder tokens in the template with actual component values.
+ *
+ * @param {Object} options - Options for injecting into the component template.
+ * @param {string} options.className - The class name of the component (PascalCase).
+ * @param {string} options.tagName - The HTML tag name of the component (kebab-case).
+ * @param {string} options.componentName - The original component name (e.g., "App").
+ * @param {string} options.innerHTML - The processed inner HTML content.
+ * @param {string} [options.additionalImports=""] - Any additional JS imports to include.
+ * @param {string} [options.constructorSteps=""] - Any custom logic to run in the constructor.
+ * @param {string} [options.runScript=""] - The main logic to run when the component mounts.
+ * @returns {Promise<string>} The fully populated component file content.
+ */
+async function injectIntoComponentTemplate({
+  className,
+  tagName,
+  componentName,
+  innerHTML,
+  additionalImports = "",
+  constructorSteps = "",
+  runScript = "",
+}) {
+  const filePath = resolvePath("@Piglet/libs/output.mjs");
+  let fileContent = await fsp.readFile(filePath, "utf-8");
+
+  fileContent = fileContent.replace(/^\/\/ noinspection.*\n?/gm, "");
+
+  fileContent = fileContent
+    .replace(/COMPONENT_CLASS_NAME/g, className)
+    .replace(/COMPONENT_NAME/g, componentName)
+    .replace(/TAG_NAME/g, tagName)
+    .replace(/COMPONENT_INNER_HTML/g, innerHTML);
+
+  fileContent = fileContent
+    .replace("/* ADDITIONAL IMPORTS */", additionalImports.trim())
+    .replace("/* ADDITIONAL CONSTRUCTOR STEPS */", constructorSteps.trim())
+    .replace("/* RUN SCRIPT HERE */", runScript.trim());
+
+  return fileContent.trim();
+}
+
+/**
+ * Orchestrates the full generation of a component file based on HTML, CSS, and JS inputs.
+ * This includes transforming tags, escaping HTML, injecting scripts, and final assembly.
+ *
+ * @param {*} _ - Unused placeholder argument.
+ * @param {...any} args - [componentName, html, content, externalCSS, externalJS]
+ * @returns {Promise<string|undefined>} The final component file content, or undefined on error.
+ */
+const generateOutput = async (_, ...args) => {
   if (args.length !== 5) {
     console.msg("components.outputGenerationError", new Error());
   }
@@ -283,33 +331,30 @@ const generateOutput = (_, ...args) => {
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
-  const fullScript = injectScriptToComponent(scriptJS, externalJS);
+  const fullScript = await injectScriptToComponent(scriptJS, externalJS);
 
-  return `
-  import ReactiveComponent from "/Piglet/reactiveComponent";
-  import { injectTreeTrackingToComponentClass } from "/Piglet/treeTracking";
-  import { getComponentDataMethod, api } from "/Piglet/helpers";
-  ${fullScript ? fullScript[1].join("\n") : ""}
-class ${className} extends ReactiveComponent {
- 
-      constructor() {
-        super();
-        const shadow = this.attachShadow({ mode: 'open' });
-        shadow.innerHTML = ${injectInnerHTMLToComponent(html, content, componentName, externalCSS)};
-        const componentKey = \`\${this.constructor.name}\${this.__componentId ?? window.Piglet.componentCounter+1}\`
-
-        ${scriptJS ? `this.runScript(shadow);` : ""}
-      }
-
-      ${fullScript[0]}
-    }
-
-injectTreeTrackingToComponentClass(${className});
-customElements.define('${tagName}', ${className});
-export default ${componentName};
-`.trim();
+  return await injectIntoComponentTemplate({
+    className,
+    tagName,
+    componentName,
+    innerHTML: injectInnerHTMLToComponent(
+      html,
+      content,
+      componentName,
+      externalCSS,
+    ),
+    additionalImports: fullScript ? fullScript[1].join("\n") : "",
+    constructorSteps: scriptJS ? `this.runScript(shadow);` : "",
+    runScript: fullScript[0],
+  });
 };
 
+/**
+ * Extracts and returns the inner content of the <content> tag from the HTML string.
+ *
+ * @param {string} html - The HTML string to search.
+ * @returns {string|undefined} The trimmed content inside the <content> tag, or undefined if not found.
+ */
 const getContentTag = (html) => {
   const contentMatch = contentRegex(html);
 
@@ -360,7 +405,7 @@ async function buildComponent(filePath) {
       externalJS = await fs.promises.readFile(externalJSPath, "utf-8");
     }
 
-    const output = generateOutput`
+    const output = await generateOutput`
     Component name: ${componentName}
     Component content: ${html}${content}
     External data: ${externalCSS}${externalJS}`;
@@ -381,37 +426,97 @@ async function buildComponent(filePath) {
 }
 
 /**
+ * Extracts description objects from `<script content="description">` blocks.
+ * Handles blocks with `export default { ... }` content.
+ *
+ * @param {string} filePath - Path to the `.pig.html` file to parse.
+ * @returns {Promise<Object[]>} - Array of parsed description objects.
+ */
+async function extractDescriptionsFromFile(filePath) {
+  try {
+    const fileContent = await fs.promises.readFile(filePath, "utf-8");
+    const descriptionMatches = [];
+    const regex = /<script\s+content="description">([\s\S]*?)<\/script>/g;
+
+    let match;
+    while ((match = regex.exec(fileContent)) !== null) {
+      let raw = match[1].trim();
+
+      // Remove "export default" and trailing semicolons or extra closing
+      if (raw.startsWith("export default")) {
+        raw = raw.replace(/^export\s+default\s+/, "").trim();
+      }
+
+      // Remove trailing semicolon if present
+      if (raw.endsWith(";")) {
+        raw = raw.slice(0, -1);
+      }
+
+      try {
+        // Evaluate as JS object using `Function` constructor to avoid unsafe `eval`
+        const descriptionData = new Function(`return ${raw}`)();
+        descriptionMatches.push(descriptionData);
+      } catch (e) {
+        console.error(`❌ Error parsing description in ${filePath}:`, e);
+      }
+    }
+
+    return descriptionMatches;
+  } catch (err) {
+    console.error(`❌ Error reading file ${filePath}:`, err);
+    return [];
+  }
+}
+
+/**
  * Recursively processes all .pig.html files in a given directory.
  *
  * @param {string} [dir=resolvePath("@/components")] - Directory to scan.
  */
+// Main function to process components and collect descriptions
 async function processAllComponents(dir = resolvePath("@/components")) {
+  const descriptions = [];
   try {
     const appPath = resolvePath("@/src/App.pig.html");
     const pagesDir = resolvePath("@/pages");
-    if (fs.existsSync(appPath)) {
+
+    // Process the App.pig.html file if it exists
+    if (fs.existsSync(appPath) && Object.values(arguments).length === 0) {
       console.msg("components.generatingFrom", "App.pig.html");
       const appHtml = await fs.promises.readFile(appPath, "utf-8");
       parseRoutes(appHtml, pagesDir);
       for (const route of Object.values(routes)) {
         await buildComponent(route);
+        const pageDescriptions = await extractDescriptionsFromFile(route);
+        descriptions.push(...pageDescriptions);
       }
     }
 
+    // Process the directory of components recursively
     const files = await fs.promises.readdir(dir, { withFileTypes: true });
 
     for (const file of files) {
       const filePath = path.join(dir, file.name);
       if (file.isDirectory()) {
-        await processAllComponents(filePath);
+        // Recursively process directories and flatten the result
+        const nestedDescriptions = await processAllComponents(filePath);
+        descriptions.push(...nestedDescriptions); // Flatten the array
       } else if (file.name.endsWith(".pig.html")) {
         console.msg("components.generatingFrom", file.name);
         await buildComponent(filePath);
+
+        // Extract descriptions from this component
+        const componentDescriptions =
+          await extractDescriptionsFromFile(filePath);
+        descriptions.push(...componentDescriptions);
       }
     }
   } catch (err) {
     console.msg("components.processingError", err);
   }
+
+  // Return the collected descriptions
+  return descriptions;
 }
 
 export { buildComponent, processAllComponents };

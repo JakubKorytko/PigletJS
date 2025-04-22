@@ -20,6 +20,7 @@ class AppRoot extends ReactiveComponent {
     return ["route"];
   }
 
+  // noinspection JSUnusedGlobalSymbols
   /**
    * Handles changes to observed attributes (in this case, 'route').
    * Dynamically imports the page based on the route and injects it as shadowRoot.
@@ -29,6 +30,7 @@ class AppRoot extends ReactiveComponent {
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === "route" && oldValue !== newValue) {
+      // noinspection JSIgnoredPromiseFromCall
       this.loadRoute(newValue);
     }
   }

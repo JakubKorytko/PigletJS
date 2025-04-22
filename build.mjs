@@ -11,6 +11,12 @@ const CURRENT_DIR = process.cwd();
 const SCRIPT_DIR = import.meta.dirname;
 const PIGLET_DIR = SCRIPT_DIR;
 
+/**
+ * Checks if a file exists at the given path.
+ *
+ * @param {string} filepath The path to the file to check.
+ * @returns {Promise<boolean>} A promise that resolves to `true` if the file exists, `false` otherwise.
+ */
 async function fileExists(filepath) {
   try {
     await fsp.access(filepath, fs.constants.F_OK);
@@ -20,6 +26,12 @@ async function fileExists(filepath) {
   }
 }
 
+/**
+ * Asks a question in the console and returns the user's input.
+ *
+ * @param {string} query The question to ask the user.
+ * @returns {Promise<string>} A promise that resolves to the user's response.
+ */
 function askQuestion(query) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -38,6 +50,13 @@ function askQuestion(query) {
   });
 }
 
+/**
+ * Copies a file from `src` to `dest` if the destination does not already exist.
+ *
+ * @param {string} src The source file path.
+ * @param {string} dest The destination file path.
+ * @returns {Promise<void>} A promise that resolves when the file is copied, or skips if the file exists.
+ */
 async function copyFileSafe(src, dest) {
   const exists = await fileExists(dest);
   if (exists) {
@@ -51,6 +70,11 @@ async function copyFileSafe(src, dest) {
   console.msg("builder.copiedFile", path.basename(dest));
 }
 
+/**
+ * Sets up the PigletJS environment by copying necessary files and asking the user for extra setup options.
+ *
+ * @returns {Promise<void>} A promise that resolves when the setup is complete.
+ */
 async function setupPiglet() {
   await console.printPigAscii();
 
@@ -69,7 +93,7 @@ async function setupPiglet() {
   const answer = await askQuestion(CONST.consoleMessages.builder.promptExtras);
   if (answer !== "y") {
     console.msg("builder.runningStart");
-    const proc = spawn("node", [startDest, "--create"], { stdio: "inherit" });
+    spawn("node", [startDest, "--create"], { stdio: "inherit" });
     return;
   }
   console.log("");
@@ -78,6 +102,7 @@ async function setupPiglet() {
     { src: "README.md" },
     { src: "root_jsconfig.json", dest: "jsconfig.json" },
     { src: ".gitignore" },
+    { src: "package.json" },
   ];
 
   for (const file of filesToCopy) {
@@ -104,6 +129,24 @@ async function setupPiglet() {
     );
   }
 
+  const webResourcesSrc = path.join(PIGLET_DIR, "webResources.xml");
+  const webResourcesDir = path.join(CURRENT_DIR, ".idea");
+  const webResourcesDest = path.join(webResourcesDir, "webResources.xml");
+
+  if (!(await fileExists(webResourcesDest))) {
+    await fsp.mkdir(webResourcesDir, { recursive: true });
+    await fsp.copyFile(webResourcesSrc, webResourcesDest);
+    console.msg(
+      "builder.copiedProfile",
+      path.relative(CURRENT_DIR, webResourcesDest),
+    );
+  } else {
+    console.msg(
+      "builder.profileExists",
+      path.relative(CURRENT_DIR, webResourcesDest),
+    );
+  }
+
   console.msg("builder.runningStart");
   const proc = spawn("node", [startDest, "--create"], { stdio: "inherit" });
 
@@ -112,4 +155,5 @@ async function setupPiglet() {
   });
 }
 
+// noinspection JSIgnoredPromiseFromCall
 setupPiglet();

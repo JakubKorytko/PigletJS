@@ -7,6 +7,18 @@ import {
 } from "@Piglet/libs/socket.mjs";
 import coreControllers from "@Piglet/controllers/index.mjs";
 
+/**
+ * @typedef {http.Server & { customRoutes: Record<string, Function> }} CustomServer
+ */
+
+/**
+ * Creates and configures the HTTP server.
+ *
+ * The server is set up with custom routes and handlers, including a WebSocket upgrade listener.
+ * It also runs the `runReloadClientOnWSMessageListener` for WebSocket communication.
+ *
+ * @returns CustomServer - The configured HTTP server instance.
+ */
 const createServer = () => {
   runReloadClientOnWSMessageListener();
 
@@ -18,6 +30,7 @@ const createServer = () => {
     ...coreControllers,
   };
 
+  // noinspection JSValidateTypes
   return server;
 };
 

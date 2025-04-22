@@ -1,8 +1,14 @@
 import ReactiveComponent from "@Piglet/browserEnv/reactiveComponent";
-import { injectTreeTrackingToComponentClass } from "@Piglet/browserEnv/treeTracking";
 import { getDeepValue } from "@Piglet/browserEnv/helpers";
 
+/**
+ * `<c-if>` is a conditional rendering component.
+ * It shows or hides itself based on the evaluation of a given boolean state or expression.
+ * The `condition` attribute can be a boolean literal, a state key, or a state path (e.g., `user.loggedIn`).
+ * Negation is supported by prefixing the condition with `!`.
+ */
 class CIf extends ReactiveComponent {
+  // noinspection JSUnusedGlobalSymbols
   static get observedAttributes() {
     return ["condition"];
   }
@@ -21,6 +27,13 @@ class CIf extends ReactiveComponent {
     this.updateVisibility();
   }
 
+  /**
+   * Called when an observed attribute is changed.
+   * @param {string} name - Attribute name.
+   * @param {string | null} oldValue - Previous value.
+   * @param {string | null} newValue - New value.
+   */
+  // noinspection JSUnusedGlobalSymbols
   attributeChangedCallback(name, oldValue, newValue) {
     if (
       name === "condition" &&
@@ -31,6 +44,11 @@ class CIf extends ReactiveComponent {
     }
   }
 
+  /**
+   * Parses the `condition` attribute and sets internal state tracking.
+   * Supports boolean literals, state paths, and negation (!).
+   * @private
+   */
   _updateFromAttribute() {
     let conditionProperty = this.getAttribute("condition");
 
@@ -62,6 +80,11 @@ class CIf extends ReactiveComponent {
     this._updateCondition(this._state.value);
   }
 
+  /**
+   * Updates the condition based on the latest value and visibility rules.
+   * @param {*} value - The state value to evaluate.
+   * @private
+   */
   _updateCondition(value) {
     const innerValue = getDeepValue(value, this._parts);
     this._condition = Boolean(innerValue);
@@ -73,6 +96,10 @@ class CIf extends ReactiveComponent {
     this.updateVisibility();
   }
 
+  /**
+   * Reacts to changes in the observed state.
+   * @param {*} value - The updated value of the observed state.
+   */
   onStateChange(value) {
     if (["true", "false"].includes(this.getAttribute("condition"))) return;
     this._updateCondition(value);
@@ -87,5 +114,4 @@ class CIf extends ReactiveComponent {
   }
 }
 
-injectTreeTrackingToComponentClass(CIf);
-customElements.define("c-if", CIf);
+export default CIf;

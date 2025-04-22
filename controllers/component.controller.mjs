@@ -16,6 +16,7 @@ export default (req, res) => {
     resolvePath(`@/builtComponents/${componentName}.mjs`),
     (err, data) => {
       if (err) {
+        // noinspection JSIgnoredPromiseFromCall
         notFound(res);
       } else {
         res.writeHead(200, { "Content-Type": "application/javascript" });

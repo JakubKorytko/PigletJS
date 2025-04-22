@@ -7,6 +7,12 @@ import runApplication from "../spawn.mjs";
 import CONST from "../CONST.mjs";
 import "../utils/console.mjs";
 
+/**
+ * Deletes the existing `templates` and `extension` directories if they exist.
+ *
+ * @param {string} dirname - The base directory from which paths are resolved.
+ * @returns {Promise<void>}
+ */
 async function clearTemplates(dirname) {
   const templatesPath = path.join(dirname, "PigletJS", "templates");
   const extensionPath = path.join(dirname, "PigletJS", "extension");
@@ -30,6 +36,12 @@ async function clearTemplates(dirname) {
   }
 }
 
+/**
+ * Prompts the user with a yes/no question in the console.
+ *
+ * @param {string} question - The question to ask the user.
+ * @returns {Promise<boolean>} Resolves to true if user answers "y", false otherwise.
+ */
 function askYesNo(question) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -48,6 +60,13 @@ function askYesNo(question) {
   });
 }
 
+/**
+ * Prompts the user to select one of the provided choices.
+ *
+ * @param {string} question - The prompt question to display.
+ * @param {string[]} choices - Array of string choices to display.
+ * @returns {Promise<string>} The selected choice.
+ */
 function askChoice(question, choices) {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -76,6 +95,14 @@ function askChoice(question, choices) {
   });
 }
 
+/**
+ * Recursively copies all files and folders from a template directory to a target directory,
+ * skipping files that already exist.
+ *
+ * @param {string} templateDir - Source directory containing the template files.
+ * @param {string} targetDir - Target directory to copy files to.
+ * @returns {Promise<void>}
+ */
 async function copyTemplateFiles(templateDir, targetDir) {
   const entries = await fsp.readdir(templateDir, { withFileTypes: true });
   for (const entry of entries) {
@@ -98,6 +125,12 @@ async function copyTemplateFiles(templateDir, targetDir) {
   }
 }
 
+/**
+ * Optionally applies a selected project template and sets up directory structure.
+ *
+ * @param {string} dirname - The base project directory.
+ * @returns {Promise<void>}
+ */
 async function maybeUseTemplate(dirname) {
   const useTemplate = await askYesNo(CONST.consoleMessages.template.initialize);
   if (!useTemplate) return;
@@ -107,7 +140,6 @@ async function maybeUseTemplate(dirname) {
     CONST.consoleMessages.template.structure,
   ]);
 
-  console.log(type);
   const selected = type.startsWith("⭐ Full") ? "full" : "structure";
   const templatePath = path.join(dirname, "PigletJS", "templates", selected);
 
@@ -136,6 +168,12 @@ async function maybeUseTemplate(dirname) {
   }
 }
 
+/**
+ * Optionally copies a browser extension template if user confirms.
+ *
+ * @param {string} dirname - The base project directory.
+ * @returns {Promise<void>}
+ */
 async function maybeCopyExtension(dirname) {
   console.log("");
   const includeExtension = await askYesNo(
@@ -157,6 +195,11 @@ async function maybeCopyExtension(dirname) {
   }
 }
 
+/**
+ * Runs a script to add the dev host to the system and starts the application.
+ *
+ * @param {string} dirname - The working directory in which to run the script.
+ */
 function runAddHostAndStartApp(dirname) {
   console.log("");
   console.msg("hosts.adding");
@@ -177,6 +220,16 @@ function runAddHostAndStartApp(dirname) {
   });
 }
 
+/**
+ * Starts the Piglet app setup process, optionally clearing templates,
+ * applying a template, copying extension files, and setting up host entries.
+ *
+ * @param {string} dirname - Project root directory.
+ * @param {boolean} create - Whether to create a new project structure.
+ * @param {boolean} host - Whether to only add a host entry.
+ * @param {boolean} clear - Whether to clear the existing template/extension folders.
+ * @returns {Promise<void>}
+ */
 async function start(dirname, create, host, clear) {
   if (clear) {
     await clearTemplates(dirname);

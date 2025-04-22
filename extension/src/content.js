@@ -1,3 +1,5 @@
+// noinspection JSUnresolvedReference
+
 const script = document.createElement("script");
 script.src = chrome.runtime.getURL("src/injected.js");
 script.onload = function () {
@@ -22,7 +24,7 @@ window.addEventListener(
   false,
 );
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg) => {
   if (msg.source !== "PIGLET_BACKGROUND") return;
 
   if (msg.type === "INITIAL_REQUEST") {

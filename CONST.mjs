@@ -9,6 +9,7 @@ const rootDir = rootDirArg
 
 const PORT = 2137;
 
+// noinspection HttpUrlsUsage
 export default {
   PORT,
   directories: {
@@ -17,7 +18,7 @@ export default {
     builtComponents: path.resolve(rootDir, "build", "components"),
     pages: path.resolve(rootDir, "src", "pages"),
     public: path.resolve(rootDir, "src", "public"),
-    pigletbrowserEnv: path.resolve(rootDir, "PigletJS", "browserEnv"),
+    pigletBrowserEnv: path.resolve(rootDir, "PigletJS", "browserEnv"),
   },
   mimeTypes: {
     ".html": "text/html",
@@ -138,7 +139,7 @@ export default {
         `⚠️ File ${file} already exists — skipping.`,
       copiedFile: (file) => `✅ Copied ${file}`,
       promptExtras:
-        "Do you want to copy additional files? (README, jsconfig, idea inspection profile, .gitignore) (y/n): ",
+        "Do you want to copy additional files? (README, jsconfig, IDE config, .gitignore) (y/n): ",
       copiedProfile: (file) => `✅ Copied ${file}`,
       profileExists: (file) => `⚠️ File ${file} already exists — skipping.`,
       runningStart: "\nRunning start.mjs...\n",
