@@ -1,6 +1,6 @@
-import { generateAppHtml } from "@Piglet/libs/pageLoader.mjs";
-import { routes } from "@Piglet/libs/routes.mjs";
-import notFound from "@Piglet/libs/notfound.mjs";
+import { generateAppHtml } from "@Piglet/parser/page.mjs";
+import { routes } from "@Piglet/libs/routes";
+import notFound from "@Piglet/libs/notfound";
 
 export default async (req, res) => {
   const componentPath = routes[req.url];

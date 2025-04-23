@@ -1,10 +1,10 @@
 import fs from "fs";
-import { resolvePath } from "@Piglet/utils/paths.mjs";
-import { processAllComponents } from "@Piglet/libs/componentBuilder.mjs";
-import { createSubprocess, resetSubprocess } from "@Piglet/watcher/methods.mjs";
-import "@Piglet/utils/console.mjs";
-import { subprocessRef } from "@Piglet/watcher/subprocessRef.mjs";
-import { mergeWebTypes } from "@Piglet/web-types.mjs";
+import { resolvePath } from "@Piglet/utils/paths";
+import { processAllComponents } from "@Piglet/parser/component";
+import { createSubprocess, resetSubprocess } from "@Piglet/watcher/methods";
+import "@Piglet/utils/console";
+import { subprocessRef } from "@Piglet/watcher/subprocessRef";
+import { mergeWebTypes } from "@Piglet/builder/webTypes";
 
 /**
  * Resets the server subprocess based on the event type and filename.

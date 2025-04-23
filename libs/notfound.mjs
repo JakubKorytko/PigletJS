@@ -1,5 +1,5 @@
-import { generateAppHtml } from "@Piglet/libs/pageLoader.mjs";
-import { resolvePath } from "@Piglet/utils/paths.mjs";
+import { generateAppHtml } from "@Piglet/parser/page";
+import { resolvePath } from "@Piglet/utils/paths";
 import fs from "fs";
 
 /**

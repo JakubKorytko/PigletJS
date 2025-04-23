@@ -1,9 +1,9 @@
-import CONST from "@Piglet/CONST.mjs";
+import CONST from "@Piglet/misc/CONST";
 import fs from "fs";
-import { processAllComponents } from "@Piglet/libs/componentBuilder.mjs";
-import { watchDirectory } from "@Piglet/watcher/methods.mjs";
-import { routes } from "@Piglet/libs/routes.mjs";
-import { mergeWebTypes } from "@Piglet/web-types.mjs";
+import { processAllComponents } from "@Piglet/parser/component";
+import { watchDirectory } from "@Piglet/watcher/methods";
+import { routes } from "@Piglet/libs/routes";
+import { mergeWebTypes } from "@Piglet/builder/webTypes";
 
 /**
  * Symbolic representation of route names defined in the application.
@@ -23,22 +23,20 @@ const routeNames = CONST.routes.reduce((acc, route) => {
  * @returns {symbol} One of the symbols from `routeNames` representing the route type.
  */
 const getRouteFromRequest = (req) => {
-  const urlStartWithApi = req.url.startsWith(CONST.customRouteAliases.api);
-  const urlStartWithComponent = req.url.startsWith(
-    CONST.customRouteAliases.component,
-  );
-  const urlStartWithModule = req.url.startsWith(
-    CONST.customRouteAliases.module,
-  );
+  const path = req.url;
 
-  const urlStartWithPiglet = req.url.startsWith(
-    CONST.customRouteAliases.piglet,
-  );
-  if (urlStartWithApi) return routeNames.api;
-  if (urlStartWithModule) return routeNames.module;
-  if (urlStartWithComponent) return routeNames.component;
-  if (urlStartWithPiglet) return routeNames.piglet;
-  if (fs.existsSync(routes[req.url])) return routeNames.page;
+  const startsWithExact = (prefix) =>
+    path === prefix || path.startsWith(prefix + "/");
+
+  if (startsWithExact(CONST.customRouteAliases.api)) return routeNames.api;
+  if (startsWithExact(CONST.customRouteAliases.module))
+    return routeNames.module;
+  if (startsWithExact(CONST.customRouteAliases.component))
+    return routeNames.component;
+  if (startsWithExact(CONST.customRouteAliases.piglet))
+    return routeNames.piglet;
+
+  if (fs.existsSync(routes[path])) return routeNames.page;
   return routeNames.file;
 };
 

@@ -1,7 +1,7 @@
-import CONST from "@Piglet/CONST.mjs";
+import CONST from "@Piglet/misc/CONST";
 import fs from "fs";
-import { resolvePath } from "@Piglet/utils/paths.mjs";
-import notFound from "@Piglet/libs/notfound.mjs";
+import { resolvePath } from "@Piglet/utils/paths";
+import notFound from "@Piglet/libs/notfound";
 
 export default (req, res) => {
   const componentName = req.url.replace(CONST.customRouteAliases.component, "");

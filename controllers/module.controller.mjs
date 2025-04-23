@@ -1,8 +1,8 @@
-import { resolvePath } from "@Piglet/utils/paths.mjs";
+import { resolvePath } from "@Piglet/utils/paths";
 import path from "path";
-import CONST from "@Piglet/CONST.mjs";
+import CONST from "@Piglet/misc/CONST";
 import fs from "fs";
-import notFound from "@Piglet/libs/notfound.mjs";
+import notFound from "@Piglet/libs/notfound";
 
 export default (req, res) => {
   const pathWithoutModule = req.url.replace("/module/", "");

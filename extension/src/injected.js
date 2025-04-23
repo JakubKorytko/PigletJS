@@ -136,3 +136,11 @@ window.addEventListener("message", (event) => {
     updateState(key, stateName, value);
   }
 });
+
+if (window.Piglet) {
+  window.Piglet.extension = {
+    sendInitialData,
+    sendTreeUpdate,
+    sendStateUpdate,
+  };
+}
