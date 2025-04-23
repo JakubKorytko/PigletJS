@@ -1,4 +1,4 @@
-import CONST from "../CONST.mjs";
+import CONST from "../misc/CONST.mjs";
 import fs from "fs/promises";
 import path from "path";
 
@@ -35,6 +35,7 @@ console.msg = function (path, ...args) {
     console.log(current, ...args);
   } else if (typeof current === "function") {
     try {
+      // noinspection JSValidateTypes
       const result = current(...args);
       console.log(result);
     } catch (err) {
@@ -82,7 +83,7 @@ console.choice = function (path, ...args) {
  */
 console.printPigAscii = async () => {
   try {
-    const filePath = path.resolve(import.meta.dirname, "../pig_ascii.txt");
+    const filePath = path.resolve(import.meta.dirname, "../misc/pig_ascii.txt");
     const data = await fs.readFile(filePath, "utf8");
 
     const lines = data.split("\n");

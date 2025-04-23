@@ -69,26 +69,6 @@
         {
           "name": "content",
           "description": "Wrapper component used to structure page content. Typically used inside route components to group page layout and elements."
-        },
-        {
-          "name": "HomePage",
-          "description": "Home page"
-        },
-        {
-          "name": "SecondPage",
-          "description": "Second Page"
-        },
-        {
-          "name": "NotFound",
-          "description": "Not found page"
-        },
-        {
-          "name": "ClickCounter",
-          "description": "Click counter"
-        },
-        {
-          "name": "NestedComponent",
-          "description": "Nested Component"
         }
       ]
     }

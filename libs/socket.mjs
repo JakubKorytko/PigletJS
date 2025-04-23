@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { clientsRef } from "@Piglet/libs/clientsRef.mjs";
+import { clientsRef } from "@Piglet/libs/clientsRef";
 
 /**
  * Handles WebSocket handshake and manages socket connections.

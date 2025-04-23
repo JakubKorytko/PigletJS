@@ -1,4 +1,5 @@
-<img src="./templates/full/src/public/logo.png" alt="PigletJS" width="100"/>
+<!--suppress CheckImageSize -->
+<img src="./templates/exampleApp/src/public/logo.png" alt="PigletJS" width="100"/>
 
 # PigletJS
 
@@ -23,7 +24,7 @@ Once Node.js is installed, you can start using PigletJS directly.
 
 ```bash
 git clone https://github.com/JakubKorytko/PigletJS
-node PigletJS/build.mjs
+node PigletJS/setup.mjs
 ```
 
 And that's it!
@@ -44,4 +45,4 @@ node start.mjs
 
 ## License
 
-PigletJS is open-source software licensed under the MIT License. See the [LICENSE](./LICENSE) file for more details.
+PigletJS is open-source software licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

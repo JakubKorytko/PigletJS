@@ -1,5 +1,5 @@
 // noinspection JSFileReferences
-import createApp from "./PigletJS/libs/create.mjs";
+import createApp from "./PigletJS/builder/index.mjs";
 
 const args = process.argv.slice(2);
 
