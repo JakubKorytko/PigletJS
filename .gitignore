@@ -1,3 +1,4 @@
 .idea/*
 !.idea/inspectionProfiles
+!.idea/webResources.xml
 build/
