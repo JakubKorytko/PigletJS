@@ -1,5 +1,6 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import { toPascalCase } from "@Piglet/browser/helpers";
+import { sendToExtension } from "@Piglet/browser/extension";
 
 class AppRoot extends ReactiveComponent {
   constructor() {
@@ -86,7 +87,7 @@ class AppRoot extends ReactiveComponent {
         this.shadowRoot.appendChild(wrapper);
       }
 
-      window.Piglet?.extension?.sendInitialData();
+      sendToExtension("initial");
 
       Piglet.log(`Route '${route}' loaded successfully.`, "info");
     } catch (err) {

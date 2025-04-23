@@ -1,3 +1,5 @@
+import { sendToExtension } from "@Piglet/browser/extension";
+
 /**
  * Class representing a state with observer pattern.
  */
@@ -91,7 +93,7 @@ const useState = (componentName, path, initialValue) => {
      * @param {*} newValue - The new state value to set.
      */
     set value(newValue) {
-      window.Piglet?.extension?.sendStateUpdate();
+      sendToExtension("state");
       window.Piglet.state[componentName][key].setState(newValue);
     },
   };
