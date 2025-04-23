@@ -1,5 +1,6 @@
 import { useState } from "@Piglet/browser/state";
 import Piglet from "@Piglet/browser/config";
+import { sendToExtension } from "@Piglet/browser/extension";
 
 /**
  * Assigns a unique component ID to a custom element if it doesn't already have one.
@@ -113,9 +114,7 @@ function injectTreeTrackingToComponentClass(targetClass) {
         Piglet.tree = this.__tree;
       }
       Piglet.log(`[${this.constructor.name}] tracking tree`);
-      if (window.Piglet?.extension?.sendTreeUpdate) {
-        window.Piglet.extension.sendTreeUpdate();
-      }
+      sendToExtension("tree");
     };
 
     this.__trackCustomTree__();
@@ -162,7 +161,7 @@ function injectTreeTrackingToComponentClass(targetClass) {
   targetClass.prototype.disconnectedCallback = function () {
     if (this.__customTreeObserver__) {
       this.__customTreeObserver__.disconnect();
-      window.Piglet?.extension?.sendTreeUpdate();
+      sendToExtension("tree");
     }
 
     if (typeof originalDisconnected === "function") {
