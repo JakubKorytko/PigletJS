@@ -1,13 +1,23 @@
 import fs from "fs";
-import { resolvePath } from "@Piglet/utils/paths.mjs";
-import { processAllComponents } from "@Piglet/libs/componentBuilder.mjs";
-import { createSubprocess, resetSubprocess } from "@Piglet/watcher/methods.mjs";
-import "@Piglet/utils/console.mjs";
-import { subprocessRef } from "@Piglet/watcher/subprocessRef.mjs";
+import { resolvePath } from "@Piglet/utils/paths";
+import { processAllComponents } from "@Piglet/parser/component";
+import { createSubprocess, resetSubprocess } from "@Piglet/watcher/methods";
+import "@Piglet/utils/console";
+import { subprocessRef } from "@Piglet/watcher/subprocessRef";
+import { mergeWebTypes } from "@Piglet/builder/webTypes";
 
+/**
+ * Resets the server subprocess based on the event type and filename.
+ *
+ * @param {string} eventType - The type of the event that triggered the reset.
+ * @param {string} filename - The filename that caused the reset.
+ */
 const resetServer = (eventType, filename) =>
   resetSubprocess(eventType, filename, false);
 
+/**
+ * Resets the server subprocess on a button click (manual reset).
+ */
 const resetServerOnButtonClick = () =>
   resetSubprocess(undefined, undefined, true);
 
@@ -32,15 +42,26 @@ process.stdin.setEncoding("utf-8");
 process.stdin.setRawMode(true);
 process.stdin.resume();
 
+/**
+ * Creates a subprocess instance for handling background tasks.
+ * @type {import('@Piglet/watcher/subprocessRef.mjs').Subprocess}
+ */
 subprocessRef.instance = createSubprocess();
 
+/**
+ * Handles stdin input events for specific key presses:
+ * - "r" triggers component regeneration.
+ * - "s" restarts the server.
+ * - "^C" shuts down the server.
+ */
 process.stdin.on("data", async (key) => {
   "use strict";
 
   if (key === "r") {
     console.msg("components.reloading");
     try {
-      await processAllComponents();
+      const descriptions = await processAllComponents();
+      await mergeWebTypes(descriptions);
       console.msg("components.regenerated");
       subprocessRef.instance.send({ type: "reload" });
     } catch (err) {

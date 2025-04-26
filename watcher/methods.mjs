@@ -1,16 +1,16 @@
 import fs from "fs";
 import { fork } from "child_process";
-import { getRootDirFromArgv, resolvePath } from "@Piglet/utils/paths.mjs";
-import { buildComponent } from "@Piglet/libs/componentBuilder.mjs";
-import { subprocessRef } from "@Piglet/watcher/subprocessRef.mjs";
-import { reloadClients } from "@Piglet/libs/socket.mjs";
+import { getRootDirFromArgv, resolvePath } from "@Piglet/utils/paths";
+import { buildComponent } from "@Piglet/parser/component";
+import { subprocessRef } from "@Piglet/watcher/subprocessRef";
+import { reloadClients } from "@Piglet/libs/socket";
 import path from "path";
 
 /**
  * Creates a subprocess for running the server.
  *
  * @param {Array<string>} [args=[]] - Optional arguments to pass to the server subprocess.
- * @returns {ChildProcess} - The forked subprocess.
+ * @returns {typeof ChildProcess} - The forked subprocess.
  */
 const createSubprocess = (args = []) => {
   try {

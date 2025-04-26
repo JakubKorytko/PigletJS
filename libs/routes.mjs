@@ -32,7 +32,6 @@ function findComponentFiles(dir, componentFiles = []) {
  *
  * @param {string} html - HTML content to parse.
  * @param {string} pagesDir - The base directory where component files are located.
- * @param {Object} routes - Object to store the route-to-component mapping.
  */
 export function parseRoutes(html, pagesDir) {
   const routeRegex = /<route\s+value="([^"]+)">[^<]*<(\w+) \/>[^<]*<\/route>/g;

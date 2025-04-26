@@ -1,0 +1,33 @@
+<content>
+  <div class="container">
+    <p>
+      I am nested page, edit me in the
+      <code>pages/nested/SecondPage.pig.html</code>!
+    </p>
+    <NestedComponent />
+    <button id="navigate">Go back</button>
+  </div>
+</content>
+
+<script>
+  element("#navigate").on("click", function () {
+    navigate("/");
+  });
+</script>
+
+<style>
+  @import "/public/globals.css";
+  @import "/public/page.css";
+
+  .container {
+    height: unset;
+    justify-content: unset;
+  }
+</style>
+
+<script content="description">
+  export default {
+    name: "SecondPage",
+    description: "Second Page",
+  };
+</script>

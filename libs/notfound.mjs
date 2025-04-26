@@ -1,7 +1,16 @@
-import { generateAppHtml } from "@Piglet/libs/pageLoader.mjs";
-import { resolvePath } from "@Piglet/utils/paths.mjs";
+import { generateAppHtml } from "@Piglet/parser/page";
+import { resolvePath } from "@Piglet/utils/paths";
 import fs from "fs";
 
+/**
+ * Handles 404 Not Found responses.
+ *
+ * If a custom `NotFound.pig.html` page exists, it will be rendered and served.
+ * Otherwise, a plain text 404 message is sent.
+ *
+ * @param {import("http").ServerResponse} res - The HTTP response object.
+ * @returns {Promise<void>}
+ */
 const notFound = async (res) => {
   const notFoundPath = resolvePath("@/src/pages/NotFound.pig.html");
 

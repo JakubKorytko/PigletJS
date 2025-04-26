@@ -2,40 +2,41 @@ body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f4f7fc;
-  color: #333;
+  background-color: #fff0f6;
+  color: #3a003a;
   min-width: 800px;
 }
 
 .tabs {
   display: flex;
-  background-color: #fff;
-  border-bottom: 2px solid #ddd;
+  background-color: #ffe4ec;
+  border-bottom: 2px solid #f5b5cd;
 }
 
 .tab {
   padding: 14px 24px;
   cursor: pointer;
-  background-color: #f4f7fc;
+  background-color: #fff0f6;
   font-weight: 600;
   font-size: 16px;
   transition: background-color 0.3s ease;
   flex: 1;
   text-align: center;
   border: none;
+  color: #a3005d;
 }
 
 .tab.active {
-  background: #0066cc;
+  background: #ff99c8;
   color: white;
-  border-bottom: 3px solid #004bb5;
+  border-bottom: 3px solid #d10068;
 }
 
 .panel {
   padding: 20px;
   display: none;
   background: white;
-  border: 1px solid #ddd;
+  border: 1px solid #f5b5cd;
   border-top: none;
 }
 
@@ -47,9 +48,9 @@ details,
 ._details {
   margin-bottom: 10px;
   padding-left: 15px;
-  background: #f9f9f9;
-  border-left: 2px solid #0066cc;
-  border-radius: 4px;
+  background: #ffeef6;
+  border-left: 3px solid #ff99c8;
+  border-radius: 6px;
 }
 
 summary,
@@ -59,7 +60,7 @@ summary,
   font-size: 14px;
   padding: 8px 12px;
   border-radius: 4px;
-  background-color: #f4f7fc;
+  background-color: #fff0f6;
   transition: background-color 0.3s ease;
 }
 
@@ -68,12 +69,12 @@ summary,
 }
 
 summary:hover {
-  background-color: #e6f0ff;
+  background-color: #ffe4ec;
 }
 
 .key {
   font-weight: 600;
-  color: #0066cc;
+  color: #d10068;
 }
 
 ul {
@@ -93,12 +94,12 @@ li {
   justify-content: center;
   padding: 40px;
   font-size: 16px;
-  color: #888;
+  color: #cc6699;
 }
 
 .spinner {
-  border: 4px solid #eee;
-  border-top: 4px solid #0066cc;
+  border: 4px solid #fcd6e8;
+  border-top: 4px solid #ff66a3;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -114,10 +115,18 @@ li {
 
 .warning {
   padding: 20px;
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
-  border-radius: 4px;
+  background: #ffe0eb;
+  color: #8a004f;
+  border: 1px solid #f7aac6;
+  border-radius: 6px;
   margin: 20px;
   font-size: 16px;
+}
+
+input {
+  border: 0;
+  border-bottom: 1px black dashed;
+  background: none;
+  outline: none;
+  margin-left: 0.5rem;
 }

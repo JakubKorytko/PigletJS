@@ -1,4 +1,4 @@
-import CONST from "@Piglet/CONST.mjs";
+import CONST from "@Piglet/misc/CONST";
 import path from "path";
 
 /**
