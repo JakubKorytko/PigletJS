@@ -5,12 +5,15 @@ import { sendToExtension } from "@Piglet/browser/extension";
  */
 class State {
   /**
-   * Creates an instance of the State class.
+   * Creates a new State instance.
+   *
    * @param {*=} initialValue - The initial value for the state.
+   * @param {boolean=} isCreatedByListener - Indicates if the state was created by a listener.
    */
-  constructor(initialValue) {
+  constructor(initialValue, isCreatedByListener) {
     this._state = initialValue;
     this._observers = [];
+    this.__isCreatedByListener = isCreatedByListener;
   }
 
   /**
@@ -61,14 +64,20 @@ class State {
 }
 
 /**
- * A hook-like function for managing component state.
+ * A hook-like function for managing component-local state.
  *
  * @param {string} componentName - The name of the component managing the state.
- * @param {string|Array} path - The path to the state within the component.
+ * @param {string | Array<string>} path - The key (or nested path) to the state within the component.
  * @param {*=} initialValue - The initial state value.
- * @returns {Object} An object with `value` getter and setter for managing state.
+ * @param {boolean=} [isCreatedByListener=false] - Whether the state was created by a listener.
+ * @returns {{ value: *, set value(newValue: *): void }} An object with `value` getter and setter for managing the state.
  */
-const useState = (componentName, path, initialValue) => {
+const useState = (
+  componentName,
+  path,
+  initialValue,
+  isCreatedByListener = false,
+) => {
   if (!window.Piglet.state[componentName]) {
     window.Piglet.state[componentName] = {};
   }
@@ -76,7 +85,16 @@ const useState = (componentName, path, initialValue) => {
   const key = Array.isArray(path) ? path.join(".") : path;
 
   if (!window.Piglet.state[componentName][key]) {
-    window.Piglet.state[componentName][key] = new State(initialValue);
+    window.Piglet.state[componentName][key] = new State(
+      initialValue,
+      isCreatedByListener,
+    );
+  } else if (
+    !isCreatedByListener &&
+    window.Piglet.state[componentName][key].__isCreatedByListener
+  ) {
+    window.Piglet.state[componentName][key].setState(initialValue);
+    window.Piglet.state[componentName][key].__isCreatedByListener = false;
   }
 
   return {
@@ -93,8 +111,8 @@ const useState = (componentName, path, initialValue) => {
      * @param {*} newValue - The new state value to set.
      */
     set value(newValue) {
-      sendToExtension("state");
       window.Piglet.state[componentName][key].setState(newValue);
+      sendToExtension("state");
     },
   };
 };

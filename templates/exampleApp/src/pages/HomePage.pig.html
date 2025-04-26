@@ -34,10 +34,8 @@
     console.log("I was called in my child!", clickCount.value);
   });
 
-  onConnect((component) => {
-    console.log("HomePage data:", component);
-    clickCounter.pass("clickcount", clickCount.value);
-  });
+  clickCounter.pass("clickcount", clickCount.value);
+  console.log("HomePage data:", component);
 
   element("#showTreeBtn").on("click", consoleTree);
 

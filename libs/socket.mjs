@@ -2,6 +2,35 @@ import crypto from "crypto";
 import { clientsRef } from "@Piglet/libs/clientsRef";
 
 /**
+ * Creates a WebSocket message frame from a given payload.
+ *
+ * The payload is JSON-encoded and framed according to the WebSocket protocol
+ * with a FIN bit set (0x81) and appropriate payload length handling.
+ *
+ * Supports payloads up to 65535 bytes.
+ *
+ * @param {Object} payload - The data to send over WebSocket, which will be JSON-stringified.
+ * @returns {Buffer} A Buffer containing the properly framed WebSocket message.
+ * @throws {Error} If the payload is too large (greater than 65535 bytes).
+ */
+function createWsMessage(payload) {
+  const json = JSON.stringify(payload);
+  const payloadBuf = Buffer.from(json);
+  const length = payloadBuf.length;
+
+  if (length < 126) {
+    return Buffer.concat([Buffer.from([0x81, length]), payloadBuf]);
+  } else if (length < 65536) {
+    return Buffer.concat([
+      Buffer.from([0x81, 126, length >> 8, length & 0xff]),
+      payloadBuf,
+    ]);
+  } else {
+    throw new Error("Payload too long");
+  }
+}
+
+/**
  * Handles WebSocket handshake and manages socket connections.
  *
  * This function processes the WebSocket handshake, creates an accept key,
@@ -40,8 +69,8 @@ const socketHandler = (req, socket) => {
  * This function creates a WebSocket message and sends it to all clients
  * in `clientsRef.instance`, requesting them to reload.
  */
-const reloadClients = () => {
-  const message = Buffer.from([0x81, 6, ...Buffer.from("reload")]);
+const reloadClients = (data) => {
+  const message = createWsMessage({ type: "reload", data });
   clientsRef.instance.forEach((sock) => {
     sock.write(message, (err) => {
       if (err) {

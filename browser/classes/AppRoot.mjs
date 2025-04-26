@@ -1,6 +1,7 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { toPascalCase } from "@Piglet/browser/helpers";
+import { fadeIn, fadeOut, toPascalCase } from "@Piglet/browser/helpers";
 import { sendToExtension } from "@Piglet/browser/extension";
+import { loadComponent } from "@Piglet/browser/loadComponent";
 
 class AppRoot extends ReactiveComponent {
   constructor() {
@@ -31,8 +32,9 @@ class AppRoot extends ReactiveComponent {
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === "route" && oldValue !== newValue) {
-      // noinspection JSIgnoredPromiseFromCall
-      this.loadRoute(newValue);
+      fadeOut(this.shadowRoot.host, 100).then(() =>
+        this.loadRoute(newValue).then(this._mount.bind(this)),
+      );
     }
   }
 
@@ -41,13 +43,15 @@ class AppRoot extends ReactiveComponent {
    * @param {string} route - The route to load.
    */
   async loadRoute(route) {
+    this._unmount();
+    window.Piglet.reset();
     this._route = route;
 
     try {
       const routePath = routes[route];
       const module = await import(`/component/${routePath}`);
 
-      const response = await fetch(`/component/${routePath}`);
+      const response = await fetch(`/component/html/${routePath}`);
       const pageSource = await response.text();
 
       const tagRegex = /<([a-z][a-z0-9-]*)\b[^>]*\/?>/g;
@@ -80,6 +84,9 @@ class AppRoot extends ReactiveComponent {
         module.default instanceof HTMLElement ||
         typeof module.default === "function"
       ) {
+        await loadComponent(module.default);
+        // noinspection ES6MissingAwait
+        fadeIn(this.shadowRoot.host, 100);
         this.shadowRoot.appendChild(new module.default());
       } else {
         const wrapper = document.createElement("div");

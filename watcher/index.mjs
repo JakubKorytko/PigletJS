@@ -34,7 +34,7 @@ for (const directory of directoriesToWatch) {
   if (fs.existsSync(fullPath)) {
     fs.watch(fullPath, { recursive: true }, resetServer);
   } else {
-    console.log(`Directory ${fullPath} does not exist`);
+    console.msg("server.directoryDoNotExist", fullPath);
   }
 }
 

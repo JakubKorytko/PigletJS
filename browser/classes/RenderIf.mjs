@@ -19,12 +19,12 @@ class RenderIf extends ReactiveComponent {
     this._condition = false;
     this._negated = false;
     this._parts = [];
-  }
 
-  connectedCallback() {
-    super.connectedCallback();
-    this._updateFromAttribute();
-    this.updateVisibility();
+    this.onMount(() => {
+      super.connectedCallback();
+      this._updateFromAttribute();
+      this.updateVisibility();
+    });
   }
 
   /**

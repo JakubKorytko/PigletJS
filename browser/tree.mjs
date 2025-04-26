@@ -58,6 +58,8 @@ function buildCustomElementTree(root = document.body) {
           state[property] = useState(
             node._caller ?? node.__componentKey,
             property,
+            undefined,
+            !!node._caller,
           )?.value;
         }
       }

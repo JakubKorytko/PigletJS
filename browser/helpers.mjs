@@ -33,34 +33,6 @@ function toPascalCase(str) {
 }
 
 /**
- * Returns a method that retrieves metadata from a custom component.
- * @param {ReactiveComponent} hostElement - The custom element instance.
- * @returns {(callback: (data: object) => void) => Promise<void>} - Async function passing component data to a callback.
- */
-function getComponentDataMethod(hostElement) {
-  return async (callback) => {
-    new Promise((resolve) => {
-      queueMicrotask(() => {
-        const component = {
-          name: hostElement.constructor.name,
-          id: hostElement.__componentId,
-          tree: hostElement.__tree,
-          shadowRoot: hostElement.shadowRoot,
-          key: hostElement.__componentKey,
-          state: hostElement.state.bind(hostElement),
-          element: hostElement,
-          parent: hostElement.getRootNode().host,
-          attributes: hostElement._attrs,
-        };
-        resolve(component);
-      });
-    }).then((component) => {
-      callback(component);
-    });
-  };
-}
-
-/**
  * Makes a request to a given API path and parses the response based on expected type.
  * @param {string} path - The API path (without leading `/api/`).
  * @param {'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData'} [expect='json'] - The expected response type.
@@ -138,4 +110,78 @@ const navigate = (route) => {
   root.element.route = route;
 };
 
-export { toPascalCase, getDeepValue, getComponentDataMethod, api, navigate };
+/**
+ * Converts a PascalCase or camelCase string to kebab-case.
+ *
+ * @param {string} str - The string to convert.
+ * @returns {string}
+ */
+function toKebabCase(str) {
+  return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+/**
+ * Fades out an element by gradually reducing its opacity to 0.
+ *
+ * @param {HTMLElement} element - The element to fade out.
+ * @param {number} [duration=400] - The duration of the fade out in milliseconds.
+ * @returns {Promise<void>} A promise that resolves when the fade out is complete.
+ */
+function fadeOut(element, duration = 400) {
+  return new Promise((resolve) => {
+    element.style.opacity = "1";
+    element.style.transition = `opacity ${duration}ms`;
+
+    void element.offsetWidth;
+
+    element.style.opacity = "0";
+
+    const handleTransitionEnd = (event) => {
+      if (event.propertyName === "opacity") {
+        element.removeEventListener("transitionend", handleTransitionEnd);
+        element.style.display = "none";
+        resolve();
+      }
+    };
+
+    element.addEventListener("transitionend", handleTransitionEnd);
+  });
+}
+
+/**
+ * Fades in an element by gradually increasing its opacity to 1.
+ *
+ * @param {HTMLElement} element - The element to fade in.
+ * @param {number} [duration=400] - The duration of the "fade in" in milliseconds.
+ * @returns {Promise<void>} A promise that resolves when the fade in is complete.
+ */
+function fadeIn(element, duration = 400) {
+  return new Promise((resolve) => {
+    element.style.opacity = "0";
+    element.style.display = "";
+
+    void element.offsetWidth;
+
+    element.style.transition = `opacity ${duration}ms`;
+    element.style.opacity = "1";
+
+    const handleTransitionEnd = (event) => {
+      if (event.propertyName === "opacity") {
+        element.removeEventListener("transitionend", handleTransitionEnd);
+        resolve();
+      }
+    };
+
+    element.addEventListener("transitionend", handleTransitionEnd);
+  });
+}
+
+export {
+  toPascalCase,
+  getDeepValue,
+  api,
+  navigate,
+  toKebabCase,
+  fadeOut,
+  fadeIn,
+};

@@ -28,6 +28,12 @@ class ReactiveComponent extends HTMLElement {
     /** @protected @type {Record<string, unknown>} */
     this._forwarded = {};
 
+    /** @protected */
+    this._isMounted = false;
+
+    /** @protected */
+    this._children = [];
+
     /**
      * Observes attribute changes and calls `onAttributeChange` and `reactive` if defined in child.
      * @private
@@ -81,13 +87,75 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * Lifecycle method called when the component is added to the DOM.
+   * Marks the component as mounted and triggers onParentMount on all children.
+   * @protected
+   */
+  _mount() {
+    this._isMounted = true;
+    for (const child of this._children) {
+      child.onParentMount();
+    }
+  }
+
+  /**
+   * Marks the component as unmounted, cleans up observers and child references.
+   * @protected
+   */
+  _unmount() {
+    this.mountCallback = undefined;
+    this._isMounted = false;
+    this._children = [];
+    for (const remove of this._observers.values()) {
+      remove?.(this);
+    }
+    this._observers.clear();
+  }
+
+  /**
+   * Lifecycle method called automatically when the component is connected to the DOM.
+   * Sets up references and registers itself as a child of its parent component if applicable.
    */
   connectedCallback() {
     Piglet.log(`${this._componentName} connected`);
     /** @protected */
     this.__root = this.shadowRoot ?? this.getRootNode();
     if (this._caller) this._caller = this.__root.host.__componentKey;
+    const parent = this.getRootNode().host;
+    if (parent && !parent._children.includes(this)) {
+      parent._children.push(this);
+    }
+  }
+
+  /**
+   * Called by the parent component when it mounts, allowing this component to initialize.
+   */
+  onParentMount() {
+    if (typeof this.mountCallback === "function") {
+      this.mountCallback();
+    }
+
+    if (!this._isMounted) {
+      if (this.runScript) {
+        this.runScript(this.shadowRoot);
+      }
+      this._mount();
+    }
+  }
+
+  /**
+   * Registers a callback to be called when this component is mounted.
+   * If the parent is already mounted, the callback is called immediately.
+   *
+   * @param {Function} callback - The function to run when the component is mounted.
+   */
+  onMount(callback) {
+    const parent = this.getRootNode().host;
+    if (parent && parent._isMounted) {
+      callback();
+      this._mount();
+    } else {
+      this.mountCallback = callback;
+    }
   }
 
   /**
@@ -125,6 +193,7 @@ class ReactiveComponent extends HTMLElement {
       this._caller ?? this.__componentKey,
       property,
       initialValue,
+      !!this._caller,
     );
     this.observeState(property);
     return state;
@@ -158,10 +227,7 @@ class ReactiveComponent extends HTMLElement {
    * Lifecycle method called when the component is removed from the DOM.
    */
   disconnectedCallback() {
-    for (const remove of this._observers.values()) {
-      remove?.(this);
-    }
-    this._observers.clear();
+    this._unmount();
   }
 }
 
