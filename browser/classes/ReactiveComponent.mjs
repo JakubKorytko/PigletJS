@@ -31,6 +31,10 @@ class ReactiveComponent extends HTMLElement {
     /** @protected */
     this._isMounted = false;
 
+    this._isHTMLInjected = false;
+
+    this._attributeQueue = [];
+
     /** @protected */
     this._children = [];
 
@@ -48,18 +52,11 @@ class ReactiveComponent extends HTMLElement {
           this._attrs[name] = newValue;
 
           if (typeof this.onAttributeChange === "function") {
-            this.onAttributeChange(newValue, name, oldValue);
-
-            // Call reactive() if it's implemented in the child component
-            if (typeof this.reactive === "function") {
-              this.reactive();
-            }
+            this._attributeQueue.push([newValue, name, oldValue]);
+            this._clearAttributesQueue();
           } else {
             if (name !== "style" && name !== "route") {
-              Piglet.log(
-                `[${this.__componentKey}] onAttributeChange not implemented for: ${name}`,
-                "warn",
-              );
+              this._attributeQueue.push([newValue, name, oldValue]);
             }
           }
         }
@@ -86,14 +83,42 @@ class ReactiveComponent extends HTMLElement {
     this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
   }
 
+  _clearAttributesQueue() {
+    if (typeof this.onAttributeChange === "function") {
+      while (this._attributeQueue.length !== 0) {
+        this.onAttributeChange(...this._attributeQueue.shift());
+
+        // Call reactive() if it's implemented in the child component
+        if (typeof this.reactive === "function") {
+          this.reactive();
+        }
+      }
+    }
+  }
+
   /**
-   * Marks the component as mounted and triggers onParentMount on all children.
+   * Marks the component as mounted and triggers mount on all children.
    * @protected
    */
   _mount() {
-    this._isMounted = true;
+    const parent = this.getRootNode().host;
+    if (
+      this._isHTMLInjected &&
+      typeof this.mountCallback === "function" &&
+      parent._isMounted
+    ) {
+      this._isMounted = true;
+      this.mountCallback();
+      this._updateChildren();
+    } else if (this.constructor.name === "AppRoot") {
+      this._isMounted = true;
+      this._updateChildren();
+    }
+  }
+
+  _updateChildren() {
     for (const child of this._children) {
-      child.onParentMount();
+      child._mount();
     }
   }
 
@@ -124,21 +149,8 @@ class ReactiveComponent extends HTMLElement {
     if (parent && !parent._children.includes(this)) {
       parent._children.push(this);
     }
-  }
-
-  /**
-   * Called by the parent component when it mounts, allowing this component to initialize.
-   */
-  onParentMount() {
-    if (typeof this.mountCallback === "function") {
-      this.mountCallback();
-    }
-
-    if (!this._isMounted) {
-      if (this.runScript) {
-        this.runScript(this.shadowRoot);
-      }
-      this._mount();
+    if (this.runScript) {
+      this.runScript(this.shadowRoot);
     }
   }
 
@@ -149,13 +161,8 @@ class ReactiveComponent extends HTMLElement {
    * @param {Function} callback - The function to run when the component is mounted.
    */
   onMount(callback) {
-    const parent = this.getRootNode().host;
-    if (parent && parent._isMounted) {
-      callback();
-      this._mount();
-    } else {
-      this.mountCallback = callback;
-    }
+    this.mountCallback = callback;
+    this._mount();
   }
 
   /**

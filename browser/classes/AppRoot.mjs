@@ -32,10 +32,22 @@ class AppRoot extends ReactiveComponent {
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === "route" && oldValue !== newValue) {
-      fadeOut(this.shadowRoot.host, 100).then(() =>
-        this.loadRoute(newValue).then(this._mount.bind(this)),
-      );
+      if (oldValue === null) {
+        this.loadRoute(newValue).then(this._mount.bind(this));
+      } else {
+        this.changeRoute(newValue);
+      }
     }
+  }
+
+  async changeRoute(newRoute) {
+    await fadeOut(this.shadowRoot.host, 100);
+    this._unmount.call(this);
+    this.shadowRoot.innerHTML = "";
+    window.Piglet.reset();
+    super.connectedCallback();
+    await this.loadRoute(newRoute);
+    this._mount.call(this);
   }
 
   /**
@@ -43,8 +55,6 @@ class AppRoot extends ReactiveComponent {
    * @param {string} route - The route to load.
    */
   async loadRoute(route) {
-    this._unmount();
-    window.Piglet.reset();
     this._route = route;
 
     try {
@@ -75,10 +85,6 @@ class AppRoot extends ReactiveComponent {
           }
         }),
       );
-
-      this.shadowRoot.innerHTML = "";
-
-      window.Piglet.reset();
 
       if (
         module.default instanceof HTMLElement ||

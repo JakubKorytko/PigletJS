@@ -2,6 +2,7 @@
 
 import ReactiveComponent from "/Piglet/classes/ReactiveComponent";
 import { loadComponent } from "/Piglet/loadComponent";
+import scriptRunner from "/Piglet/scriptRunner";
 
 class COMPONENT_CLASS_NAME extends ReactiveComponent {
   constructor() {
@@ -10,6 +11,8 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
     this.loadContent().then((content) => {
       const componentKey = `${this.constructor.name}${this.__componentId ?? window.Piglet.componentCounter + 1}`;
       shadow.innerHTML = content;
+      this._isHTMLInjected = true;
+      this._mount();
     });
   }
 
@@ -30,7 +33,11 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
   }
 
   runScript(shadowRoot) {
-    /* RUN SCRIPT HERE */
+    (function (shadowRoot, hostElement) {
+      import(`/component/script/COMPONENT_NAME`).then((module) =>
+        scriptRunner(hostElement, module),
+      );
+    })(shadowRoot, this);
   }
 }
 

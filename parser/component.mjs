@@ -156,28 +156,6 @@ const transformScript = (fullScript) => {
 };
 
 /**
- * Injects transformed component code into the runScript template.
- *
- * Reads a base `runScript.mjs` file, removes unnecessary comments,
- * and replaces a placeholder with the final component script path.
- *
- * @param {string} componentScript - The transformed component logic (after internal processing).
- * @param {string} componentName - The name of the component (used to generate script path).
- * @returns {Promise<string>} - The final script to be injected into the component runtime.
- */
-async function injectIntoRunScript(componentScript, componentName) {
-  const filePath = resolvePath("@Piglet/parser/runScript.mjs");
-  let fileContent = await fsp.readFile(filePath, "utf-8");
-
-  fileContent = fileContent.replace(/^\/\/ noinspection.*\n?/gm, "");
-
-  return fileContent.replace(
-    "COMPONENT_PATH",
-    `/component/script/${componentName}`,
-  );
-}
-
-/**
  * Combines external and internal scripts, transforms them,
  * extracts imports, generates the final component module file,
  * and prepares the script to be injected into the runtime.
@@ -185,10 +163,10 @@ async function injectIntoRunScript(componentScript, componentName) {
  * @param {string} scriptJS - The inline script extracted from the `.pig.html` file.
  * @param {string} externalJS - The external `.pig.mjs` script content, if available.
  * @param {string} componentName - The name of the component (used for file generation).
- * @returns {Promise<string>} - The final script string ready to be injected at runtime.
+ * @returns {Promise<void>} - The final script string ready to be injected at runtime.
  */
-const injectScriptToComponent = async (scriptJS, externalJS, componentName) => {
-  if (!scriptJS && !externalJS) return "";
+const generateComponentScript = async (scriptJS, externalJS, componentName) => {
+  if (!scriptJS && !externalJS) return;
 
   const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
   const transformedScript = transformScript(fullScript);
@@ -215,9 +193,7 @@ const injectScriptToComponent = async (scriptJS, externalJS, componentName) => {
     element
   }) => {\n${cleanedCode}\n}`);
 
-  await fs.promises.writeFile(outputPath, scriptForFile);
-
-  return await injectIntoRunScript(cleanedCode, componentName);
+  return fs.promises.writeFile(outputPath, scriptForFile);
 };
 
 /**
@@ -295,25 +271,19 @@ const injectInnerHTMLToComponent = (
  * @param {Object} options - Options for injecting into the component template.
  * @param {string} options.className - The class name of the component (PascalCase).
  * @param {string} options.componentName - The original component name (e.g., "App").
- * @param {string} [options.runScript=""] - The main logic to run when the component mounts.
  * @returns {Promise<string>} The fully populated component file content.
  */
-async function injectIntoComponentTemplate({
-  className,
-  componentName,
-  runScript = "",
-}) {
+async function injectIntoComponentTemplate({ className, componentName }) {
   const filePath = resolvePath("@Piglet/parser/base.mjs");
   let fileContent = await fsp.readFile(filePath, "utf-8");
 
-  fileContent = fileContent.replace(/^\/\/ noinspection.*\n?/gm, "");
-  fileContent = fileContent.replace(/COMPONENT_CLASS_NAME/g, className);
-  fileContent = fileContent.replace(/COMPONENT_NAME/g, componentName);
-  fileContent = fileContent.replace("/* RUN SCRIPT HERE */", runScript.trim());
-
-  fileContent += `\n loadComponent(${className})`;
-
-  return fileContent.trim();
+  return `${fileContent
+    .replace(/^\/\/ noinspection.*\n?/gm, "")
+    .replace(/COMPONENT_CLASS_NAME/g, className)
+    .replace(
+      /COMPONENT_NAME/g,
+      componentName,
+    )}\n loadComponent(${className})`.trim();
 }
 
 /**
@@ -341,11 +311,7 @@ const generateOutput = async (_, ...args) => {
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
-  const fullScript = await injectScriptToComponent(
-    scriptJS,
-    externalJS,
-    componentName,
-  );
+  await generateComponentScript(scriptJS, externalJS, componentName);
 
   const innerHTML = formatHTML(
     injectInnerHTMLToComponent(
@@ -367,7 +333,6 @@ const generateOutput = async (_, ...args) => {
     tagName,
     componentName,
     innerHTML: `\`${indent(escapeTemplateLiteral(innerHTML), 8)}\``,
-    runScript: fullScript,
   });
 };
 

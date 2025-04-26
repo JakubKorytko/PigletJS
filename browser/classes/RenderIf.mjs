@@ -25,6 +25,9 @@ class RenderIf extends ReactiveComponent {
       this._updateFromAttribute();
       this.updateVisibility();
     });
+
+    this._isHTMLInjected = true;
+    this._mount();
   }
 
   /**
