@@ -1,10 +1,9 @@
-// noinspection JSFileReferences
-import ReactiveComponent from "/Piglet/classes/ReactiveComponent";
-// noinspection JSFileReferences,ES6UnusedImports
-import { loadComponent } from "/Piglet/loadComponent";
-// noinspection JSFileReferences
-import scriptRunner from "/Piglet/scriptRunner";
+import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+// noinspection ES6UnusedImports
+import { loadComponent } from "@Piglet/browser/loadComponent";
+import scriptRunner from "@Piglet/browser/scriptRunner";
 
+// noinspection JSClosureCompilerSyntax
 /**
  * Represents a reactive web component that fetches and injects HTML content
  * and runs associated JavaScript. It extends the `ReactiveComponent` class.
@@ -25,10 +24,12 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
    */
   constructor() {
     super();
-    const shadow = this.attachShadow({ mode: "open" });
+    this.attachShadow({ mode: "open" });
+    // noinspection JSIgnoredPromiseFromCall
     this.loadContent();
   }
 
+  // noinspection JSUnusedGlobalSymbols
   /**
    * Reloads the component by resetting its internal state and re-fetching
    * the HTML content. It also re-runs the component's script.
@@ -57,6 +58,7 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
     try {
       const response = await fetch(url);
       if (!response.ok) {
+        // noinspection ExceptionCaughtLocallyJS
         throw new Error(`Failed to fetch HTML for ${componentName}`);
       }
 
@@ -84,4 +86,5 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
   }
 }
 
+// noinspection JSUnresolvedReference,JSUnusedGlobalSymbols
 export default COMPONENT_NAME;

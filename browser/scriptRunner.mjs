@@ -1,15 +1,18 @@
 /**
+ * @typedef {Object} ShadowDomElement
+ * @property {(event: string, callback: EventListener) => ReturnType<typeof queryElement>} on
+ * @property {(event: string, callback: EventListener) => ReturnType<typeof queryElement>} off
+ * @property {(attrName: string, value: any) => ReturnType<typeof queryElement>} pass
+ * @property {typeof ReactiveComponent|Element|null} ref
+ */
+
+/**
  * Queries a shadow DOM element inside a host element and provides helper methods
  * for event binding, attribute setting, and direct reference access.
  *
  * @param {typeof ReactiveComponent} hostElement - The host custom element containing the shadowRoot.
  * @param {string} selector - The CSS selector used to find the element inside shadowRoot.
- * @returns {{
- *   on: (event: string, callback: EventListener) => ReturnType<typeof queryElement>,
- *   off: (event: string, callback: EventListener) => ReturnType<typeof queryElement>,
- *   pass: (attrName: string, value: any) => ReturnType<typeof queryElement>,
- *   ref: typeof ReactiveComponent|null
- * }}
+ * @returns {ShadowDomElement}
  */
 const queryElement = (hostElement, selector) => {
   const el = hostElement.shadowRoot.querySelector(selector);
@@ -112,13 +115,13 @@ function getCallbackProxies() {
  * @returns {{
  *   component: {
  *     name: string,
- *     id: string,
+ *     id: number,
  *     tree: any,
  *     shadowRoot: ShadowRoot|null,
  *     key: string,
  *     state: Function,
  *     element: typeof ReactiveComponent,
- *     parent: typeof ReactiveComponent|null,
+ *     parent: typeof ReactiveComponent|null|Element,
  *     attributes: Object,
  *     forwarded: Object
  *   },

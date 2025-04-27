@@ -2,8 +2,39 @@ import { assignComponentIdToElement } from "@Piglet/browser/tree";
 import { useState, useObserver } from "@Piglet/browser/state";
 
 /**
+ * @typedef State
+ * @param {string} property
+ * @param {*=} initialValue
+ * @returns {{value: *}} The state value
+ */
+
+/**
+ * @typedef GetRootNode
+ * @param {GetRootNodeOptions=} options
+ * @returns Node
+ */
+
+/**
  * Base class for custom elements with reactive state and attribute tracking.
  * Child components can optionally implement `onStateChange`, `onAttributeChange`, and `reactive`.
+ * @property {string} _caller The host element associated with this component.
+ * @property {string} _componentName The name of the component.
+ * @property {Map} _observers A map of observers for the component's state.
+ * @property {Record<string, string>} _attrs A record of the component's attributes.
+ * @property {Object} __tree The tree structure of the component.
+ * @property {Record<string, unknown>} _forwarded The forwarded properties.
+ * @property {boolean} _isMounted Indicates if the component is mounted.
+ * @property {boolean} _isHTMLInjected Indicates if the component's HTML has been injected.
+ * @property {Array} _attributeQueue The queue of attribute changes.
+ * @property {Array} _children The children of the component.
+ * @property {number} __componentId The unique component ID.
+ * @property {string} __componentKey The unique component key.
+ * @property {ShadowRoot} shadowRoot
+ * @property {State} state
+ * @property {GetRootNode} getRootNode
+ * @property {Function} _clearAttributesQueue
+ * @property {Function} onMount
+ * @property {Function} reloadComponent
  */
 class ReactiveComponent extends HTMLElement {
   constructor() {
@@ -85,6 +116,13 @@ class ReactiveComponent extends HTMLElement {
     this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
   }
 
+  /**
+   * Clears the attribute change queue and triggers `onAttributeChange` for each queued change.
+   * If `onAttributeChange` is defined in the component, it will be called for each item in the queue.
+   * If `reactive()` is implemented, it will be called after processing each change.
+   *
+   * @private
+   */
   _clearAttributesQueue() {
     if (typeof this.onAttributeChange === "function") {
       while (this._attributeQueue.length !== 0) {
@@ -192,12 +230,6 @@ class ReactiveComponent extends HTMLElement {
     this._observers.set(property, () => removeObserver(callback));
   }
 
-  /**
-   * Initialize a state property with an optional initial value.
-   * @param {string} property
-   * @param {*=} initialValue
-   * @returns {*} The state value
-   */
   state(property, initialValue) {
     const state = useState(
       this._caller ?? this.__componentKey,

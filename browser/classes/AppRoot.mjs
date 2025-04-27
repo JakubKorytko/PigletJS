@@ -35,6 +35,7 @@ class AppRoot extends ReactiveComponent {
       if (oldValue === null) {
         this.loadRoute(newValue).then(this._mount.bind(this));
       } else {
+        // noinspection JSIgnoredPromiseFromCall
         this.changeRoute(newValue);
       }
     }

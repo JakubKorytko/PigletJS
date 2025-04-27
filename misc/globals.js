@@ -105,7 +105,7 @@ let init;
 
 /**
  * Registers a callback to be executed whenever there is an update to the component's state or attributes.
- * This function typically updates the DOM or performs some side-effect based on the current state or attributes.
+ * This function typically updates the DOM or performs some side effect based on the current state or attributes.
  *
  * @param {Function} callback - The callback function to be executed on each update.
  * The callback will be invoked with no arguments and should contain logic for handling state changes.

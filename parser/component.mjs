@@ -279,6 +279,7 @@ async function injectIntoComponentTemplate({ className, componentName }) {
 
   return `${fileContent
     .replace(/^\/\/ noinspection.*\n?/gm, "")
+    .replace(/["@']@Piglet\/browser\//g, '"/Piglet/')
     .replace(/COMPONENT_CLASS_NAME/g, className)
     .replace(
       /COMPONENT_NAME/g,

@@ -75,6 +75,7 @@ async function generateAppHtml(route, fullPath) {
       `<app$1>${pageContent}</app>`,
     );
 
+    // noinspection HtmlUnknownTarget
     appHtml = appHtml.replace(
       "</body>",
       `<script type="module" src="/Piglet"></script></body>`,

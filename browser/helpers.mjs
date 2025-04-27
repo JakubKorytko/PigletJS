@@ -123,7 +123,7 @@ function toKebabCase(str) {
 /**
  * Fades out an element by gradually reducing its opacity to 0.
  *
- * @param {typeof ReactiveComponent} element - The element to fade out.
+ * @param {typeof ReactiveComponent & HTMLElement} element - The element to fade out.
  * @param {number} [duration=400] - The duration of the fade out in milliseconds.
  * @returns {Promise<void>} A promise that resolves when the fade out is complete.
  */
@@ -151,7 +151,7 @@ function fadeOut(element, duration = 400) {
 /**
  * Fades in an element by gradually increasing its opacity to 1.
  *
- * @param {typeof ReactiveComponent} element - The element to fade in.
+ * @param {typeof ReactiveComponent & HTMLElement} element - The element to fade in.
  * @param {number} [duration=400] - The duration of the "fade in" in milliseconds.
  * @returns {Promise<void>} A promise that resolves when the fade in is complete.
  */
