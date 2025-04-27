@@ -64,13 +64,44 @@ const socketHandler = (req, socket) => {
 };
 
 /**
- * Sends a reload message to all connected clients.
+ * Sends a reload message to all connected WebSocket clients,
+ * optionally targeting a specific component or resource.
  *
- * This function creates a WebSocket message and sends it to all clients
- * in `clientsRef.instance`, requesting them to reload.
+ * @param {string} [data] - Optional identifier for the resource or component to reload.
+ * If omitted, clients will perform a full application reload.
+ * @returns {void}
  */
-const reloadClients = (data) => {
-  const message = createWsMessage({ type: "reload", data });
+const reloadClients = (data) =>
+  sendMessageToSocketClients(createWsMessage({ type: "reload", data }));
+
+/**
+ * Notifies all connected WebSocket clients that the server is restarting.
+ * Clients can use this information to attempt reconnection or show a message.
+ *
+ * @returns {void}
+ */
+const tellClientsAboutServerRestart = () => {
+  sendMessageToSocketClients(createWsMessage({ type: "serverRestart" }));
+};
+
+/**
+ * Forces all connected WebSocket clients to perform a full page reload.
+ *
+ * @returns {void}
+ */
+const fullReload = () => {
+  sendMessageToSocketClients(createWsMessage({ type: "fullReload" }));
+};
+
+/**
+ * Sends a raw WebSocket message to all currently connected clients.
+ *
+ * If a client connection fails during writing, the client socket will be destroyed.
+ *
+ * @param {string|Buffer} message - The message to send to each connected client.
+ * @returns {void}
+ */
+const sendMessageToSocketClients = (message) => {
   clientsRef.instance.forEach((sock) => {
     sock.write(message, (err) => {
       if (err) {
@@ -91,7 +122,15 @@ const runReloadClientOnWSMessageListener = () =>
   process.on("message", (msg) => {
     if (msg.type === "reload") {
       reloadClients();
+    } else if (msg.type === "serverRestart") {
+      tellClientsAboutServerRestart();
     }
   });
 
-export { socketHandler, runReloadClientOnWSMessageListener, reloadClients };
+export {
+  socketHandler,
+  runReloadClientOnWSMessageListener,
+  reloadClients,
+  tellClientsAboutServerRestart,
+  fullReload,
+};

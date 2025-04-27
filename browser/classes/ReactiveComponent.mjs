@@ -31,8 +31,10 @@ class ReactiveComponent extends HTMLElement {
     /** @protected */
     this._isMounted = false;
 
+    /** @protected */
     this._isHTMLInjected = false;
 
+    /** @protected */
     this._attributeQueue = [];
 
     /** @protected */
@@ -150,7 +152,8 @@ class ReactiveComponent extends HTMLElement {
       parent._children.push(this);
     }
     if (this.runScript) {
-      this.runScript(this.shadowRoot);
+      // noinspection JSIgnoredPromiseFromCall
+      this.runScript();
     }
   }
 

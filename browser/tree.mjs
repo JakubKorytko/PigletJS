@@ -8,7 +8,7 @@ import { sendToExtension } from "@Piglet/browser/extension";
  * @returns {number} The assigned component ID.
  */
 function assignComponentIdToElement(el) {
-  if (!el.__componentId) {
+  if (el.__componentId === undefined) {
     el.__componentId = ++Piglet.componentCounter;
   }
   return el.__componentId;
@@ -109,6 +109,14 @@ function injectTreeTrackingToComponentClass(targetClass) {
   targetClass.prototype.connectedCallback = function () {
     assignComponentIdToElement(this);
 
+    this.__mountData = {
+      key: this.__componentKey,
+      tag: this.tagName,
+      ref: this,
+    };
+
+    Piglet.mountedComponents.add(this.__mountData);
+
     this.__trackCustomTree__ = () => {
       const root = this;
       this.__tree = buildCustomElementTree(root);
@@ -165,6 +173,8 @@ function injectTreeTrackingToComponentClass(targetClass) {
       this.__customTreeObserver__.disconnect();
       sendToExtension("tree");
     }
+
+    Piglet.mountedComponents.delete(this.__mountData);
 
     if (typeof originalDisconnected === "function") {
       originalDisconnected.call(this);

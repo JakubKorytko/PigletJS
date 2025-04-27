@@ -5,6 +5,7 @@ import notFound from "@Piglet/libs/notfound";
 
 export default (req, res) => {
   const componentName = req.url
+    .split("?")[0]
     .replace(CONST.customRouteSubAliases.component.html, "")
     .replace(CONST.customRouteSubAliases.component.script, "")
     .replace(CONST.customRouteAliases.component, "");

@@ -112,6 +112,7 @@ export default {
       changed: (filename) => `✅ File changed: ${filename}`,
       notFound: (componentName) =>
         `Component file for "${componentName}" not found.`,
+      fullReloadTriggered: "✅ Sent full reload to socket clients",
     },
     pages: {
       failedToLoad: (pageName, err) => [

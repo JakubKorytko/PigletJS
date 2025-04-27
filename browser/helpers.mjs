@@ -123,7 +123,7 @@ function toKebabCase(str) {
 /**
  * Fades out an element by gradually reducing its opacity to 0.
  *
- * @param {HTMLElement} element - The element to fade out.
+ * @param {typeof ReactiveComponent} element - The element to fade out.
  * @param {number} [duration=400] - The duration of the fade out in milliseconds.
  * @returns {Promise<void>} A promise that resolves when the fade out is complete.
  */
@@ -151,7 +151,7 @@ function fadeOut(element, duration = 400) {
 /**
  * Fades in an element by gradually increasing its opacity to 1.
  *
- * @param {HTMLElement} element - The element to fade in.
+ * @param {typeof ReactiveComponent} element - The element to fade in.
  * @param {number} [duration=400] - The duration of the "fade in" in milliseconds.
  * @returns {Promise<void>} A promise that resolves when the fade in is complete.
  */
@@ -176,6 +176,30 @@ function fadeIn(element, duration = 400) {
   });
 }
 
+/**
+ * Retrieves all mounted component instances that match a given tag name.
+ *
+ * This function searches through the `window.Piglet.mountedComponents` set
+ * and returns the `.ref` property of each component whose `tag` matches
+ * the provided `tagName` (case-insensitive).
+ *
+ * @param {string} tagName - The tag name of the components to find (e.g., "my-component").
+ * @returns {Array<typeof ReactiveComponent>} An array of references (`.ref`) to the matching mounted components.
+ */
+function getMountedComponentsByTag(tagName) {
+  const componentRefs = [];
+
+  if (!window.Piglet?.mountedComponents?.size) return componentRefs;
+
+  for (const mountedComponent of window.Piglet.mountedComponents) {
+    if (mountedComponent.tag.toLowerCase() === tagName.toLowerCase()) {
+      componentRefs.push(mountedComponent.ref);
+    }
+  }
+
+  return componentRefs;
+}
+
 export {
   toPascalCase,
   getDeepValue,
@@ -184,4 +208,5 @@ export {
   toKebabCase,
   fadeOut,
   fadeIn,
+  getMountedComponentsByTag,
 };

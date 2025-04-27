@@ -91,8 +91,8 @@ let onStateChange;
  * @property {ShadowRoot|null} shadowRoot - The component's shadow root, if present.
  * @property {string} key - Unique component key (`__componentKey`).
  * @property {Function} state - Bound `state` method of the component (for accessing reactive state).
- * @property {HTMLElement} element - The actual host element instance.
- * @property {HTMLElement|null} parent - The parent custom element hosting this component, if any.
+ * @property {typeof ReactiveComponent} element - The actual host element instance.
+ * @property {typeof ReactiveComponent|null} parent - The parent custom element hosting this component, if any.
  */
 let component;
 

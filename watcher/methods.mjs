@@ -4,7 +4,7 @@ import { fork } from "child_process";
 import { getRootDirFromArgv, resolvePath } from "@Piglet/utils/paths";
 import { buildComponent } from "@Piglet/parser/component";
 import { subprocessRef } from "@Piglet/watcher/subprocessRef";
-import { reloadClients } from "@Piglet/libs/socket";
+import { reloadClients, fullReload } from "@Piglet/libs/socket";
 import { toKebabCase } from "@Piglet/utils/stringUtils";
 
 /**
@@ -116,6 +116,19 @@ const watchDirectory = () => {
   );
 
   console.msg("components.watchingForChanges", resolvePath("@/pages"));
+
+  const filesForFullReload = [resolvePath("@/Pig.html")];
+
+  for (const file of filesForFullReload) {
+    fs.watchFile(file, { interval: 500 }, (curr, prev) => {
+      if (curr.mtime !== prev.mtime) {
+        console.msg("components.fullReloadTriggered", file);
+        fullReload();
+      }
+    });
+
+    console.msg("components.watchingForChanges", file);
+  }
 };
 
 export { watchDirectory, resetSubprocess, createSubprocess };
