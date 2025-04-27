@@ -1,10 +1,11 @@
 import fs from "fs";
+import path from "path";
 import { fork } from "child_process";
 import { getRootDirFromArgv, resolvePath } from "@Piglet/utils/paths";
 import { buildComponent } from "@Piglet/parser/component";
 import { subprocessRef } from "@Piglet/watcher/subprocessRef";
-import { reloadClients } from "@Piglet/libs/socket";
-import path from "path";
+import { reloadClients, fullReload } from "@Piglet/libs/socket";
+import { toKebabCase } from "@Piglet/utils/stringUtils";
 
 /**
  * Creates a subprocess for running the server.
@@ -72,13 +73,16 @@ const watchDirectory = () => {
           base: "",
           ext: ".html",
         });
+
+        const socketData = toKebabCase(htmlFilename.replace(".pig.html", ""));
+
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/components/${htmlFilename}`);
           console.msg("components.changed", htmlFilename);
           buildComponent(filePath)
             .catch((err) => console.msg("components.generatingError", err))
-            .then(reloadClients);
+            .then(() => reloadClients(socketData));
         }, 500);
       }
     },
@@ -97,19 +101,34 @@ const watchDirectory = () => {
           ext: ".html",
         });
 
+        const socketData = toKebabCase(htmlFilename.replace(".pig.html", ""));
+
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
           const filePath = resolvePath(`@/pages/${htmlFilename}`);
           console.msg("components.changed", htmlFilename);
           buildComponent(filePath)
             .catch((err) => console.msg("pages.generatingError", err))
-            .then(reloadClients);
+            .then(() => reloadClients(socketData));
         }, 500);
       }
     },
   );
 
   console.msg("components.watchingForChanges", resolvePath("@/pages"));
+
+  const filesForFullReload = [resolvePath("@/Pig.html")];
+
+  for (const file of filesForFullReload) {
+    fs.watchFile(file, { interval: 500 }, (curr, prev) => {
+      if (curr.mtime !== prev.mtime) {
+        console.msg("components.fullReloadTriggered", file);
+        fullReload();
+      }
+    });
+
+    console.msg("components.watchingForChanges", file);
+  }
 };
 
 export { watchDirectory, resetSubprocess, createSubprocess };

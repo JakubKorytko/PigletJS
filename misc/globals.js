@@ -84,21 +84,17 @@ let element;
 let onStateChange;
 
 /**
- * Asynchronously executes a callback once the host component is connected and available.
- * Uses `queueMicrotask` to ensure DOM setup is completed before executing the callback.
- *
- * @param {function(Object): void} callback - A function that receives the connected component's metadata.
- *   The `component` object passed to the callback contains:
- *   @property {string} name - The component's constructor name.
- *   @property {number|string} id - The component's internal ID (`__componentId`).
- *   @property {Object} tree - The component's tracked tree structure (`__tree`).
- *   @property {ShadowRoot|null} shadowRoot - The component's shadow root, if present.
- *   @property {string} key - Unique component key (`__componentKey`).
- *   @property {Function} state - Bound `state` method of the component (for accessing reactive state).
- *   @property {HTMLElement} element - The actual host element instance.
- *   @property {HTMLElement|null} parent - The parent custom element hosting this component, if any.
+ * @typedef {Object} ConnectedComponent
+ * @property {string} name - The component's constructor name.
+ * @property {number|string} id - The component's internal ID (`__componentId`).
+ * @property {Object} tree - The component's tracked tree structure (`__tree`).
+ * @property {ShadowRoot|null} shadowRoot - The component's shadow root, if present.
+ * @property {string} key - Unique component key (`__componentKey`).
+ * @property {Function} state - Bound `state` method of the component (for accessing reactive state).
+ * @property {typeof ReactiveComponent} element - The actual host element instance.
+ * @property {typeof ReactiveComponent|null} parent - The parent custom element hosting this component, if any.
  */
-let onConnect;
+let component;
 
 /**
  * Initializes the state with a default value.

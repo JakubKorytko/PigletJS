@@ -1,4 +1,4 @@
-import { generateAppHtml } from "@Piglet/parser/page.mjs";
+import { generateAppHtml } from "@Piglet/parser/page";
 import { routes } from "@Piglet/libs/routes";
 import notFound from "@Piglet/libs/notfound";
 

@@ -2,6 +2,35 @@ import crypto from "crypto";
 import { clientsRef } from "@Piglet/libs/clientsRef";
 
 /**
+ * Creates a WebSocket message frame from a given payload.
+ *
+ * The payload is JSON-encoded and framed according to the WebSocket protocol
+ * with a FIN bit set (0x81) and appropriate payload length handling.
+ *
+ * Supports payloads up to 65535 bytes.
+ *
+ * @param {Object} payload - The data to send over WebSocket, which will be JSON-stringified.
+ * @returns {Buffer} A Buffer containing the properly framed WebSocket message.
+ * @throws {Error} If the payload is too large (greater than 65535 bytes).
+ */
+function createWsMessage(payload) {
+  const json = JSON.stringify(payload);
+  const payloadBuf = Buffer.from(json);
+  const length = payloadBuf.length;
+
+  if (length < 126) {
+    return Buffer.concat([Buffer.from([0x81, length]), payloadBuf]);
+  } else if (length < 65536) {
+    return Buffer.concat([
+      Buffer.from([0x81, 126, length >> 8, length & 0xff]),
+      payloadBuf,
+    ]);
+  } else {
+    throw new Error("Payload too long");
+  }
+}
+
+/**
  * Handles WebSocket handshake and manages socket connections.
  *
  * This function processes the WebSocket handshake, creates an accept key,
@@ -35,13 +64,44 @@ const socketHandler = (req, socket) => {
 };
 
 /**
- * Sends a reload message to all connected clients.
+ * Sends a reload message to all connected WebSocket clients,
+ * optionally targeting a specific component or resource.
  *
- * This function creates a WebSocket message and sends it to all clients
- * in `clientsRef.instance`, requesting them to reload.
+ * @param {string} [data] - Optional identifier for the resource or component to reload.
+ * If omitted, clients will perform a full application reload.
+ * @returns {void}
  */
-const reloadClients = () => {
-  const message = Buffer.from([0x81, 6, ...Buffer.from("reload")]);
+const reloadClients = (data) =>
+  sendMessageToSocketClients(createWsMessage({ type: "reload", data }));
+
+/**
+ * Notifies all connected WebSocket clients that the server is restarting.
+ * Clients can use this information to attempt reconnection or show a message.
+ *
+ * @returns {void}
+ */
+const tellClientsAboutServerRestart = () => {
+  sendMessageToSocketClients(createWsMessage({ type: "serverRestart" }));
+};
+
+/**
+ * Forces all connected WebSocket clients to perform a full page reload.
+ *
+ * @returns {void}
+ */
+const fullReload = () => {
+  sendMessageToSocketClients(createWsMessage({ type: "fullReload" }));
+};
+
+/**
+ * Sends a raw WebSocket message to all currently connected clients.
+ *
+ * If a client connection fails during writing, the client socket will be destroyed.
+ *
+ * @param {string|Buffer} message - The message to send to each connected client.
+ * @returns {void}
+ */
+const sendMessageToSocketClients = (message) => {
   clientsRef.instance.forEach((sock) => {
     sock.write(message, (err) => {
       if (err) {
@@ -62,7 +122,15 @@ const runReloadClientOnWSMessageListener = () =>
   process.on("message", (msg) => {
     if (msg.type === "reload") {
       reloadClients();
+    } else if (msg.type === "serverRestart") {
+      tellClientsAboutServerRestart();
     }
   });
 
-export { socketHandler, runReloadClientOnWSMessageListener, reloadClients };
+export {
+  socketHandler,
+  runReloadClientOnWSMessageListener,
+  reloadClients,
+  tellClientsAboutServerRestart,
+  fullReload,
+};

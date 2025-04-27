@@ -18,10 +18,27 @@ export default {
     "@": rootDir,
     components: path.resolve(rootDir, "src", "components"),
     builtComponents: path.resolve(rootDir, "build", "components"),
+    builtScript: path.resolve(rootDir, "build", "script"),
+    builtHTML: path.resolve(rootDir, "build", "html"),
     pages: path.resolve(rootDir, "src", "pages"),
     public: path.resolve(rootDir, "src", "public"),
     browser: path.resolve(rootDir, "PigletJS", "browser"),
   },
+  voidTags: [
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+  ],
   mimeTypes: {
     ".html": "text/html",
     ".js": "text/javascript",
@@ -41,6 +58,12 @@ export default {
     module: "/module",
     api: "/api",
     public: "/public",
+  },
+  customRouteSubAliases: {
+    component: {
+      html: "/component/html",
+      script: "/component/script",
+    },
   },
   routes: ["component", "page", "file", "piglet", "module", "api"],
   consoleMessages: {
@@ -84,10 +107,12 @@ export default {
       ],
       watchingForChanges: (path) =>
         `👀 Watching for changes in directory: ${path}`,
+      directoryDoNotExist: (path) => `Directory ${path} does not exist`,
       generatingError: (err) => ["❌ Error while generating component:", err],
       changed: (filename) => `✅ File changed: ${filename}`,
       notFound: (componentName) =>
         `Component file for "${componentName}" not found.`,
+      fullReloadTriggered: "✅ Sent full reload to socket clients",
     },
     pages: {
       failedToLoad: (pageName, err) => [

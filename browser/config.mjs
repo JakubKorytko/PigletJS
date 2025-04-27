@@ -58,6 +58,18 @@ export default {
   extension: {},
 
   /**
+   * A set containing references to all currently mounted components
+   * within the application.
+   *
+   * Each entry in the set typically represents a live custom element instance
+   * that has been attached to the DOM and is being tracked for features like
+   * hot-reloading, debugging, or state synchronization.
+   *
+   * @type {Set<HTMLElement>}
+   */
+  mountedComponents: new Set(),
+
+  /**
    * Logs a message to the console based on severity, if the corresponding
    * log level is enabled in `enableCoreLogs`.
    *
