@@ -1,25 +1,21 @@
 import Piglet from "@Piglet/browser/config";
-
 import { navigate } from "@Piglet/browser/helpers";
-import { injectTreeTrackingToComponentClass } from "@Piglet/browser/tree";
+import { loadComponent } from "@Piglet/browser/loadComponent";
 
 import AppRoot from "@Piglet/browser/classes/AppRoot";
 import RenderIf from "@Piglet/browser/classes/RenderIf";
+import Socket from "@Piglet/browser/socket";
 
-const ws = new WebSocket("ws://" + location.host);
+async function loadCoreComponents() {
+  await loadComponent(AppRoot);
+  await loadComponent(RenderIf);
+}
 
-ws.onmessage = (event) => {
-  if (event.data === "reload") {
-    location.reload();
-  }
-};
+new Socket();
 
 window.Piglet = Piglet;
 
-injectTreeTrackingToComponentClass(RenderIf);
-injectTreeTrackingToComponentClass(AppRoot);
-
-customElements.define("render-if", RenderIf);
-customElements.define("app-root", AppRoot);
+// noinspection JSIgnoredPromiseFromCall
+loadCoreComponents();
 
 window["navigate"] ??= navigate;

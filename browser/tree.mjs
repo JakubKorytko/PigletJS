@@ -1,5 +1,6 @@
 import { useState } from "@Piglet/browser/state";
 import Piglet from "@Piglet/browser/config";
+import { sendToExtension } from "@Piglet/browser/extension";
 
 /**
  * Assigns a unique component ID to a custom element if it doesn't already have one.
@@ -7,7 +8,7 @@ import Piglet from "@Piglet/browser/config";
  * @returns {number} The assigned component ID.
  */
 function assignComponentIdToElement(el) {
-  if (!el.__componentId) {
+  if (el.__componentId === undefined) {
     el.__componentId = ++Piglet.componentCounter;
   }
   return el.__componentId;
@@ -57,6 +58,8 @@ function buildCustomElementTree(root = document.body) {
           state[property] = useState(
             node._caller ?? node.__componentKey,
             property,
+            undefined,
+            !!node._caller,
           )?.value;
         }
       }
@@ -106,6 +109,14 @@ function injectTreeTrackingToComponentClass(targetClass) {
   targetClass.prototype.connectedCallback = function () {
     assignComponentIdToElement(this);
 
+    this.__mountData = {
+      key: this.__componentKey,
+      tag: this.tagName,
+      ref: this,
+    };
+
+    Piglet.mountedComponents.add(this.__mountData);
+
     this.__trackCustomTree__ = () => {
       const root = this;
       this.__tree = buildCustomElementTree(root);
@@ -113,9 +124,7 @@ function injectTreeTrackingToComponentClass(targetClass) {
         Piglet.tree = this.__tree;
       }
       Piglet.log(`[${this.constructor.name}] tracking tree`);
-      if (window.Piglet?.extension?.sendTreeUpdate) {
-        window.Piglet.extension.sendTreeUpdate();
-      }
+      sendToExtension("tree");
     };
 
     this.__trackCustomTree__();
@@ -162,8 +171,10 @@ function injectTreeTrackingToComponentClass(targetClass) {
   targetClass.prototype.disconnectedCallback = function () {
     if (this.__customTreeObserver__) {
       this.__customTreeObserver__.disconnect();
-      window.Piglet?.extension?.sendTreeUpdate();
+      sendToExtension("tree");
     }
+
+    Piglet.mountedComponents.delete(this.__mountData);
 
     if (typeof originalDisconnected === "function") {
       originalDisconnected.call(this);

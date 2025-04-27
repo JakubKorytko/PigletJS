@@ -4,6 +4,7 @@ import path from "path";
 import { resolvePath } from "@Piglet/utils/paths";
 import { indent, toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
+import { formatHTML, formatJS } from "@Piglet/parser/format";
 
 /**
  * Extracts import statements from JavaScript code and returns the cleaned code.
@@ -155,39 +156,44 @@ const transformScript = (fullScript) => {
 };
 
 /**
- * Injects transformed component code into the runScript template.
- *
- * @param {string} componentScript - The transformed component logic.
- * @returns {Promise<string>} - The final script to be injected.
- */
-async function injectIntoRunScript(componentScript) {
-  const filePath = resolvePath("@Piglet/parser/runScript.mjs");
-  let fileContent = await fsp.readFile(filePath, "utf-8");
-
-  fileContent = fileContent.replace(/^\/\/ noinspection.*\n?/gm, "");
-
-  return fileContent.replace("/* COMPONENT CODE */", componentScript).trim();
-}
-
-/**
  * Combines external and internal scripts, transforms them,
- * and prepares the final executable component logic.
+ * extracts imports, generates the final component module file,
+ * and prepares the script to be injected into the runtime.
  *
- * @param {string} scriptJS - The internal script from the .pig.html file.
- * @param {string} externalJS - The external .pig.mjs script content.
- * @returns {Promise<[string, string[]]>} - The final script and its imports.
+ * @param {string} scriptJS - The inline script extracted from the `.pig.html` file.
+ * @param {string} externalJS - The external `.pig.mjs` script content, if available.
+ * @param {string} componentName - The name of the component (used for file generation).
+ * @returns {Promise<void>} - The final script string ready to be injected at runtime.
  */
-const injectScriptToComponent = async (scriptJS, externalJS) => {
-  if (!scriptJS && !externalJS) return ["", [""]];
+const generateComponentScript = async (scriptJS, externalJS, componentName) => {
+  if (!scriptJS && !externalJS) return;
 
   const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
   const transformedScript = transformScript(fullScript);
 
   const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
 
-  const script = await injectIntoRunScript(cleanedCode);
+  await fs.promises.mkdir(resolvePath("@/builtScript"), {
+    recursive: true,
+  });
+  const outputPath = resolvePath(`@/builtScript/${componentName}.mjs`);
 
-  return [`runScript(shadowRoot) ${script}`, imports];
+  const scriptForFile = formatJS(`
+  import { api } from "/Piglet/helpers";
+  ${imports.join("\n")}
+  
+  export default ({
+    state,
+    attributes,
+    forwarded,
+    component,
+    onStateChange,
+    onAttributeChange,
+    onUpdate,
+    element
+  }) => {\n${cleanedCode}\n}`);
+
+  return fs.promises.writeFile(outputPath, scriptForFile);
 };
 
 /**
@@ -249,15 +255,13 @@ const injectInnerHTMLToComponent = (
     .filter(Boolean)
     .join("\n\n");
 
-  const innerHTML = `
+  return `
   <style>
   ${styleCSS}
   </style>
   
   ${modifiedContent}
   `;
-
-  return `\`${indent(escapeTemplateLiteral(innerHTML), 8)}\``;
 };
 
 /**
@@ -266,40 +270,20 @@ const injectInnerHTMLToComponent = (
  *
  * @param {Object} options - Options for injecting into the component template.
  * @param {string} options.className - The class name of the component (PascalCase).
- * @param {string} options.tagName - The HTML tag name of the component (kebab-case).
  * @param {string} options.componentName - The original component name (e.g., "App").
- * @param {string} options.innerHTML - The processed inner HTML content.
- * @param {string} [options.additionalImports=""] - Any additional JS imports to include.
- * @param {string} [options.constructorSteps=""] - Any custom logic to run in the constructor.
- * @param {string} [options.runScript=""] - The main logic to run when the component mounts.
  * @returns {Promise<string>} The fully populated component file content.
  */
-async function injectIntoComponentTemplate({
-  className,
-  tagName,
-  componentName,
-  innerHTML,
-  additionalImports = "",
-  constructorSteps = "",
-  runScript = "",
-}) {
+async function injectIntoComponentTemplate({ className, componentName }) {
   const filePath = resolvePath("@Piglet/parser/base.mjs");
   let fileContent = await fsp.readFile(filePath, "utf-8");
 
-  fileContent = fileContent.replace(/^\/\/ noinspection.*\n?/gm, "");
-
-  fileContent = fileContent
+  return `${fileContent
+    .replace(/^\/\/ noinspection.*\n?/gm, "")
     .replace(/COMPONENT_CLASS_NAME/g, className)
-    .replace(/COMPONENT_NAME/g, componentName)
-    .replace(/TAG_NAME/g, tagName)
-    .replace(/COMPONENT_INNER_HTML/g, innerHTML);
-
-  fileContent = fileContent
-    .replace("/* ADDITIONAL IMPORTS */", additionalImports.trim())
-    .replace("/* ADDITIONAL CONSTRUCTOR STEPS */", constructorSteps.trim())
-    .replace("/* RUN SCRIPT HERE */", runScript.trim());
-
-  return fileContent.trim();
+    .replace(
+      /COMPONENT_NAME/g,
+      componentName,
+    )}\n loadComponent(${className})`.trim();
 }
 
 /**
@@ -327,21 +311,28 @@ const generateOutput = async (_, ...args) => {
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
-  const fullScript = await injectScriptToComponent(scriptJS, externalJS);
+  await generateComponentScript(scriptJS, externalJS, componentName);
+
+  const innerHTML = formatHTML(
+    injectInnerHTMLToComponent(
+      html,
+      content,
+      componentName,
+      externalCSS,
+    ).trim(),
+  );
+
+  await fs.promises.mkdir(resolvePath("@/builtHTML"), {
+    recursive: true,
+  });
+  const outputPath = resolvePath(`@/builtHTML/${componentName}.html`);
+  await fs.promises.writeFile(outputPath, innerHTML);
 
   return await injectIntoComponentTemplate({
     className,
     tagName,
     componentName,
-    innerHTML: injectInnerHTMLToComponent(
-      html,
-      content,
-      componentName,
-      externalCSS,
-    ),
-    additionalImports: fullScript ? fullScript[1].join("\n") : "",
-    constructorSteps: scriptJS ? `this.runScript(shadow);` : "",
-    runScript: fullScript[0],
+    innerHTML: `\`${indent(escapeTemplateLiteral(innerHTML), 8)}\``,
   });
 };
 

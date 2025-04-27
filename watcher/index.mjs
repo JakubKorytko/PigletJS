@@ -32,9 +32,11 @@ const directoriesToWatch = [
 for (const directory of directoriesToWatch) {
   const fullPath = resolvePath(directory);
   if (fs.existsSync(fullPath)) {
-    fs.watch(fullPath, { recursive: true }, resetServer);
+    fs.watch(fullPath, { recursive: true }, (...args) => {
+      resetServer(...args);
+    });
   } else {
-    console.log(`Directory ${fullPath} does not exist`);
+    console.msg("server.directoryDoNotExist", fullPath);
   }
 }
 
@@ -70,6 +72,7 @@ process.stdin.on("data", async (key) => {
   }
 
   if (key === "s") {
+    subprocessRef.instance.send({ type: "serverRestart" });
     console.msg("server.restarting");
     resetServerOnButtonClick();
   }

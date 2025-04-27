@@ -1,5 +1,7 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { toPascalCase } from "@Piglet/browser/helpers";
+import { fadeIn, fadeOut, toPascalCase } from "@Piglet/browser/helpers";
+import { sendToExtension } from "@Piglet/browser/extension";
+import { loadComponent } from "@Piglet/browser/loadComponent";
 
 class AppRoot extends ReactiveComponent {
   constructor() {
@@ -30,9 +32,22 @@ class AppRoot extends ReactiveComponent {
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === "route" && oldValue !== newValue) {
-      // noinspection JSIgnoredPromiseFromCall
-      this.loadRoute(newValue);
+      if (oldValue === null) {
+        this.loadRoute(newValue).then(this._mount.bind(this));
+      } else {
+        this.changeRoute(newValue);
+      }
     }
+  }
+
+  async changeRoute(newRoute) {
+    await fadeOut(this.shadowRoot.host, 100);
+    this._unmount.call(this);
+    this.shadowRoot.innerHTML = "";
+    window.Piglet.reset();
+    super.connectedCallback();
+    await this.loadRoute(newRoute);
+    this._mount.call(this);
   }
 
   /**
@@ -46,7 +61,7 @@ class AppRoot extends ReactiveComponent {
       const routePath = routes[route];
       const module = await import(`/component/${routePath}`);
 
-      const response = await fetch(`/component/${routePath}`);
+      const response = await fetch(`/component/html/${routePath}`);
       const pageSource = await response.text();
 
       const tagRegex = /<([a-z][a-z0-9-]*)\b[^>]*\/?>/g;
@@ -71,14 +86,13 @@ class AppRoot extends ReactiveComponent {
         }),
       );
 
-      this.shadowRoot.innerHTML = "";
-
-      window.Piglet.reset();
-
       if (
         module.default instanceof HTMLElement ||
         typeof module.default === "function"
       ) {
+        await loadComponent(module.default);
+        // noinspection ES6MissingAwait
+        fadeIn(this.shadowRoot.host, 100);
         this.shadowRoot.appendChild(new module.default());
       } else {
         const wrapper = document.createElement("div");
@@ -86,7 +100,7 @@ class AppRoot extends ReactiveComponent {
         this.shadowRoot.appendChild(wrapper);
       }
 
-      window.Piglet?.extension?.sendInitialData();
+      sendToExtension("initial");
 
       Piglet.log(`Route '${route}' loaded successfully.`, "info");
     } catch (err) {
