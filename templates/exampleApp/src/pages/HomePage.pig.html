@@ -24,19 +24,19 @@
 <script>
   import consoleTree from "@/modules/consoleTree.pig";
 
-  const { clickCount = init(0) } = state;
-  const clickCounter = element("#clickCounter");
+  let $clickCount = 0;
 
-  onStateChange["clickCount"] = (value) => {
-    clickCounter.pass("clickcount", value);
-  };
+  element("#clickCounter").pass({
+    parentMethod: () => {
+      console.log("I was called in my child!", $clickCount);
+    },
+    clickCount: $clickCount,
+    display: true
+  })
 
-  clickCounter.pass("parentMethod", () => {
-    console.log("I was called in my child!", clickCount.value);
-  });
-
-  clickCounter.pass("clickcount", clickCount.value);
-  console.log("HomePage data:", component);
+  $onBeforeUpdate(() => {
+    console.log('I am called before update!')
+  })
 
   element("#showTreeBtn").on("click", consoleTree);
 
@@ -45,7 +45,7 @@
   });
 
   element("#clickMe").on("click", function () {
-    clickCount.value += 1;
+    $clickCount += 1;
   });
 </script>
 

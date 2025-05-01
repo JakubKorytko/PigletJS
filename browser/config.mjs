@@ -1,3 +1,5 @@
+import CONST from "@Piglet/browser/CONST";
+
 /**
  * Core configuration object for debugging, logging, state management,
  * and component tracking within the application.
@@ -77,15 +79,18 @@ export default {
    * @param {"info"|"warn"|"error"} [severity="info"] - The severity level of the log.
    * @param {...any} args - Additional values to be logged with the message.
    */
-  log(message, severity = "info", ...args) {
+  log(message, severity = CONST.coreLogsLevels.info, ...args) {
     if (!this.enableCoreLogs[severity]) return;
-    const levels = ["info", "warn", "error"];
 
-    if (!levels.includes(severity)) {
-      severity = "info";
+    if (!Object.values(CONST.coreLogsLevels).includes(severity)) {
+      severity = CONST.coreLogsLevels.info;
     }
 
-    console[severity === "info" ? "log" : severity](message, ...args);
+    console[
+      severity === CONST.coreLogsLevels.info
+        ? CONST.coreLogLevelsAliases.info
+        : severity
+    ](message, ...args);
   },
 
   /**

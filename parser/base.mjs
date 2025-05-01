@@ -40,7 +40,7 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
   async reloadComponent() {
     this._isHTMLInjected = false;
     this._isMounted = false;
-    await this.runScript();
+    await this.runScript({ name: "reload" });
     await this.loadContent();
   }
 
@@ -64,7 +64,7 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
 
       this.shadowRoot.innerHTML = await response.text();
       this._isHTMLInjected = true;
-      this._mount();
+      this._mount({ name: "loadContent" });
     } catch (error) {
       console.error(error);
       return null;
@@ -78,10 +78,11 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
    * @async
    * @returns {Promise<void>} A promise that resolves when the script has been executed.
    */
-  async runScript() {
+  async runScript(reason) {
     scriptRunner(
       this.shadowRoot.host,
       await import(`/component/script/COMPONENT_NAME?noCache=${Date.now()}`),
+      reason,
     );
   }
 }

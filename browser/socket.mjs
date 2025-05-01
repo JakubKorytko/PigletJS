@@ -1,14 +1,5 @@
 import { getMountedComponentsByTag } from "@Piglet/browser/helpers";
-
-const socketMessages = {
-  connected: "[Socket] Connected",
-  closed: "[Socket] Connection closed",
-  error: "[Socket] Error:",
-  reconnecting: (when, attempt) =>
-    `[Socket] Reconnecting in ${when}s (Attempt ${attempt})`,
-  maxReconnectAttempts: "[Socket] Max reconnect attempts reached",
-  serverRestarted: "[Socket] Server restart detected!",
-};
+import CONST from "@Piglet/browser/CONST";
 
 /**
  * Singleton class for managing WebSocket connections.
@@ -73,41 +64,45 @@ class Socket {
     this.ws = new WebSocket("ws://" + location.host);
 
     this.ws.onopen = () => {
-      Piglet.log(socketMessages.connected);
+      Piglet.log(CONST.pigletLogs.socket.connected);
       this.reconnectAttempts = 0;
     };
 
     this.ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
 
-      if (message.type === "reload" && message.data) {
+      if (message.type === CONST.socket.messageTypes.reload && message.data) {
         const components = getMountedComponentsByTag(message.data);
         for (const component of components) {
           component.reloadComponent();
         }
-      } else if (message.type === "reload") {
-        const appRoot = document.querySelector("app-root");
+      } else if (message.type === CONST.socket.messageTypes.reload) {
+        const appRoot = document.querySelector(CONST.appRootTag);
         // noinspection JSIgnoredPromiseFromCall
         appRoot.changeRoute(appRoot._route);
       }
 
-      if (message.type === "serverRestart") {
-        Piglet.log(socketMessages.serverRestarted);
+      if (message.type === CONST.socket.messageTypes.serverRestart) {
+        Piglet.log(CONST.pigletLogs.socket.serverRestarted);
         this.tryReconnect();
       }
 
-      if (message.type === "fullReload") {
+      if (message.type === CONST.socket.messageTypes.fullReload) {
         window.location.reload();
       }
     };
 
     this.ws.onclose = () => {
-      Piglet.log(socketMessages.closed);
+      Piglet.log(CONST.pigletLogs.socket.closed);
       this.tryReconnect();
     };
 
     this.ws.onerror = (error) => {
-      Piglet.log(socketMessages.error, "error", error);
+      Piglet.log(
+        CONST.pigletLogs.socket.error,
+        CONST.coreLogsLevels.error,
+        error,
+      );
       this.ws.close();
     };
   }
@@ -119,7 +114,10 @@ class Socket {
    */
   tryReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      Piglet.log(socketMessages.maxReconnectAttempts, "warn");
+      Piglet.log(
+        CONST.pigletLogs.socket.maxReconnectAttempts,
+        CONST.coreLogsLevels.warn,
+      );
       return;
     }
 

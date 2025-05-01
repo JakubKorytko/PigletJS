@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import { resolvePath } from "@Piglet/utils/paths";
+import CONST from "@Piglet/misc/CONST";
 
 /**
  * @typedef {Object} WebTypesAttribute
@@ -32,7 +33,7 @@ export async function mergeWebTypes(newElements) {
     const file = await fs.readFile(basePath, "utf-8");
     baseJson = JSON.parse(file);
   } catch (err) {
-    console.error(`❌ Failed to load ${basePath}:`, err.message);
+    console.msg("webTypes.failedToLoad", basePath, err);
     return;
   }
 
@@ -58,8 +59,8 @@ export async function mergeWebTypes(newElements) {
 
   try {
     await fs.writeFile(outputPath, JSON.stringify(baseJson, null, 2), "utf-8");
-    console.log(`✅ Added ${addedCount} custom element(s) into web-types.json`);
+    console.msg("webTypes.added", addedCount);
   } catch (err) {
-    console.error(`❌ Failed to write ${outputPath}:`, err.message);
+    console.msg("webTypes.failedToWrite", outputPath, err);
   }
 }

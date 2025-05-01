@@ -46,6 +46,8 @@ console.msg = function (path, ...args) {
   }
 };
 
+console.nl = () => console.log("");
+
 /**
  * Custom logging function with emoji and colored output that calls `console.msg`.
  *

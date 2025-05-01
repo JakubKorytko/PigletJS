@@ -2,6 +2,7 @@ import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import { fadeIn, fadeOut, toPascalCase } from "@Piglet/browser/helpers";
 import { sendToExtension } from "@Piglet/browser/extension";
 import { loadComponent } from "@Piglet/browser/loadComponent";
+import CONST from "@Piglet/browser/CONST";
 
 class AppRoot extends ReactiveComponent {
   constructor() {
@@ -19,7 +20,7 @@ class AppRoot extends ReactiveComponent {
 
   // noinspection JSUnusedGlobalSymbols
   static get observedAttributes() {
-    return ["route"];
+    return [CONST.routeAttribute];
   }
 
   // noinspection JSUnusedGlobalSymbols
@@ -31,7 +32,7 @@ class AppRoot extends ReactiveComponent {
    * @param {string} newValue - The new value of the attribute.
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    if (name === "route" && oldValue !== newValue) {
+    if (name === CONST.routeAttribute && oldValue !== newValue) {
       if (oldValue === null) {
         this.loadRoute(newValue).then(this._mount.bind(this));
       } else {
@@ -60,15 +61,14 @@ class AppRoot extends ReactiveComponent {
 
     try {
       const routePath = routes[route];
-      const module = await import(`/component/${routePath}`);
+      const module = await import(`${CONST.componentRoute.base}/${routePath}`);
 
-      const response = await fetch(`/component/html/${routePath}`);
+      const response = await fetch(`${CONST.componentRoute.html}/${routePath}`);
       const pageSource = await response.text();
 
-      const tagRegex = /<([a-z][a-z0-9-]*)\b[^>]*\/?>/g;
       const tags = new Set();
       let match;
-      while ((match = tagRegex.exec(pageSource)) !== null) {
+      while ((match = CONST.tagRegex.exec(pageSource)) !== null) {
         const tag = match[1];
         if (!tag.includes("-")) continue;
         tags.add(tag);
@@ -78,11 +78,15 @@ class AppRoot extends ReactiveComponent {
 
       await Promise.all(
         Array.from(pascalTags).map(async (tag) => {
-          if (tag === "RenderIf") return;
+          if (tag === CONST.conditionalName) return;
           try {
-            await import(`/component/${tag}`);
+            await import(`${CONST.componentRoute.base}/${tag}`);
           } catch (e) {
-            Piglet.log(`Unable to load component <${tag}>`, "warn", e);
+            Piglet.log(
+              CONST.pigletLogs.appRoot.unableToLoadComponent(tag),
+              CONST.coreLogsLevels.warn,
+              e,
+            );
           }
         }),
       );
@@ -101,12 +105,19 @@ class AppRoot extends ReactiveComponent {
         this.shadowRoot.appendChild(wrapper);
       }
 
-      sendToExtension("initial");
+      sendToExtension(CONST.extension.initialMessage);
 
-      Piglet.log(`Route '${route}' loaded successfully.`, "info");
+      Piglet.log(
+        CONST.pigletLogs.appRoot.routeLoaded(route),
+        CONST.coreLogsLevels.info,
+      );
     } catch (err) {
-      Piglet.log(`Error loading route '${route}':`, "error", err);
-      this.shadowRoot.innerHTML = "<h1>Page Not Found</h1>";
+      Piglet.log(
+        CONST.pigletLogs.appRoot.errorLoading(route),
+        CONST.coreLogsLevels.error,
+        err,
+      );
+      this.shadowRoot.innerHTML = `<h1>${CONST.pageNotFound}</h1>`;
     }
   }
 
@@ -124,7 +135,7 @@ class AppRoot extends ReactiveComponent {
    */
   set route(newRoute) {
     if (this._route !== newRoute) {
-      this.setAttribute("route", newRoute);
+      this.setAttribute(CONST.routeAttribute, newRoute);
       if (window.location.pathname !== newRoute) {
         history.pushState({}, "", newRoute);
       }

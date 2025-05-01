@@ -88,7 +88,7 @@ async function setupPiglet(pigletDir) {
 
   await copyFileSafe(pigletStart, startDest);
 
-  console.log("");
+  console.nl();
   const answer = await askQuestion(CONST.consoleMessages.builder.promptExtras);
   if (answer !== "y") {
     console.msg("builder.runningStart");
@@ -96,7 +96,7 @@ async function setupPiglet(pigletDir) {
     return;
   }
 
-  console.log("");
+  console.nl();
 
   const filesToCopy = [
     { src: "README.md" },

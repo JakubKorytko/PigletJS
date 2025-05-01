@@ -1,3 +1,5 @@
+import CONST from "@Piglet/browser/CONST";
+
 /**
  * Retrieves a deeply nested value from an object using a path array.
  * @param {object} obj - The object to extract the value from.
@@ -32,6 +34,24 @@ function toPascalCase(str) {
     .join("");
 }
 
+function toPigletAttr(name) {
+  if (name.includes("-") || name.toLowerCase() === name) {
+    return `${CONST.attributePrefix}${name}`;
+  }
+
+  const transformed = name.replace(/([A-Z])/g, "_$1").toLowerCase();
+  return `${CONST.attributePrefix}${transformed}`;
+}
+
+function fromPigletAttr(pigletName) {
+  if (!pigletName.startsWith(CONST.attributePrefix)) {
+    return "";
+  }
+  let raw = pigletName.slice(7);
+
+  return raw.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+}
+
 /**
  * Makes a request to a given API path and parses the response based on expected type.
  * @param {string} path - The API path (without leading `/api/`).
@@ -40,13 +60,13 @@ function toPascalCase(str) {
  * @throws {Error} - Throws if fetching or parsing fails.
  */
 async function api(path, expect = "json") {
-  const url = `/api/${path.replace(/^\/+/, "")}`;
+  const url = `${CONST.apiRoute}/${path.replace(/^\/+/, "")}`;
 
   let res;
   try {
     res = await fetch(url);
   } catch (err) {
-    throw new Error(`Failed to fetch ${url}: ${err.message}`);
+    throw CONST.error.failedToFetchAPI(url, err);
   }
 
   const contentType = res.headers.get("Content-Type") || "";
@@ -63,15 +83,15 @@ async function api(path, expect = "json") {
   const parse = parsers[expected];
 
   if (!parse) {
-    throw new Error(`Unsupported expect type: "${expect}"`);
+    throw CONST.error.unsupportedExpect(expect);
   }
 
   try {
     const data = await parse();
     if (!contentType.includes(expected)) {
       Piglet.log(
-        `Warning: Expected response type "${expected}", but got "${contentType}".`,
-        "warn",
+        CONST.warning.expectedButGot(expected, contentType),
+        CONST.coreLogsLevels.warn,
       );
     }
     return data;
@@ -79,12 +99,12 @@ async function api(path, expect = "json") {
     try {
       const fallback = await res.text();
       Piglet.log(
-        `Warning: Failed to parse as "${expected}". Response returned as plain text.`,
-        "warn",
+        CONST.warning.failedToParseAs(expected),
+        CONST.coreLogsLevels.warn,
       );
       return fallback;
     } catch {
-      throw new Error(`Failed to parse response as "${expected}" from ${url}`);
+      throw CONST.error.failedToParseFromURL(expected, url);
     }
   }
 }
@@ -209,4 +229,6 @@ export {
   fadeOut,
   fadeIn,
   getMountedComponentsByTag,
+  toPigletAttr,
+  fromPigletAttr,
 };

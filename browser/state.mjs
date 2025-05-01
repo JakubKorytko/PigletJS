@@ -1,4 +1,5 @@
 import { sendToExtension } from "@Piglet/browser/extension";
+import CONST from "@Piglet/browser/CONST";
 
 /**
  * Class representing a state with observer pattern.
@@ -10,10 +11,11 @@ class State {
    * @param {*=} initialValue - The initial value for the state.
    * @param {boolean=} isCreatedByListener - Indicates if the state was created by a listener.
    */
-  constructor(initialValue, isCreatedByListener) {
+  constructor(initialValue, isCreatedByListener, asRef = false) {
     this._state = initialValue;
     this._observers = [];
     this.__isCreatedByListener = isCreatedByListener;
+    this._isRef = asRef;
   }
 
   /**
@@ -48,7 +50,9 @@ class State {
   setState(newState) {
     const oldState = this._state;
     this._state = newState;
-    this._notify(oldState);
+    if (!this._isRef) {
+      this._notify(oldState);
+    }
   }
 
   /**
@@ -77,6 +81,7 @@ const useState = (
   path,
   initialValue,
   isCreatedByListener = false,
+  asRef,
 ) => {
   if (!window.Piglet.state[componentName]) {
     window.Piglet.state[componentName] = {};
@@ -88,6 +93,7 @@ const useState = (
     window.Piglet.state[componentName][key] = new State(
       initialValue,
       isCreatedByListener,
+      asRef,
     );
   } else if (
     !isCreatedByListener &&
@@ -112,7 +118,7 @@ const useState = (
      */
     set value(newValue) {
       window.Piglet.state[componentName][key].setState(newValue);
-      sendToExtension("state");
+      sendToExtension(CONST.extension.state);
     },
   };
 };

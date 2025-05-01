@@ -143,10 +143,10 @@ async function maybeUseTemplate(dirname) {
   const selected = type.startsWith("⭐ Full") ? "exampleApp" : "structureOnly";
   const templatePath = path.join(dirname, "PigletJS", "templates", selected);
 
-  console.log("");
+  console.nl();
   console.msg("template.applyingTemplate", selected);
   await copyTemplateFiles(templatePath, dirname);
-  console.log("");
+  console.nl();
 
   if (selected === "structureOnly") {
     const foldersToCreate = [
@@ -175,11 +175,11 @@ async function maybeUseTemplate(dirname) {
  * @returns {Promise<void>}
  */
 async function maybeCopyExtension(dirname) {
-  console.log("");
+  console.nl();
   const includeExtension = await askYesNo(
     CONST.consoleMessages.template.doYouWantExtension,
   );
-  console.log("");
+  console.nl();
   if (includeExtension) {
     const extensionSrc = path.join(dirname, "PigletJS", "extension");
     const extensionDest = path.join(dirname, "extension");
@@ -191,7 +191,7 @@ async function maybeCopyExtension(dirname) {
       await fsp.mkdir(extensionDest, { recursive: true });
       await copyTemplateFiles(extensionSrc, extensionDest);
     }
-    console.log("");
+    console.nl();
   }
 }
 
@@ -201,7 +201,7 @@ async function maybeCopyExtension(dirname) {
  * @param {string} dirname - The working directory in which to run the script.
  */
 function runAddHostAndStartApp(dirname) {
-  console.log("");
+  console.nl();
   console.msg("hosts.adding");
 
   const child = spawn("node", ["./PigletJS/builder/host.mjs"], {

@@ -1,5 +1,6 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import { getDeepValue } from "@Piglet/browser/helpers";
+import CONST from "@Piglet/browser/CONST";
 
 /**
  * `<render-if>` is a conditional rendering component.
@@ -10,7 +11,7 @@ import { getDeepValue } from "@Piglet/browser/helpers";
 class RenderIf extends ReactiveComponent {
   // noinspection JSUnusedGlobalSymbols
   static get observedAttributes() {
-    return ["condition"];
+    return [CONST.conditionAttribute];
   }
 
   constructor() {
@@ -19,15 +20,32 @@ class RenderIf extends ReactiveComponent {
     this._condition = false;
     this._negated = false;
     this._parts = [];
+    this._stateless = true;
 
-    this.onMount(() => {
+    this._contentFragment = document.createDocumentFragment();
+    this._contentMounted = false;
+    this._firstContentMounted = false;
+
+    this.onMount((reason) => {
+      if (!this._firstContentMounted) {
+        this._firstContentMounted = true;
+        this._moveChildrenToFragment();
+      }
+
       super.connectedCallback();
+
       this._updateFromAttribute();
       this.updateVisibility();
     });
 
     this._isHTMLInjected = true;
-    this._mount();
+    this._mount(CONST.reason.onMount);
+  }
+
+  _moveChildrenToFragment() {
+    while (this.firstChild) {
+      this._contentFragment.appendChild(this.firstChild);
+    }
   }
 
   /**
@@ -39,9 +57,9 @@ class RenderIf extends ReactiveComponent {
   // noinspection JSUnusedGlobalSymbols
   attributeChangedCallback(name, oldValue, newValue) {
     if (
-      name === "condition" &&
+      name === CONST.conditionAttribute &&
       oldValue !== newValue &&
-      (!this._caller || this._caller.indexOf("_NOT_SETTLED") === -1)
+      (!this._caller || this._caller.indexOf(CONST.notSettledSuffix) === -1)
     ) {
       this._updateFromAttribute();
     }
@@ -53,7 +71,7 @@ class RenderIf extends ReactiveComponent {
    * @private
    */
   _updateFromAttribute() {
-    let conditionProperty = this.getAttribute("condition");
+    let conditionProperty = this.getAttribute(CONST.conditionAttribute);
 
     this._negated = false;
     if (conditionProperty.startsWith("!")) {
@@ -70,17 +88,36 @@ class RenderIf extends ReactiveComponent {
       return;
     }
 
+    if (!conditionProperty.startsWith("$")) {
+      this._condition = true;
+      this.updateVisibility();
+      return;
+    }
+
+    conditionProperty = conditionProperty.substring(1);
+
     const parts = conditionProperty.split(".");
+    const isAttribute = parts[0] === CONST.attributesObjectName;
+
+    if (isAttribute) {
+      conditionProperty = conditionProperty.replace(`${parts.shift()}.`, "");
+    }
 
     if (parts.length > 1) {
-      this._parts = parts.slice(1);
+      if (!isAttribute) {
+        this._parts = parts.slice(1);
+      }
       conditionProperty = parts[0];
     } else {
       this._parts = [];
     }
 
-    this._state = this.state(conditionProperty);
-    this._updateCondition(this._state.value);
+    if (isAttribute) {
+      this._updateCondition(this.__root.host._attrs[conditionProperty]);
+    } else {
+      this._state = this.state(conditionProperty, undefined, true);
+      this._updateCondition(this._state.value);
+    }
   }
 
   /**
@@ -104,12 +141,23 @@ class RenderIf extends ReactiveComponent {
    * @param {*} value - The updated value of the observed state.
    */
   onStateChange(value) {
-    if (["true", "false"].includes(this.getAttribute("condition"))) return;
+    if (["true", "false"].includes(this.getAttribute(CONST.conditionAttribute)))
+      return;
     this._updateCondition(value);
   }
 
   updateVisibility() {
-    this.style.display = this._condition ? "block" : "none";
+    if (this._condition) {
+      if (!this._contentMounted) {
+        this.appendChild(this._contentFragment);
+        this._contentMounted = true;
+      }
+    } else {
+      if (this._contentMounted) {
+        this._moveChildrenToFragment();
+        this._contentMounted = false;
+      }
+    }
   }
 
   disconnectedCallback() {

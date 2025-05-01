@@ -119,7 +119,10 @@ let init;
  * In this example, the element with the ID `clickCount` is updated with a message
  * that reflects the current value of the `clickcount` attribute.
  */
-let onUpdate;
+let $onUpdate;
+
+/** @type {Function} */
+let $ref;
 
 /**
  * Handler for reacting to attribute changes on a custom element.

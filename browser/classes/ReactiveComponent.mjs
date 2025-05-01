@@ -1,5 +1,8 @@
 import { assignComponentIdToElement } from "@Piglet/browser/tree";
 import { useState, useObserver } from "@Piglet/browser/state";
+import { fromPigletAttr } from "@Piglet/browser/helpers";
+import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
+import CONST from "@Piglet/browser/CONST";
 
 /**
  * @typedef State
@@ -37,12 +40,15 @@ import { useState, useObserver } from "@Piglet/browser/state";
  * @property {Function} reloadComponent
  */
 class ReactiveComponent extends HTMLElement {
+  #pendingAttributeUpdate = false;
+  #batchedAttributeChanges = [];
+
   constructor() {
     super();
 
     /** @public */
-    this._caller = this.getAttribute("host__element");
-    this.removeAttribute("host__element");
+    this._caller = this.getAttribute(CONST.callerAttribute);
+    this.removeAttribute(CONST.callerAttribute);
 
     /** @private */
     this._componentName = this.constructor.name;
@@ -68,6 +74,8 @@ class ReactiveComponent extends HTMLElement {
     /** @protected */
     this._attributeQueue = [];
 
+    this._attributeFlushScheduled = false;
+
     /** @protected */
     this._children = [];
 
@@ -82,14 +90,38 @@ class ReactiveComponent extends HTMLElement {
           const oldValue = mutation.oldValue;
           const newValue = this.getAttribute(name);
 
-          this._attrs[name] = newValue;
+          if (name.startsWith(CONST.attributePrefix)) {
+            const attrName = fromPigletAttr(name);
 
-          if (typeof this.onAttributeChange === "function") {
-            this._attributeQueue.push([newValue, name, oldValue]);
-            this._clearAttributesQueue();
-          } else {
-            if (name !== "style" && name !== "route") {
-              this._attributeQueue.push([newValue, name, oldValue]);
+            this.#batchedAttributeChanges.push({
+              newValue,
+              attrName,
+              oldValue,
+            });
+
+            this._attrs[attrName] = newValue;
+
+            if (!this.#pendingAttributeUpdate) {
+              this.#pendingAttributeUpdate = true;
+
+              Promise.resolve().then(() => {
+                this.#pendingAttributeUpdate = false;
+
+                const changes = this.#batchedAttributeChanges;
+                this.#batchedAttributeChanges = [];
+
+                this._mount(CONST.reason.attributesChange(changes));
+
+                for (const { newValue, attrName, oldValue } of changes) {
+                  if (typeof this.onAttributeChange === "function") {
+                    this.onAttributeChange(newValue, attrName, oldValue);
+                  }
+                }
+
+                if (typeof this.reactive === "function") {
+                  this.reactive();
+                }
+              });
             }
           }
         }
@@ -102,10 +134,14 @@ class ReactiveComponent extends HTMLElement {
     });
 
     for (const attr of this.attributes) {
-      this._attrs[attr.name] = attr.value;
+      if (name.startsWith(CONST.attributePrefix)) {
+        const attrName = fromPigletAttr(name);
+
+        this._attrs[attrName] = attr.value;
+      }
     }
 
-    if (this.constructor.name === "AppRoot") {
+    if (this.constructor.name === CONST.appRootName) {
       /** @public */
       this.__componentId = 0;
     } else {
@@ -117,30 +153,10 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * Clears the attribute change queue and triggers `onAttributeChange` for each queued change.
-   * If `onAttributeChange` is defined in the component, it will be called for each item in the queue.
-   * If `reactive()` is implemented, it will be called after processing each change.
-   *
-   * @private
-   */
-  _clearAttributesQueue() {
-    if (typeof this.onAttributeChange === "function") {
-      while (this._attributeQueue.length !== 0) {
-        this.onAttributeChange(...this._attributeQueue.shift());
-
-        // Call reactive() if it's implemented in the child component
-        if (typeof this.reactive === "function") {
-          this.reactive();
-        }
-      }
-    }
-  }
-
-  /**
    * Marks the component as mounted and triggers mount on all children.
    * @protected
    */
-  _mount() {
+  _mount(reason) {
     const parent = this.getRootNode().host;
     if (
       this._isHTMLInjected &&
@@ -148,17 +164,21 @@ class ReactiveComponent extends HTMLElement {
       parent._isMounted
     ) {
       this._isMounted = true;
-      this.mountCallback();
-      this._updateChildren();
+      this.mountCallback(reason);
+      this._updateChildren(reason);
     } else if (this.constructor.name === "AppRoot") {
       this._isMounted = true;
-      this._updateChildren();
+      this._updateChildren(reason);
     }
   }
 
-  _updateChildren() {
+  _updateChildren(reason) {
     for (const child of this._children) {
-      child._mount();
+      if (!child._isMounted || child._stateless) {
+        child._mount(CONST.reason.parentUpdate(reason));
+      } else {
+        child._updateChildren(reason);
+      }
     }
   }
 
@@ -181,7 +201,7 @@ class ReactiveComponent extends HTMLElement {
    * Sets up references and registers itself as a child of its parent component if applicable.
    */
   connectedCallback() {
-    Piglet.log(`${this._componentName} connected`);
+    Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
     /** @protected */
     this.__root = this.shadowRoot ?? this.getRootNode();
     if (this._caller) this._caller = this.__root.host.__componentKey;
@@ -189,9 +209,10 @@ class ReactiveComponent extends HTMLElement {
     if (parent && !parent._children.includes(this)) {
       parent._children.push(this);
     }
+
     if (this.runScript) {
       // noinspection JSIgnoredPromiseFromCall
-      this.runScript();
+      this.runScript(CONST.reason.addedToDOM);
     }
   }
 
@@ -203,7 +224,7 @@ class ReactiveComponent extends HTMLElement {
    */
   onMount(callback) {
     this.mountCallback = callback;
-    this._mount();
+    this._mount(CONST.reason.onMount);
   }
 
   /**
@@ -230,16 +251,20 @@ class ReactiveComponent extends HTMLElement {
     this._observers.set(property, () => removeObserver(callback));
   }
 
-  state(property, initialValue) {
+  state(property, initialValue, asRef = false) {
     const state = useState(
       this._caller ?? this.__componentKey,
       property,
       initialValue,
       !!this._caller,
+      asRef,
     );
     this.observeState(property);
     return state;
   }
+
+  #pendingStateUpdate = false;
+  #batchedChanges = [];
 
   /**
    * Called when a watched state property changes.
@@ -250,18 +275,35 @@ class ReactiveComponent extends HTMLElement {
    * @param {*} prevValue
    */
   stateChange(value, property, prevValue) {
-    if (typeof this.onStateChange === "function") {
-      this.onStateChange(value, property, prevValue);
+    clearAllListenersForHost(this);
 
-      // Call reactive() if implemented in the child
-      if (typeof this.reactive === "function") {
-        this.reactive();
-      }
-    } else {
-      Piglet.log(
-        `[${this._caller ?? this.__componentKey}] onStateChange not implemented for: ${property}`,
-        "warn",
-      );
+    this.#batchedChanges.push({ value, property, prevValue });
+
+    if (!this.#pendingStateUpdate) {
+      this.#pendingStateUpdate = true;
+      Promise.resolve().then(() => {
+        const changes = this.#batchedChanges;
+        this.#batchedChanges = [];
+        this.#pendingStateUpdate = false;
+
+        this._mount(CONST.reason.stateChange(changes));
+
+        if (typeof this.onStateChange === "function") {
+          for (const { value, property, prevValue } of changes) {
+            this.onStateChange(value, property, prevValue);
+          }
+          if (typeof this.reactive === "function") {
+            this.reactive();
+          }
+        } else {
+          for (const { property } of changes) {
+            Piglet.log(
+              CONST.pigletLogs.onStateChangeNotImplemented(this, property),
+              CONST.coreLogsLevels.warn,
+            );
+          }
+        }
+      });
     }
   }
 

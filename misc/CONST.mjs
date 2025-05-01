@@ -2,6 +2,7 @@
 
 import path from "path";
 import { fileURLToPath } from "url";
+import BROWSER_CONST from "../browser/CONST.mjs";
 
 const rootDirArg = process.argv.find((value) => value.startsWith("--rootDir="));
 
@@ -173,5 +174,15 @@ export default {
       startExitCode: (code) => `❌ start.mjs exited with code: ${code}`,
       start: "🔧 Running build script...\n",
     },
+    webTypes: {
+      failedToLoad: (path, err) => [`❌ Failed to load ${path}:`, err.message],
+      added: (addedCount) =>
+        `✅ Added ${addedCount} custom element(s) into web-types.json`,
+      failedToWrite: (path, err) => [
+        `❌ Failed to write ${path}:`,
+        err.message,
+      ],
+    },
   },
+  browser: BROWSER_CONST,
 };

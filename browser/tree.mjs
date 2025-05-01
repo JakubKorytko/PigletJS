@@ -1,6 +1,7 @@
 import { useState } from "@Piglet/browser/state";
 import Piglet from "@Piglet/browser/config";
 import { sendToExtension } from "@Piglet/browser/extension";
+import CONST from "@Piglet/browser/CONST";
 
 /**
  * Assigns a unique component ID to a custom element if it doesn't already have one.
@@ -46,7 +47,7 @@ function buildCustomElementTree(root = document.body) {
     }
 
     if (isCustom) {
-      if (node.constructor.name === "AppRoot") {
+      if (node.constructor.name === CONST.appRootName) {
         node.__componentId = 0;
       } else {
         assignComponentIdToElement(node);
@@ -59,7 +60,7 @@ function buildCustomElementTree(root = document.body) {
             node._caller ?? node.__componentKey,
             property,
             undefined,
-            !!node._caller,
+            true,
           )?.value;
         }
       }
@@ -120,11 +121,11 @@ function injectTreeTrackingToComponentClass(targetClass) {
     this.__trackCustomTree__ = () => {
       const root = this;
       this.__tree = buildCustomElementTree(root);
-      if (this.constructor.name === "AppRoot") {
+      if (this.constructor.name === CONST.appRootName) {
         Piglet.tree = this.__tree;
       }
-      Piglet.log(`[${this.constructor.name}] tracking tree`);
-      sendToExtension("tree");
+      Piglet.log(CONST.pigletLogs.trackingTree(this));
+      sendToExtension(CONST.extension.tree);
     };
 
     this.__trackCustomTree__();
@@ -171,7 +172,7 @@ function injectTreeTrackingToComponentClass(targetClass) {
   targetClass.prototype.disconnectedCallback = function () {
     if (this.__customTreeObserver__) {
       this.__customTreeObserver__.disconnect();
-      sendToExtension("tree");
+      sendToExtension(CONST.extension.tree);
     }
 
     Piglet.mountedComponents.delete(this.__mountData);

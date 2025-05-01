@@ -5,6 +5,7 @@ import { resolvePath } from "@Piglet/utils/paths";
 import { indent, toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
 import { formatHTML, formatJS } from "@Piglet/parser/format";
+import CONST from "@Piglet/misc/CONST";
 
 /**
  * Extracts import statements from JavaScript code and returns the cleaned code.
@@ -109,9 +110,68 @@ function injectHostElementAttribute(content, tagName, componentName) {
   const regex = new RegExp(`<${tagName}([^>]*)>`, "g");
 
   return content.replace(regex, (match, attrs) => {
-    if (/host__element\s*=/.test(attrs)) return match;
-    return `<${tagName} host__element="${componentName}_NOT_SETTLED"${attrs}>`;
+    if (new RegExp(`${CONST.browser.callerAttribute}\\s*=`).test(attrs))
+      return match;
+    return `<${tagName} ${CONST.browser.callerAttribute}="${componentName}_NOT_SETTLED"${attrs}>`;
   });
+}
+
+function autoInjectValue(script) {
+  const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
+  const usageRegex = /\B(\$\w+)\b/g;
+  const excludedNames = new Set([
+    "$onUpdate",
+    "$onBeforeUpdate",
+    "$attrs",
+    "$ref",
+  ]);
+
+  const declarationRanges = [];
+
+  for (const match of script.matchAll(declarationRegex)) {
+    const fullMatch = match[0];
+    const varName = match[1];
+    const start = match.index + fullMatch.indexOf(varName);
+    const end = start + varName.length;
+    declarationRanges.push([start, end]);
+  }
+
+  const stringRanges = [];
+  const stringRegex = /(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g;
+
+  for (const match of script.matchAll(stringRegex)) {
+    stringRanges.push([match.index, match.index + match[0].length]);
+  }
+
+  const isInRanges = (start, end, ranges) =>
+    ranges.some(([s, e]) => start >= s && end <= e);
+
+  let result = "";
+  let lastIndex = 0;
+
+  for (const match of script.matchAll(usageRegex)) {
+    const start = match.index;
+    const end = start + match[1].length;
+    const name = match[1];
+
+    const inDeclaration = isInRanges(start, end, declarationRanges);
+    const inExcluded = excludedNames.has(name);
+    const inString = isInRanges(start, end, stringRanges);
+
+    const isInTemplateExpr = (() => {
+      const before = script.slice(Math.max(0, start - 2), start);
+      const after = script.slice(end, end + 1);
+      return before === "${" && after === "}";
+    })();
+
+    if (!inDeclaration && !inExcluded && (!inString || isInTemplateExpr)) {
+      result += script.slice(lastIndex, start) + name + ".value";
+      lastIndex = end;
+    }
+  }
+
+  result += script.slice(lastIndex);
+  return result;
 }
 
 /**
@@ -128,31 +188,42 @@ function injectHostElementAttribute(content, tagName, componentName) {
  * @returns {string} The transformed JavaScript code.
  */
 const transformScript = (fullScript) => {
-  const destructureRegex = /const\s*{\s*(.*?)\s*}\s*=\s*state\s*;/g;
+  const assignmentsRegex = /let\s*\$(\w+)\s*=\s*(.+?(?=;|$))/gm;
+  const declarationsRegex = /let\s+((?:\$\w+\s*(?:,\s*)?)+)(;|$)/;
 
-  return fullScript.replace(destructureRegex, (_, vars) => {
-    return vars
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .map((v) => {
-        const [namePart, defaultPart] = v.split("=").map((s) => s.trim());
-        const name = namePart.replace(/[{}]/g, "").trim();
+  return autoInjectValue(fullScript)
+    .replace(assignmentsRegex, (_, name, value) => {
+      const trimmed = value.trim();
 
-        let secondArg = "";
+      // Obsługa: let $x = $ref(...)
+      const refCallMatch = /^\$ref\s*\((.*)\)$/.exec(trimmed);
+      if (refCallMatch) {
+        const inner = refCallMatch[1].trim();
+        const hasValue = inner.length > 0;
+        return `let $${name} = state("${name}", ${hasValue ? inner : "undefined"}, true)`;
+      }
 
-        if (defaultPart) {
-          const initMatch = defaultPart.match(/^init\((.*)\)$/);
+      // Obsługa: let $x = $ref;
+      if (trimmed === "$ref") {
+        return `let $${name} = state("${name}", undefined, true)`;
+      }
 
-          if (initMatch) {
-            secondArg = `, ${initMatch[1]}`;
-          }
-        }
+      // Domyślna obsługa: let $x = coś
+      return `let $${name} = state("${name}", ${value})`;
+    })
+    .replace(declarationsRegex, (_, group) => {
+      const variables = group
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v.startsWith("$"));
 
-        return `const ${name} = state("${name}"${secondArg});`;
-      })
-      .join("\n");
-  });
+      return variables
+        .map((v) => {
+          const name = v.slice(1);
+          return `let $${name} = state("${name}")`;
+        })
+        .join("\n");
+    });
 };
 
 /**
@@ -184,14 +255,32 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   
   export default ({
     state,
-    attributes,
+    attributes: primitiveAttributes,
     forwarded,
     component,
     onStateChange,
     onAttributeChange,
-    onUpdate,
-    element
-  }) => {\n${cleanedCode}\n}`);
+    onUpdate: $onUpdate,
+    $onBeforeUpdate,
+    $onAfterUpdate,
+    element,
+    reason
+  }) => {
+
+  const originalBoolean = Boolean;
+
+  Boolean = function(...args) {
+    if (args[0] && args[0].isPigletProxy) {
+      const proxyValue = args[0].valueOf()
+      return Boolean(proxyValue);
+    }
+
+    return originalBoolean(...args);
+  };
+  
+  const $attrs = {...forwarded, ...primitiveAttributes};
+  
+  ${cleanedCode}\n}`);
 
   return fs.promises.writeFile(outputPath, scriptForFile);
 };

@@ -1,10 +1,8 @@
-const { display = init(true) } = state;
-const { nested = init({ object: { hide: true } }) } = state;
+let $display = true;
 
-onStateChange["display"] = (value) => {
-  nested.value = { object: { hide: value } };
-};
+let $nested = { object: { hide: true } };
 
 element("#hide").on("click", () => {
-  display.value = !display.value;
+  $display = !$display;
+  $nested = { object: { hide: $display } };
 });
