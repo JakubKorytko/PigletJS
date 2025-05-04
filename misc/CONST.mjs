@@ -224,6 +224,8 @@ export default {
       "typedoc.config.js",
       "web-types.json",
       "prod_start.mjs",
+      "start.mjs",
+      "setup.mjs",
     ]),
   },
 };

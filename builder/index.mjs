@@ -90,6 +90,7 @@ async function prepareProd(dirname) {
   await minifyMjsFiles(outputDir);
   console.log("✅ Minification completed.");
   await fsp.rm(path.join(dirname, "start.mjs"));
+  await fsp.rm(path.join(dirname, CONST.dirPath(true), "piglet.mjs"));
   console.log("✅ Removed production side-effects.");
   console.log("Run 'node piglet.mjs' to start the app!");
 }
