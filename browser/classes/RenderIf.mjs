@@ -116,7 +116,7 @@ class RenderIf extends ReactiveComponent {
       const host = getHost(this.__root);
       this._updateCondition(host.__attrs[conditionProperty]);
     } else {
-      this._state = this.state(conditionProperty, undefined, true);
+      this._state = this.state(conditionProperty, undefined);
       this._updateCondition(this._state.value);
     }
   }

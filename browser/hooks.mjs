@@ -30,6 +30,7 @@ const useState = (
     !isCreatedByListener &&
     window.Piglet.state[componentName][key].__isCreatedByListener
   ) {
+    window.Piglet.state[componentName][key]._isRef = asRef;
     window.Piglet.state[componentName][key].setState(initialValue);
     window.Piglet.state[componentName][key].__isCreatedByListener = false;
   }
