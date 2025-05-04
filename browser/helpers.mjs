@@ -1,12 +1,55 @@
-import CONST from "@Piglet/browser/CONST";
-
 /**
- * Retrieves a deeply nested value from an object using a path array.
- * @param {object} obj - The object to extract the value from.
- * @param {string[]} pathParts - An array of keys representing the path to the value.
- * @returns {*} - The value at the specified path, or undefined if not found.
+ * @import {
+ *  GetHost,
+ *  IsShadowRoot,
+ *  GetDeepValue,
+ *  ToPascalCase,
+ *  ToPigletAttr,
+ *  FromPigletAttr,
+ *  Api,
+ *  Navigate,
+ *  ToKebabCase,
+ *  FadeOut,
+ *  FadeIn,
+ *  GetMountedComponentsByTag,
+ *  SendToExtension,
+ *  LoadComponent
+ * } from '@jsdocs/browser/helpers.d'
  */
-function getDeepValue(obj, pathParts) {
+
+import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import CONST from "@Piglet/browser/CONST";
+import { injectTreeTrackingToComponentClass } from "@Piglet/browser/tree";
+/** @type {GetHost} */
+const getHost = function (node, parent) {
+  /** @type {Node|ShadowRoot} */
+  let target;
+
+  if (parent) {
+    target = node.getRootNode();
+  } else if (isShadowRoot(node)) {
+    target = node;
+  } else if ("shadowRoot" in node) {
+    const shadowRoot = node.shadowRoot;
+    if (shadowRoot instanceof ShadowRoot) {
+      target = shadowRoot;
+    }
+  }
+
+  if ("host" in target && target.host instanceof ReactiveComponent) {
+    return target.host;
+  }
+
+  return null;
+};
+
+/** @type {IsShadowRoot} */
+const isShadowRoot = function (shadowRootNode) {
+  return shadowRootNode instanceof ShadowRoot;
+};
+
+/** @type {GetDeepValue} */
+const getDeepValue = function (obj, pathParts) {
   if (!pathParts) return obj;
 
   let result = obj;
@@ -20,46 +63,38 @@ function getDeepValue(obj, pathParts) {
   }
 
   return result;
-}
+};
 
-/**
- * Converts a kebab-case or snake_case string to PascalCase.
- * @param {string} str - The input string.
- * @returns {string} - The converted PascalCase string.
- */
-function toPascalCase(str) {
+/** @type {ToPascalCase} */
+const toPascalCase = function (str) {
   return str
     .split(/[-_]/)
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
     .join("");
-}
+};
 
-function toPigletAttr(name) {
+/** @type {ToPigletAttr} */
+const toPigletAttr = function (name) {
   if (name.includes("-") || name.toLowerCase() === name) {
     return `${CONST.attributePrefix}${name}`;
   }
 
   const transformed = name.replace(/([A-Z])/g, "_$1").toLowerCase();
   return `${CONST.attributePrefix}${transformed}`;
-}
+};
 
-function fromPigletAttr(pigletName) {
+/** @type {FromPigletAttr} */
+const fromPigletAttr = function fromPigletAttr(pigletName) {
   if (!pigletName.startsWith(CONST.attributePrefix)) {
     return "";
   }
   let raw = pigletName.slice(7);
 
   return raw.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
-}
+};
 
-/**
- * Makes a request to a given API path and parses the response based on expected type.
- * @param {string} path - The API path (without leading `/api/`).
- * @param {'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData'} [expect='json'] - The expected response type.
- * @returns {Promise<*>} - The parsed response data.
- * @throws {Error} - Throws if fetching or parsing fails.
- */
-async function api(path, expect = "json") {
+/** @type {Api} */
+const api = async function (path, expect = "json") {
   const url = `${CONST.apiRoute}/${path.replace(/^\/+/, "")}`;
 
   let res;
@@ -89,7 +124,7 @@ async function api(path, expect = "json") {
   try {
     const data = await parse();
     if (!contentType.includes(expected)) {
-      Piglet.log(
+      window.Piglet.log(
         CONST.warning.expectedButGot(expected, contentType),
         CONST.coreLogsLevels.warn,
       );
@@ -98,7 +133,7 @@ async function api(path, expect = "json") {
   } catch (err) {
     try {
       const fallback = await res.text();
-      Piglet.log(
+      window.Piglet.log(
         CONST.warning.failedToParseAs(expected),
         CONST.coreLogsLevels.warn,
       );
@@ -107,17 +142,9 @@ async function api(path, expect = "json") {
       throw CONST.error.failedToParseFromURL(expected, url);
     }
   }
-}
+};
 
-/**
- * Navigates to a new route within the application by updating the browser history
- * and setting the `route` property on the root component.
- *
- * This function assumes that `window.Piglet.tree` contains a tracked component tree,
- * and that the root component has the name `"AppRoot"` and a `route` property.
- *
- * @param {string} route - The new route path to navigate to (e.g., "/about", "/dashboard").
- */
+/** @type {Navigate} */
 const navigate = (route) => {
   if (!window.Piglet.tree) return;
 
@@ -130,24 +157,13 @@ const navigate = (route) => {
   root.element.route = route;
 };
 
-/**
- * Converts a PascalCase or camelCase string to kebab-case.
- *
- * @param {string} str - The string to convert.
- * @returns {string}
- */
-function toKebabCase(str) {
+/** @type {ToKebabCase} */
+const toKebabCase = function (str) {
   return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
-}
+};
 
-/**
- * Fades out an element by gradually reducing its opacity to 0.
- *
- * @param {typeof ReactiveComponent & HTMLElement} element - The element to fade out.
- * @param {number} [duration=400] - The duration of the fade out in milliseconds.
- * @returns {Promise<void>} A promise that resolves when the fade out is complete.
- */
-function fadeOut(element, duration = 400) {
+/** @type {FadeOut} */
+const fadeOut = function (element, duration = 400) {
   return new Promise((resolve) => {
     element.style.opacity = "1";
     element.style.transition = `opacity ${duration}ms`;
@@ -166,23 +182,18 @@ function fadeOut(element, duration = 400) {
 
     element.addEventListener("transitionend", handleTransitionEnd);
   });
-}
+};
 
-/**
- * Fades in an element by gradually increasing its opacity to 1.
- *
- * @param {typeof ReactiveComponent & HTMLElement} element - The element to fade in.
- * @param {number} [duration=400] - The duration of the "fade in" in milliseconds.
- * @returns {Promise<void>} A promise that resolves when the fade in is complete.
- */
-function fadeIn(element, duration = 400) {
+/** @type {FadeIn} */
+const fadeIn = function (element, duration = 400) {
+  if (!element) return Promise.resolve();
   return new Promise((resolve) => {
-    element.style.opacity = "0";
     element.style.display = "";
+    element.style.opacity = "0";
+    element.style.transition = `opacity ${duration}ms`;
 
     void element.offsetWidth;
 
-    element.style.transition = `opacity ${duration}ms`;
     element.style.opacity = "1";
 
     const handleTransitionEnd = (event) => {
@@ -194,19 +205,10 @@ function fadeIn(element, duration = 400) {
 
     element.addEventListener("transitionend", handleTransitionEnd);
   });
-}
+};
 
-/**
- * Retrieves all mounted component instances that match a given tag name.
- *
- * This function searches through the `window.Piglet.mountedComponents` set
- * and returns the `.ref` property of each component whose `tag` matches
- * the provided `tagName` (case-insensitive).
- *
- * @param {string} tagName - The tag name of the components to find (e.g., "my-component").
- * @returns {Array<typeof ReactiveComponent>} An array of references (`.ref`) to the matching mounted components.
- */
-function getMountedComponentsByTag(tagName) {
+/** @type {GetMountedComponentsByTag} */
+const getMountedComponentsByTag = function (tagName) {
   const componentRefs = [];
 
   if (!window.Piglet?.mountedComponents?.size) return componentRefs;
@@ -218,17 +220,50 @@ function getMountedComponentsByTag(tagName) {
   }
 
   return componentRefs;
+};
+
+/** @type {SendToExtension} */
+const sendToExtension = (requestType) => {
+  const api = window.Piglet?.extension;
+  const actions = {
+    initial: api?.sendInitialData,
+    state: api?.sendStateUpdate,
+    tree: api?.sendTreeUpdate,
+  };
+
+  const action = actions[requestType];
+  if (typeof action === "function") {
+    action();
+  }
+};
+
+/** @type {LoadComponent} */
+function loadComponent(_class) {
+  const className = _class.name;
+  const tagName = toKebabCase(className);
+
+  const existingClass = customElements.get(tagName);
+  if (!existingClass) {
+    injectTreeTrackingToComponentClass(_class);
+    customElements.define(tagName, _class);
+  }
+
+  return customElements.whenDefined(tagName);
 }
 
 export {
-  toPascalCase,
+  getHost,
+  isShadowRoot,
   getDeepValue,
+  toPascalCase,
+  toPigletAttr,
+  fromPigletAttr,
   api,
   navigate,
   toKebabCase,
   fadeOut,
   fadeIn,
   getMountedComponentsByTag,
-  toPigletAttr,
-  fromPigletAttr,
+  loadComponent,
+  sendToExtension,
 };

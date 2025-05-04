@@ -11,6 +11,9 @@
 </content>
 
 <script>
+  /** @import { $ref } from "@Piglet/misc/globals"; */
+  /** @import { element } from "@Piglet/browser/helpers"; */
+  
   const { clickCount, parentMethod } = $attrs;
 
   // noinspection JSUnusedAssignment
@@ -18,7 +21,8 @@
 
   $display = clickCount > 5;
 
-  element("#clickCount").innerText = `You clicked the button in my parent ${clickCount} times`;
+  element("#clickCount").innerText =
+    `You clicked the button in my parent ${clickCount} times`;
 
   parentMethod();
 </script>

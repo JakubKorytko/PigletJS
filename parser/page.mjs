@@ -1,6 +1,7 @@
 import fs from "fs";
 import { resolvePath } from "@Piglet/utils/paths";
 import { toKebabCase } from "@Piglet/utils/stringUtils";
+import console from "@Piglet/utils/console";
 
 /**
  * Loads the HTML content of a specific page.

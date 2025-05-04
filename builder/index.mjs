@@ -5,7 +5,7 @@ import fs from "fs";
 import { spawn } from "child_process";
 import runApplication from "../watcher/spawn.mjs";
 import CONST from "../misc/CONST.mjs";
-import "../utils/console.mjs";
+import console from "../utils/console.mjs";
 
 /**
  * Deletes the existing `templates` and `extension` directories if they exist.

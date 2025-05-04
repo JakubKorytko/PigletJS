@@ -1,6 +1,6 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import { getHost, loadComponent } from "@Piglet/browser/helpers";
 // noinspection ES6UnusedImports
-import { loadComponent } from "@Piglet/browser/loadComponent";
 import scriptRunner from "@Piglet/browser/scriptRunner";
 
 // noinspection JSClosureCompilerSyntax
@@ -19,7 +19,7 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
   /**
    * Creates an instance of the component and attaches a shadow DOM.
    * It also loads the component's content via the `loadContent` method.
-   *
+   *we
    * @constructor
    */
   constructor() {
@@ -27,48 +27,6 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
     this.attachShadow({ mode: "open" });
     // noinspection JSIgnoredPromiseFromCall
     this.loadContent();
-  }
-
-  // noinspection JSUnusedGlobalSymbols
-  /**
-   * Reloads the component by resetting its internal state and re-fetching
-   * the HTML content. It also re-runs the component's script.
-   *
-   * @async
-   * @returns {Promise<void>} A promise that resolves when the reload is complete.
-   */
-  async reloadComponent() {
-    this._isHTMLInjected = false;
-    this._isMounted = false;
-    await this.runScript({ name: "reload" });
-    await this.loadContent();
-  }
-
-  /**
-   * Fetches and injects the HTML content for the component from the server.
-   * The HTML is injected into the component's shadow DOM.
-   *
-   * @async
-   * @returns {Promise<void|null>} A promise that resolves when the HTML content is loaded, or `null` in case of an error.
-   */
-  async loadContent() {
-    const componentName = this.constructor.name;
-    const url = `/component/html/${componentName}`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        // noinspection ExceptionCaughtLocallyJS
-        throw new Error(`Failed to fetch HTML for ${componentName}`);
-      }
-
-      this.shadowRoot.innerHTML = await response.text();
-      this._isHTMLInjected = true;
-      this._mount({ name: "loadContent" });
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
   }
 
   /**
@@ -80,12 +38,14 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
    */
   async runScript(reason) {
     scriptRunner(
-      this.shadowRoot.host,
+      getHost(this),
       await import(`/component/script/COMPONENT_NAME?noCache=${Date.now()}`),
       reason,
     );
   }
 }
 
+// Replaced with component name by parser
 // noinspection JSUnresolvedReference,JSUnusedGlobalSymbols
+// @ts-ignore
 export default COMPONENT_NAME;

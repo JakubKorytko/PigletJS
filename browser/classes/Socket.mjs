@@ -1,56 +1,34 @@
+/** @import {SocketInterface, Member} from "@jsdocs/browser/classes/Socket.d" */
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
+/** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 import { getMountedComponentsByTag } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 
-/**
- * Singleton class for managing WebSocket connections.
- * Automatically reconnects on server restarts or connection drops.
- */
+/** @implements {SocketInterface} */
 class Socket {
-  /** @type {Socket|null} */
   static instance = null;
+  ws = null;
+  reconnectAttempts = 0;
+  maxReconnectAttempts = 5;
+  reconnectInterval = 2000;
 
-  /**
-   * Creates a new WebSocket connection or returns the existing singleton instance.
-   */
   constructor() {
     if (Socket.instance) {
       return Socket.instance;
     }
 
-    /**
-     * The active WebSocket instance.
-     * @type {WebSocket|null}
-     */
     this.ws = null;
-
-    /**
-     * The number of attempted reconnections after disconnection.
-     * @type {number}
-     */
     this.reconnectAttempts = 0;
-
-    /**
-     * Maximum number of allowed reconnection attempts.
-     * @type {number}
-     */
     this.maxReconnectAttempts = 5;
-
-    /**
-     * Interval between reconnection attempts in milliseconds.
-     * @type {number}
-     */
     this.reconnectInterval = 2000;
 
     this.connect();
-
     Socket.instance = this;
   }
 
   /**
-   * Establishes a new WebSocket connection and sets up event handlers.
-   * If a connection already exists, it is properly closed first.
-   *
-   * @returns {void}
+   * @type {Member["connect"]["Type"]}
+   * @returns {Member["connect"]["ReturnType"]}
    */
   connect() {
     if (this.ws) {
@@ -64,7 +42,7 @@ class Socket {
     this.ws = new WebSocket("ws://" + location.host);
 
     this.ws.onopen = () => {
-      Piglet.log(CONST.pigletLogs.socket.connected);
+      window.Piglet.log(CONST.pigletLogs.socket.connected);
       this.reconnectAttempts = 0;
     };
 
@@ -72,18 +50,19 @@ class Socket {
       const message = JSON.parse(event.data);
 
       if (message.type === CONST.socket.messageTypes.reload && message.data) {
+        /** @type {ReactiveComponent[]} */
         const components = getMountedComponentsByTag(message.data);
         for (const component of components) {
           component.reloadComponent();
         }
       } else if (message.type === CONST.socket.messageTypes.reload) {
+        /** @type {AppRoot} */
         const appRoot = document.querySelector(CONST.appRootTag);
-        // noinspection JSIgnoredPromiseFromCall
         appRoot.changeRoute(appRoot._route);
       }
 
       if (message.type === CONST.socket.messageTypes.serverRestart) {
-        Piglet.log(CONST.pigletLogs.socket.serverRestarted);
+        window.Piglet.log(CONST.pigletLogs.socket.serverRestarted);
         this.tryReconnect();
       }
 
@@ -93,12 +72,12 @@ class Socket {
     };
 
     this.ws.onclose = () => {
-      Piglet.log(CONST.pigletLogs.socket.closed);
+      window.Piglet.log(CONST.pigletLogs.socket.closed);
       this.tryReconnect();
     };
 
     this.ws.onerror = (error) => {
-      Piglet.log(
+      window.Piglet.log(
         CONST.pigletLogs.socket.error,
         CONST.coreLogsLevels.error,
         error,
@@ -108,13 +87,12 @@ class Socket {
   }
 
   /**
-   * Attempts to reconnect the WebSocket connection if the maximum number of attempts hasn't been reached.
-   *
-   * @returns {void}
+   * @type {Member["tryReconnect"]["Type"]}
+   * @returns {Member["tryReconnect"]["ReturnType"]}
    */
   tryReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      Piglet.log(
+      window.Piglet.log(
         CONST.pigletLogs.socket.maxReconnectAttempts,
         CONST.coreLogsLevels.warn,
       );
@@ -122,8 +100,8 @@ class Socket {
     }
 
     this.reconnectAttempts++;
-    Piglet.log(
-      socketMessages.reconnecting(
+    window.Piglet.log(
+      CONST.pigletLogs.socket.reconnecting(
         this.reconnectInterval / 1000,
         this.reconnectAttempts,
       ),

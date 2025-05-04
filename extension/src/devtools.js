@@ -1,6 +1,9 @@
 // noinspection JSUnresolvedReference
 
-chrome.devtools.panels.create(
+/** @type {import("./chrome.d.js").Chrome} */
+const chromeExtension = globalThis.chrome;
+
+chromeExtension.devtools.panels.create(
   "🐷 PigletJS",
   "assets/icon.png",
   "panel.html",

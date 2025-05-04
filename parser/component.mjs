@@ -6,6 +6,7 @@ import { indent, toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
 import { formatHTML, formatJS } from "@Piglet/parser/format";
 import CONST from "@Piglet/misc/CONST";
+import console from "@Piglet/utils/console";
 
 /**
  * Extracts import statements from JavaScript code and returns the cleaned code.
@@ -420,9 +421,7 @@ const generateOutput = async (_, ...args) => {
 
   return await injectIntoComponentTemplate({
     className,
-    tagName,
     componentName,
-    innerHTML: `\`${indent(escapeTemplateLiteral(innerHTML), 8)}\``,
   });
 };
 

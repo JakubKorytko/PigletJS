@@ -1,7 +1,10 @@
 // noinspection JSUnresolvedReference
 
+/** @type {import("./chrome.d.js").Chrome} */
+const chromeExtension = globalThis.chrome;
+
 const script = document.createElement("script");
-script.src = chrome.runtime.getURL("src/injected.js");
+script.src = chromeExtension.runtime.getURL("src/injected.js");
 script.onload = function () {
   this.remove();
 };
@@ -15,7 +18,7 @@ window.addEventListener(
 
     const { type, payload } = event.data;
 
-    chrome.runtime.sendMessage({
+    chromeExtension.runtime.sendMessage({
       type,
       payload,
       source: "PIGLET_CONTENT",
@@ -24,7 +27,7 @@ window.addEventListener(
   false,
 );
 
-chrome.runtime.onMessage.addListener((msg) => {
+chromeExtension.runtime.onMessage.addListener((msg) => {
   if (msg.source !== "PIGLET_BACKGROUND") return;
 
   if (msg.type === "INITIAL_REQUEST") {

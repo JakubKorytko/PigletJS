@@ -1,8 +1,15 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
-      "@Piglet/*": ["./*"]
-    }
-  }
+      "@Piglet/*": ["./*.mjs", "./*.js"],
+      "@jsdocs/*": ["./@jsdocs/*.mjs", "./@jsdocs/*.js"]
+    },
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": ["**/*.mjs", "**/*.js", "**/*.d.ts", "**/*.d.js"]
 }

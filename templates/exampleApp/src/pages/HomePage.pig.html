@@ -31,12 +31,12 @@
       console.log("I was called in my child!", $clickCount);
     },
     clickCount: $clickCount,
-    display: true
-  })
+    display: true,
+  });
 
   $onBeforeUpdate(() => {
-    console.log('I am called before update!')
-  })
+    console.log("I am called before update!");
+  });
 
   element("#showTreeBtn").on("click", consoleTree);
 

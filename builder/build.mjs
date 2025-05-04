@@ -5,7 +5,7 @@ import path from "path";
 import readline from "readline";
 import { spawn } from "child_process";
 import CONST from "../misc/CONST.mjs";
-import "../utils/console.mjs";
+import console from "../utils/console.mjs";
 
 const CURRENT_DIR = process.cwd();
 

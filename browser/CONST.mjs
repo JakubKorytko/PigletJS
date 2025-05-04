@@ -1,4 +1,7 @@
-export default {
+/** @import {Constants} from "@jsdocs/browser/CONST.d" */
+
+/** @type {Constants} */
+const CONST = {
   coreLogsLevels: {
     info: "info",
     warn: "warn",
@@ -91,3 +94,5 @@ export default {
   appRootName: "AppRoot",
   appRootTag: "app-root",
 };
+
+export default CONST;

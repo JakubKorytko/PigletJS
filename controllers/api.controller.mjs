@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs/promises";
 import { resolvePath } from "@Piglet/utils/paths";
 import notFound from "@Piglet/libs/notfound";
+import console from "@Piglet/utils/console";
 
 export default async (req, res) => {
   const url = new URL(req.url, `https://${req.headers.host}`);

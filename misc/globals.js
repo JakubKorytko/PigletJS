@@ -1,3 +1,5 @@
+/** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+
 /**
  * Reactive state accessor object.
  *
@@ -17,7 +19,7 @@
  * const user = state("user");
  * user.value = { name: "Anna" };
  *
- * @typedef {Object<string, StateRef<any>> & ((key: string) => StateRef<any>)} StateProxy
+ * @typedef {Object<string, StateRef & ((key: string) => StateRef)>} StateProxy
  */
 
 /**
@@ -171,7 +173,7 @@ let attributes;
  * or state without directly accessing the parent component.
  *
  * @typedef {Object} ForwardedMethods
- * @property {Function}  - A method forwarded from the parent component.
+ * @property {Function} [methodName] - A method forwarded from the parent component.
  * This method can be called by the child component to perform actions in the parent
  * or retrieve data. The exact methods available depend on the parent component's implementation.
  *

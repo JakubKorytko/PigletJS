@@ -1,26 +1,14 @@
-/**
- * @typedef {Object} ShadowDomElement
- * @property {(event: string, callback: EventListener) => ReturnType<typeof queryElement>} on
- * @property {(event: string, callback: EventListener) => ReturnType<typeof queryElement>} off
- * @property {(attrName: string, value: any) => ReturnType<typeof queryElement>} pass
- * @property {typeof ReactiveComponent|Element|null} ref
- */
+/** @import {ClearAllListenersForHost, QueryElement, GetCallbackProxies, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner} from "@jsdocs/browser/scriptRunner.d" */
 
-import { toPigletAttr } from "@Piglet/browser/helpers";
+import { toPigletAttr, getHost } from "@Piglet/browser/helpers";
+import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 
-/**
- * Queries a shadow DOM element inside a host element and provides helper methods
- * for event binding, attribute setting, and direct reference access.
- *
- * @param {typeof ReactiveComponent} hostElement - The host custom element containing the shadowRoot.
- * @param {string} selector - The CSS selector used to find the element inside shadowRoot.
- * @returns {ShadowDomElement}
- */
 const elementListeners = new WeakMap(); // el -> Map<event, Set<callback>>
 const allTrackedElements = new Set(); // All els with listeners
 const hostToElements = new WeakMap(); // host -> Set<shadowEl>
 
-export function clearAllListenersForHost(hostElement) {
+/** @type {ClearAllListenersForHost} */
+export const clearAllListenersForHost = function (hostElement) {
   const elements = hostToElements.get(hostElement);
   if (!elements) return;
 
@@ -38,11 +26,12 @@ export function clearAllListenersForHost(hostElement) {
   }
 
   hostToElements.delete(hostElement);
-}
+};
 
-const queryElement = (hostElement, selector) => {
+/** @type {QueryElement} */
+const queryElement = function (hostElement, selector) {
   const el = hostElement.shadowRoot.querySelector(selector);
-  if (!el) return {};
+  if (!el) return undefined;
 
   if (!hostToElements.has(hostElement)) {
     hostToElements.set(hostElement, new Set());
@@ -88,7 +77,7 @@ const queryElement = (hostElement, selector) => {
       return proxy;
     },
     pass(updates) {
-      if (el) {
+      if (el && el instanceof ReactiveComponent) {
         for (const [key, value] of Object.entries(updates)) {
           if (typeof value === "function") {
             if (!el._forwarded) {
@@ -96,7 +85,7 @@ const queryElement = (hostElement, selector) => {
             }
             el._forwarded[key] = value;
             if (el.onAttributeChange)
-              el.onAttributeChange("forwarded", el._forwarded);
+              el.onAttributeChange(el._forwarded, "forwarded");
             if (el.reactive) el.reactive();
           } else {
             const attr = toPigletAttr(key);
@@ -130,18 +119,8 @@ const queryElement = (hostElement, selector) => {
   return proxy;
 };
 
-/**
- * Creates proxy handlers for listening and reacting to state and attribute changes
- * inside a component.
- *
- * Each proxy allows registering callbacks dynamically for specific property names.
- *
- * @returns {{
- *   onStateChange: Proxy<(value: any, property: string, prevValue: any) => void>,
- *   onAttributeChange: Proxy<(newValue: any, property: string, prevValue: any) => void>
- * }}
- */
-function getCallbackProxies() {
+/** @type {GetCallbackProxies} */
+const getCallbackProxies = function () {
   const stateHandlers = {};
   const attributeHandlers = {};
 
@@ -188,51 +167,25 @@ function getCallbackProxies() {
   );
 
   return { onStateChange, onAttributeChange };
-}
+};
 
-/**
- * Generates an object containing component metadata and callback helpers
- * for a given host custom element.
- *
- * This is used to wire up reactive behavior, state updates, and attribute forwarding.
- *
- * @param {typeof ReactiveComponent} hostElement - The custom element instance to extract data from.
- * @returns {{
- *   component: {
- *     name: string,
- *     id: number,
- *     tree: any,
- *     shadowRoot: ShadowRoot|null,
- *     key: string,
- *     state: Function,
- *     element: typeof ReactiveComponent,
- *     parent: typeof ReactiveComponent|null|Element,
- *     attributes: Object,
- *     forwarded: Object
- *   },
- *   callbacks: {
- *     onStateChange: Proxy,
- *     onAttributeChange: Proxy,
- *     onUpdate: (callback: Function) => void,
- *     reactiveRef: { value: Function },
- *     element: (selector: string) => ReturnType<typeof queryElement>
- *   }
- * }}
- */
-function generateComponentData(hostElement) {
+/** @type {GetComponentData} */
+const generateComponentData = function (hostElement) {
+  /** @type {ComponentData["callbacks"]["reactiveRef"]} */
   const reactiveRef = {
     value: () => {},
   };
 
+  /** @type {ComponentData["callbacks"]["onBeforeUpdateRef"]} */
   const onBeforeUpdateRef = {
     value: () => {},
   };
 
+  /** @type {ComponentData["callbacks"]["onAfterUpdateRef"]} */
   const onAfterUpdateRef = {
     value: () => {},
   };
 
-  // noinspection JSUnusedGlobalSymbols
   return {
     component: {
       name: hostElement.constructor.name,
@@ -242,7 +195,7 @@ function generateComponentData(hostElement) {
       key: hostElement.__componentKey,
       state: hostElement.state.bind(hostElement),
       element: hostElement,
-      parent: hostElement.getRootNode().host,
+      parent: getHost(hostElement, true) ?? null,
       attributes: hostElement._attrs,
       forwarded: hostElement._forwarded,
     },
@@ -263,23 +216,10 @@ function generateComponentData(hostElement) {
       element: queryElement.bind(this, hostElement),
     },
   };
-}
+};
 
-/**
- * Binds reactive callbacks and clears attribute queues for a component
- * after mounting.
- *
- * Used internally after scriptRunner initializes component logic.
- *
- * @param {typeof ReactiveComponent} hostElement - The host custom element.
- * @param {{
- *   reactiveRef: { value: Function },
- *   onStateChange: Proxy,
- *   onAttributeChange: Proxy
- * }} callbacks - The reactive references and proxies generated earlier.
- * @returns {void}
- */
-function componentMountCleanup(
+/** @type {ComponentMountCleanup} */
+const componentMountCleanup = function (
   hostElement,
   {
     reactiveRef,
@@ -294,22 +234,11 @@ function componentMountCleanup(
   hostElement.onAttributeChange = onAttributeChange;
   hostElement.onBeforeUpdate = onBeforeUpdateRef.value;
   hostElement.onAfterUpdate = onAfterUpdateRef.value;
-  // hostElement._scheduleAttributesFlush();
   hostElement.reactive();
-}
+};
 
-/**
- * Executes a module script against a custom element instance,
- * setting up reactive behavior, state watchers, and event forwarding.
- *
- * The module must export a default function that will receive
- * the component structure and callback utilities.
- *
- * @param {typeof ReactiveComponent} hostElement - The host custom element.
- * @param {any} module - The imported module containing the default initialization function.
- * @returns {void}
- */
-function scriptRunner(hostElement, module, scriptReason) {
+/** @type {ScriptRunner} */
+const scriptRunner = function (hostElement, module, scriptReason) {
   if (typeof module.default !== "function") {
     return;
   }
@@ -340,6 +269,6 @@ function scriptRunner(hostElement, module, scriptReason) {
       hostElement.onAfterUpdate();
     }
   });
-}
+};
 
 export default scriptRunner;

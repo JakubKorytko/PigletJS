@@ -1,6 +1,6 @@
 import os from "os";
 import fs from "fs";
-import "../utils/console.mjs";
+import console from "../utils/console.mjs";
 
 /**
  * Host entry to be added to the hosts file.

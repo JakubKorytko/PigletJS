@@ -6,12 +6,12 @@ import { buildComponent } from "@Piglet/parser/component";
 import { subprocessRef } from "@Piglet/watcher/subprocessRef";
 import { reloadClients, fullReload } from "@Piglet/libs/socket";
 import { toKebabCase } from "@Piglet/utils/stringUtils";
-
+import console from "@Piglet/utils/console";
 /**
  * Creates a subprocess for running the server.
  *
  * @param {Array<string>} [args=[]] - Optional arguments to pass to the server subprocess.
- * @returns {typeof ChildProcess} - The forked subprocess.
+ * @returns {import("child_process").ChildProcess} - The forked subprocess.
  */
 const createSubprocess = (args = []) => {
   try {

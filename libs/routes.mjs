@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-
+import console from "@Piglet/utils/console";
 export const routes = {};
 export const routeAliases = {};
 
