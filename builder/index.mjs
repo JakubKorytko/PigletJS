@@ -8,32 +8,90 @@ import CONST from "../misc/CONST.mjs";
 import console from "../utils/console.mjs";
 
 /**
- * Deletes the existing `templates` and `extension` directories if they exist.
+ * Minifies the given code by removing comments and whitespace.
  *
- * @param {string} dirname - The base directory from which paths are resolved.
+ * @param {string} code - The code to minify.
+ * @returns {string} The minified code.
+ */
+function safeMinify(code) {
+  return code
+    .replace(/^[ \t]*\/\/.*$/gm, "")
+    .replace(/\/\*\*[\s\S]*?\*\/|\/\*[^*][\s\S]*?\*\//g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[\r\n]{2,}/g, "\n")
+    .trim();
+}
+
+/**
+ * Minifies all MJS files in the given directory.
+ *
+ * @param {string} dir - The directory to minify.
  * @returns {Promise<void>}
  */
-async function clearTemplates(dirname) {
-  const templatesPath = path.join(dirname, "PigletJS", "templates");
-  const extensionPath = path.join(dirname, "PigletJS", "extension");
+async function minifyMjsFiles(dir) {
+  const entries = await fsp.readdir(dir, { withFileTypes: true });
 
-  try {
-    if (fs.existsSync(templatesPath)) {
-      await fsp.rm(templatesPath, { recursive: true, force: true });
-      console.msg("template.templatesRemoved");
-    } else {
-      console.msg("template.templatesDoNotExists");
-    }
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
 
-    if (fs.existsSync(extensionPath)) {
-      await fsp.rm(extensionPath, { recursive: true, force: true });
-      console.msg("template.extensionRemoved");
-    } else {
-      console.msg("template.extensionDoNotExists");
+    if (entry.isDirectory()) {
+      await minifyMjsFiles(fullPath);
+    } else if (entry.isFile() && entry.name.endsWith(".mjs")) {
+      const content = await fsp.readFile(fullPath, "utf-8");
+      const minified = safeMinify(content);
+      await fsp.writeFile(fullPath, minified, "utf-8");
+      console.log(`Minified: ${fullPath}`);
     }
-  } catch (err) {
-    console.msg("template.errorRemoving", err);
   }
+}
+
+/**
+ * Recursively copies all files and directories from a source directory to a destination directory.
+ *
+ * @param {string} srcDir - The source directory to copy from.
+ * @param {string} destDir - The destination directory to copy to.
+ * @returns {Promise<void>}
+ */
+async function copyRecursive(srcDir, destDir) {
+  await fsp.mkdir(destDir, { recursive: true });
+  const entries = await fsp.readdir(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (
+      CONST.productionExclude.dirs.has(entry.name) ||
+      CONST.productionExclude.files.has(entry.name)
+    )
+      continue;
+
+    const srcPath = path.join(srcDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyRecursive(srcPath, destPath);
+    } else {
+      await fsp.copyFile(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * Prepares the production build by removing the output directory, copying the project root,
+ * minifying MJS files, removing production side-effects, and logging a message.
+ *
+ * @param {string} dirname - The base project directory.
+ */
+async function prepareProd(dirname) {
+  const projectRoot = path.join(dirname, CONST.dirPath(false));
+  const outputDir = path.join(dirname, CONST.dirPath(true));
+
+  await fsp.rm(outputDir, { recursive: true, force: true });
+  await copyRecursive(projectRoot, outputDir);
+  console.log(`✅ ${CONST.dirPath(true)} created successfully.`);
+  await minifyMjsFiles(outputDir);
+  console.log("✅ Minification completed.");
+  await fsp.rm(path.join(dirname, "start.mjs"));
+  console.log("✅ Removed production side-effects.");
+  console.log("Run 'node piglet.mjs' to start the app!");
 }
 
 /**
@@ -227,12 +285,12 @@ function runAddHostAndStartApp(dirname) {
  * @param {string} dirname - Project root directory.
  * @param {boolean} create - Whether to create a new project structure.
  * @param {boolean} host - Whether to only add a host entry.
- * @param {boolean} clear - Whether to clear the existing template/extension folders.
+ * @param {boolean} prod - Whether to generate production build
  * @returns {Promise<void>}
  */
-async function start(dirname, create, host, clear) {
-  if (clear) {
-    await clearTemplates(dirname);
+async function start(dirname, create, host, prod) {
+  if (prod) {
+    await prepareProd(dirname);
     return;
   }
 

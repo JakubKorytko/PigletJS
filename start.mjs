@@ -8,5 +8,5 @@ createApp(
   import.meta.dirname,
   args.includes("--create"),
   args.includes("--add-host"),
-  args.includes("--clear-templates"),
+  args.includes("--production"),
 );

@@ -120,11 +120,7 @@ function injectHostElementAttribute(content, tagName, componentName) {
 function autoInjectValue(script) {
   const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
   const usageRegex = /\B(\$\w+)\b/g;
-  const excludedNames = new Set([
-    "$onBeforeUpdate",
-    "$attrs",
-    "$ref",
-  ]);
+  const excludedNames = new Set(["$onBeforeUpdate", "$attrs", "$ref"]);
 
   const declarationRanges = [];
 

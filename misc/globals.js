@@ -158,4 +158,3 @@ let routes;
  * @type {Object<string, string>}
  */
 let routeAliases;
-

@@ -3,7 +3,7 @@
 /**
  * @typedef {(node: Node|ShadowRoot, parent?: boolean) => ReactiveComponent|null} GetHost
  * Gets the host component for a given node, returning null if no ReactiveComponent is found.
-*/
+ */
 
 /**
  * @typedef {(node: Node) => node is ShadowRoot} IsShadowRoot

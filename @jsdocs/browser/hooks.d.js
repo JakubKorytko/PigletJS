@@ -23,7 +23,7 @@
  * @template T - The type of the state value.
  * @typedef {[addObserver: ObserverFn<T>, removeObserver: ObserverFn<T>]} ObserverTuple
  * A tuple containing functions to add and remove observers for a specific state.
-*/
+ */
 
 /**
  * @template T - The type of the state value.

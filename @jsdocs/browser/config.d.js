@@ -33,7 +33,7 @@
  * PigletJS configuration object.
  */
 
-/** 
+/**
  * @typedef {(message: string, severity: "info"|"warn"|"error", ...args: any[]) => void} Log
  * Log a message with a severity.
  */

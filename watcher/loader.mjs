@@ -1,11 +1,14 @@
 import { pathToFileURL, fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
+import CONST from "../misc/CONST.mjs";
 
 let projectRoot = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../",
 );
+
+const isProd = process.env.NODE_ENV === "production";
 
 /**
  * Resolves a module specifier to an absolute file path, handling aliases like "@/".
@@ -21,7 +24,10 @@ let projectRoot = path.join(
 // noinspection JSUnusedGlobalSymbols
 export async function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith("@/") || specifier.startsWith("@Piglet/")) {
-    const modifiedSpecifier = specifier.replace("@Piglet/", "@/PigletJS/");
+    const modifiedSpecifier = specifier.replace(
+      "@Piglet/",
+      `@/${CONST.dirPath(isProd)}/`,
+    );
     let targetPath = path.resolve(projectRoot, modifiedSpecifier.slice(2));
 
     if (!fs.existsSync(targetPath)) {

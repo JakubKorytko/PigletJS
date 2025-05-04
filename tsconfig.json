@@ -8,7 +8,6 @@
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "checkJs": true,
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "types",

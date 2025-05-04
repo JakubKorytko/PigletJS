@@ -91,7 +91,7 @@
  *   }
  * }} ComponentData
  * Contains the data related to a component's state, attributes, and lifecycle callbacks.
-*/
+ */
 
 export /** @exports ScriptContext */
 /** @exports ScriptResult */

@@ -1,5 +1,7 @@
-import CONST from "@Piglet/misc/CONST";
+import CONST from "../misc/CONST.mjs";
 import path from "path";
+
+const isProd = process.env.NODE_ENV === "production";
 
 /**
  * Resolves an input path, replacing aliases with corresponding directory paths.
@@ -11,7 +13,10 @@ import path from "path";
  */
 function resolvePath(inputPath) {
   if (inputPath.startsWith("@/") || inputPath.startsWith("@Piglet/")) {
-    const modifiedPath = inputPath.replace("@Piglet/", "@/PigletJS/");
+    const modifiedPath = inputPath.replace(
+      "@Piglet/",
+      `@/${CONST.dirPath(isProd)}/`,
+    );
     const aliasPath = modifiedPath.replace("@/", "");
 
     if (
