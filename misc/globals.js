@@ -1,3 +1,5 @@
+/** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+
 /**
  * Reactive state accessor object.
  *
@@ -17,7 +19,7 @@
  * const user = state("user");
  * user.value = { name: "Anna" };
  *
- * @typedef {Object<string, StateRef<any>> & ((key: string) => StateRef<any>)} StateProxy
+ * @typedef {Object<string, StateRef & ((key: string) => StateRef)>} StateProxy
  */
 
 /**
@@ -61,29 +63,6 @@ let state;
 let element;
 
 /**
- * Handler for reacting to state changes in a component.
- *
- * This is a Proxy function that routes changes to specific state key handlers.
- * You can register handlers using bracket notation:
- *
- * @example
- * onStateChange['display'] = (newValue, prevValue) => {
- *   nested.value = { object: { hide: newValue } };
- * };
- *
- * When a state change occurs, call:
- *
- * @example
- * onStateChange(newValue, stateKey, prevValue);
- *
- * @param {any} newValue - The new value of the state.
- * @param {any} prevValue - The previous value of that state key.
- *
- * @property {(newValue: any, prevValue: any) => void} [stateKey] - Assignable handler for a specific state key.
- */
-let onStateChange;
-
-/**
  * @typedef {Object} ConnectedComponent
  * @property {string} name - The component's constructor name.
  * @property {number|string} id - The component's internal ID (`__componentId`).
@@ -103,46 +82,8 @@ let component;
  */
 let init;
 
-/**
- * Registers a callback to be executed whenever there is an update to the component's state or attributes.
- * This function typically updates the DOM or performs some side-effect based on the current state or attributes.
- *
- * @param {Function} callback - The callback function to be executed on each update.
- * The callback will be invoked with no arguments and should contain logic for handling state changes.
- *
- * @example
- * onUpdate(() => {
- *   element("#clickCount").ref.innerText =
- *     `You clicked the button in my parent ${attributes.clickcount} times`;
- * });
- *
- * In this example, the element with the ID `clickCount` is updated with a message
- * that reflects the current value of the `clickcount` attribute.
- */
-let onUpdate;
-
-/**
- * Handler for reacting to attribute changes on a custom element.
- *
- * This is a Proxy function that dispatches changes to per-attribute callbacks.
- * You can assign handlers using bracket notation:
- *
- * @example
- * onAttributeChange['clickcount'] = (newValue, prevValue) => {
- *   display.value = newValue > 5;
- * };
- *
- * Internally, when the host element detects an attribute change, it should call:
- *
- * @example
- * onAttributeChange(newValue, attributeName, prevValue);
- *
- * @param {any} newValue - The new value of the attribute.
- * @param {any} prevValue - The previous value of the attribute.
- *
- * @property {(newValue: any, prevValue: any) => void} [attributeName] - Assignable handler for a specific attribute.
- */
-let onAttributeChange;
+/** @type {Function} */
+let $ref;
 
 /**
  * An object that contains attributes assigned to the component. The `attributes` object
@@ -168,7 +109,7 @@ let attributes;
  * or state without directly accessing the parent component.
  *
  * @typedef {Object} ForwardedMethods
- * @property {Function}  - A method forwarded from the parent component.
+ * @property {Function} [methodName] - A method forwarded from the parent component.
  * This method can be called by the child component to perform actions in the parent
  * or retrieve data. The exact methods available depend on the parent component's implementation.
  *

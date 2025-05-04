@@ -1,3 +1,27 @@
 {
-  "web-types": "./web-types.json"
+  "name": "piglet",
+  "version": "0.0.1",
+  "description": "A lightweight, reactive, and component-based framework for building web applications.",
+  "author": "Jakub Korytko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JakubKorytko/PigletJS.git"
+  },
+  "homepage": "https://github.com/JakubKorytko/PigletJS",
+  "bugs": {
+    "url": "https://github.com/JakubKorytko/PigletJS/issues"
+  },
+  "keywords": [
+    "piglet",
+    "pigletjs",
+    "framework",
+    "reactive",
+    "component-based"
+  ],
+  "scripts": {
+    "setup": "node setup.mjs"
+  },
+  "web-types": "./web-types.json",
+  "type": "module"
 }

@@ -3,6 +3,17 @@ import fs from "fs/promises";
 import path from "path";
 
 /**
+ * @typedef ExtendedConsole
+ * @property {function(string, ...any): void} msg
+ * @property {function(): void} nl
+ * @property {function(string, ...any): void} choice
+ * @property {function(): Promise<void>} printPigAscii
+ */
+
+/** @type {Console & Partial<ExtendedConsole>} */
+const console = global.console ?? window.console;
+
+/**
  * Custom message logging function that fetches messages from `CONST.consoleMessages`
  * and logs them to the console.
  *
@@ -35,8 +46,9 @@ console.msg = function (path, ...args) {
     console.log(current, ...args);
   } else if (typeof current === "function") {
     try {
-      // noinspection JSValidateTypes
-      const result = current(...args);
+      /** @type {function(...any): any} */
+      const fn = current;
+      const result = fn(...args);
       console.log(result);
     } catch (err) {
       console.msg("consoleMsg.evaluatingError", path, err);
@@ -45,6 +57,8 @@ console.msg = function (path, ...args) {
     console.msg("consoleMsg.invalidMessageType", path);
   }
 };
+
+console.nl = () => console.log("");
 
 /**
  * Custom logging function with emoji and colored output that calls `console.msg`.
@@ -103,3 +117,5 @@ console.printPigAscii = async () => {
     console.error("Failed to read pig_ascii.txt:", err.message);
   }
 };
+
+export default console;

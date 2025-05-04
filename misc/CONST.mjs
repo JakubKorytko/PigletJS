@@ -2,6 +2,7 @@
 
 import path from "path";
 import { fileURLToPath } from "url";
+import BROWSER_CONST from "../browser/CONST.mjs";
 
 const rootDirArg = process.argv.find((value) => value.startsWith("--rootDir="));
 
@@ -11,9 +12,14 @@ const rootDir = rootDirArg
 
 const PORT = 2137;
 
+const isProd = process.env.NODE_ENV === "production";
+
+const dirPath = (isProd) => `PigletJS${isProd ? "_Prod" : ""}`;
+
 // noinspection HttpUrlsUsage
 export default {
   PORT,
+  dirPath,
   directories: {
     "@": rootDir,
     components: path.resolve(rootDir, "src", "components"),
@@ -22,7 +28,7 @@ export default {
     builtHTML: path.resolve(rootDir, "build", "html"),
     pages: path.resolve(rootDir, "src", "pages"),
     public: path.resolve(rootDir, "src", "public"),
-    browser: path.resolve(rootDir, "PigletJS", "browser"),
+    browser: path.resolve(rootDir, dirPath(isProd), "browser"),
   },
   voidTags: [
     "area",
@@ -172,6 +178,52 @@ export default {
       runningStart: "\nRunning start.mjs...\n",
       startExitCode: (code) => `❌ start.mjs exited with code: ${code}`,
       start: "🔧 Running build script...\n",
+      errorParsingDescription: (err) => ["❌ Error parsing description:", err],
+      errorReadingFile: (err) => ["❌ Error reading file:", err],
     },
+    webTypes: {
+      failedToLoad: (path, err) => [`❌ Failed to load ${path}:`, err.message],
+      added: (addedCount) =>
+        `✅ Added ${addedCount} custom element(s) into web-types.json`,
+      failedToWrite: (path, err) => [
+        `❌ Failed to write ${path}:`,
+        err.message,
+      ],
+    },
+    watcher: {
+      errorInRunWatcher: (error) => ["❌ Error in runWatcher:", error],
+      errorInCreateSubprocess: (error) => [
+        "❌ Error in createSubprocess:",
+        error,
+      ],
+      entryFileNotFound: (path) => ["❌ Entry file not found:", path],
+      pleaseCreateEntryFile: (path) => [
+        "💡 Please create '@/server/index.mjs' before running the process.\n",
+        path,
+      ],
+    },
+  },
+  browser: BROWSER_CONST,
+  productionExclude: {
+    dirs: new Set([
+      ".git",
+      ".idea",
+      "@jsdocs",
+      "@types",
+      "docs",
+      "extension",
+      "templates",
+    ]),
+    files: new Set([
+      ".gitignore",
+      "jsconfig.json",
+      "LICENSE",
+      "package.json",
+      "README.md",
+      "tsconfig.json",
+      "typedoc.config.js",
+      "web-types.json",
+      "prod_start.mjs",
+    ]),
   },
 };

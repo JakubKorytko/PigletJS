@@ -6,22 +6,20 @@ import { buildComponent } from "@Piglet/parser/component";
 import { subprocessRef } from "@Piglet/watcher/subprocessRef";
 import { reloadClients, fullReload } from "@Piglet/libs/socket";
 import { toKebabCase } from "@Piglet/utils/stringUtils";
-
+import console from "@Piglet/utils/console";
 /**
  * Creates a subprocess for running the server.
  *
  * @param {Array<string>} [args=[]] - Optional arguments to pass to the server subprocess.
- * @returns {typeof ChildProcess} - The forked subprocess.
+ * @returns {import("child_process").ChildProcess} - The forked subprocess.
  */
 const createSubprocess = (args = []) => {
   try {
     const entryPath = resolvePath("@/server/index.mjs");
 
     if (!fs.existsSync(entryPath)) {
-      console.error(`\n⚠️  Entry file not found: ${entryPath}`);
-      console.error(
-        "💡 Please create '@/server/index.mjs' before running the process.\n",
-      );
+      console.msg("watcher.entryFileNotFound", entryPath);
+      console.msg("watcher.pleaseCreateEntryFile", entryPath);
       process.exit(1);
       return null;
     }
@@ -32,7 +30,7 @@ const createSubprocess = (args = []) => {
       {},
     );
   } catch (error) {
-    console.error("Failed to create subprocess:", error.message);
+    console.msg("watcher.errorInCreateSubprocess", error);
     return null;
   }
 };
@@ -74,7 +72,9 @@ const watchDirectory = () => {
           ext: ".html",
         });
 
-        const socketData = toKebabCase(htmlFilename.replace(".pig.html", ""));
+        const socketData = toKebabCase(
+          path.basename(htmlFilename).replace(".pig.html", ""),
+        );
 
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {

@@ -2,7 +2,7 @@ import fs from "fs";
 import { resolvePath } from "@Piglet/utils/paths";
 import { processAllComponents } from "@Piglet/parser/component";
 import { createSubprocess, resetSubprocess } from "@Piglet/watcher/methods";
-import "@Piglet/utils/console";
+import console from "@Piglet/utils/console";
 import { subprocessRef } from "@Piglet/watcher/subprocessRef";
 import { mergeWebTypes } from "@Piglet/builder/webTypes";
 
@@ -46,7 +46,7 @@ process.stdin.resume();
 
 /**
  * Creates a subprocess instance for handling background tasks.
- * @type {import('@Piglet/watcher/subprocessRef.mjs').Subprocess}
+ * @type {import('@Piglet/watcher/subprocessRef').subprocessRef}
  */
 subprocessRef.instance = createSubprocess();
 
@@ -59,7 +59,7 @@ subprocessRef.instance = createSubprocess();
 process.stdin.on("data", async (key) => {
   "use strict";
 
-  if (key === "r") {
+  if (typeof key === "string" && key === "r") {
     console.msg("components.reloading");
     try {
       const descriptions = await processAllComponents();
@@ -71,13 +71,13 @@ process.stdin.on("data", async (key) => {
     }
   }
 
-  if (key === "s") {
+  if (typeof key === "string" && key === "s") {
     subprocessRef.instance.send({ type: "serverRestart" });
     console.msg("server.restarting");
     resetServerOnButtonClick();
   }
 
-  if (key === "\u0003") {
+  if (typeof key === "string" && key === "\u0003") {
     console.msg("server.shuttingDown");
     subprocessRef.instance.kill("SIGINT");
     subprocessRef.instance = null;

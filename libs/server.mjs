@@ -1,5 +1,5 @@
 import http from "http";
-import "@Piglet/utils/console";
+import console from "@Piglet/utils/console";
 import { proxyHandler, serverHandler } from "@Piglet/libs/helpers";
 import {
   runReloadClientOnWSMessageListener,

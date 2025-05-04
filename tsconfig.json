@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@Piglet/*": ["./*.mjs", "./*.js"],
+      "@jsdocs/*": ["./@jsdocs/*.mjs", "./@jsdocs/*.js"]
+    },
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "types",
+    "strict": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.js", "**/*.mjs", "**/*.d.js", "**/*.d.ts"]
+}

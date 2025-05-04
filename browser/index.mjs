@@ -1,10 +1,9 @@
 import Piglet from "@Piglet/browser/config";
-import { navigate } from "@Piglet/browser/helpers";
-import { loadComponent } from "@Piglet/browser/loadComponent";
+import { navigate, loadComponent } from "@Piglet/browser/helpers";
 
 import AppRoot from "@Piglet/browser/classes/AppRoot";
 import RenderIf from "@Piglet/browser/classes/RenderIf";
-import Socket from "@Piglet/browser/socket";
+import Socket from "@Piglet/browser/classes/Socket";
 
 async function loadCoreComponents() {
   await loadComponent(AppRoot);
@@ -18,4 +17,4 @@ window.Piglet = Piglet;
 // noinspection JSIgnoredPromiseFromCall
 loadCoreComponents();
 
-window["navigate"] ??= navigate;
+window.navigate ??= navigate;

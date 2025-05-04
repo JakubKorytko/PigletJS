@@ -1,38 +1,34 @@
-import { useState } from "@Piglet/browser/state";
-import Piglet from "@Piglet/browser/config";
-import { sendToExtension } from "@Piglet/browser/extension";
-
 /**
- * Assigns a unique component ID to a custom element if it doesn't already have one.
- * @param {typeof ReactiveComponent} el - The custom element to which the component ID will be assigned.
- * @returns {number} The assigned component ID.
+ * @import {
+ *  AssignComponentIdToElement,
+ *  BuildCustomElementTree,
+ *  InjectTreeTrackingToComponentClass,
+ *  Walk
+ * }
+ * from "@jsdocs/browser/tree.d"
  */
-function assignComponentIdToElement(el) {
+import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+
+import { useState } from "@Piglet/browser/hooks";
+import Piglet from "@Piglet/browser/config";
+import CONST from "@Piglet/browser/CONST";
+import { getHost, sendToExtension } from "@Piglet/browser/helpers";
+/** @type {AssignComponentIdToElement} */
+const assignComponentIdToElement = function (el) {
   if (el.__componentId === undefined) {
     el.__componentId = ++Piglet.componentCounter;
   }
   return el.__componentId;
-}
+};
 
-/**
- * Recursively builds a tree structure representing the custom elements in the DOM.
- * The tree includes custom elements and their state, children, and key information.
- *
- * @param {typeof ReactiveComponent} [root=document.body] - The root element to start building the tree from.
- * @returns {Object} The custom element tree structure.
- */
-function buildCustomElementTree(root = document.body) {
+/** @type {BuildCustomElementTree<ReactiveComponent>} */
+const buildCustomElementTree = function (root = document.body) {
   const tree = {};
 
-  /**
-   * Walks through a node and its children to collect relevant data.
-   *
-   * @param {ReactiveComponent} node - The DOM node to inspect.
-   * @returns {Object|null} Data about the node or null if not relevant.
-   */
-  function walk(node) {
+  /** @type {Walk<ReactiveComponent|Element, ReactiveComponent>} */
+  const walk = function (node) {
     const tagName = node.tagName?.toLowerCase?.();
-    const isCustom = tagName?.includes("-");
+    const isCustom = node instanceof ReactiveComponent;
     const childNodes = node.shadowRoot
       ? Array.from(node.shadowRoot.children)
       : Array.from(node.children);
@@ -46,20 +42,20 @@ function buildCustomElementTree(root = document.body) {
     }
 
     if (isCustom) {
-      if (node.constructor.name === "AppRoot") {
+      if (node.constructor.name === CONST.appRootName) {
         node.__componentId = 0;
       } else {
         assignComponentIdToElement(node);
       }
 
       let state = {};
-      if (node._observers && node.__componentKey) {
-        for (const property of node._observers.keys()) {
+      if (node.__observers && node.__componentKey) {
+        for (const property of node.__observers.keys()) {
           state[property] = useState(
-            node._caller ?? node.__componentKey,
+            node.__caller ?? node.__componentKey,
             property,
             undefined,
-            !!node._caller,
+            true,
           )?.value;
         }
       }
@@ -84,7 +80,7 @@ function buildCustomElementTree(root = document.body) {
     }
 
     return null;
-  }
+  };
 
   const rootData = walk(root);
   if (rootData?.key) {
@@ -92,20 +88,12 @@ function buildCustomElementTree(root = document.body) {
   }
 
   return tree;
-}
+};
 
-/**
- * Injects tree tracking functionality into a custom component class.
- * This enables the component to track its custom element tree and notify when changes occur.
- *
- * @param {typeof ReactiveComponent} targetClass - The custom component class to augment with tree tracking.
- */
-function injectTreeTrackingToComponentClass(targetClass) {
+/** @type {InjectTreeTrackingToComponentClass} */
+const injectTreeTrackingToComponentClass = function (targetClass) {
   const originalConnected = targetClass.prototype.connectedCallback;
 
-  /**
-   * @this {ReactiveComponent}
-   */
   targetClass.prototype.connectedCallback = function () {
     assignComponentIdToElement(this);
 
@@ -115,39 +103,39 @@ function injectTreeTrackingToComponentClass(targetClass) {
       ref: this,
     };
 
-    Piglet.mountedComponents.add(this.__mountData);
+    window.Piglet.mountedComponents.add(this.__mountData);
 
-    this.__trackCustomTree__ = () => {
+    this.__trackCustomTree = () => {
       const root = this;
       this.__tree = buildCustomElementTree(root);
-      if (this.constructor.name === "AppRoot") {
-        Piglet.tree = this.__tree;
+      if (this.constructor.name === CONST.appRootName) {
+        window.Piglet.tree = this.__tree;
       }
-      Piglet.log(`[${this.constructor.name}] tracking tree`);
-      sendToExtension("tree");
+      window.Piglet.log(CONST.pigletLogs.trackingTree(this));
+      sendToExtension(CONST.extension.tree);
     };
 
-    this.__trackCustomTree__();
+    this.__trackCustomTree();
 
-    let parent = this.getRootNode().host;
+    let parent = getHost(this, true);
     while (parent) {
-      if (typeof parent.__trackCustomTree__ === "function") {
-        parent.__trackCustomTree__();
+      if (typeof parent.__trackCustomTree === "function") {
+        parent.__trackCustomTree();
         break;
       }
-      parent = parent.getRootNode?.().host;
+      parent = getHost(parent, true);
     }
 
     const observer = new MutationObserver(() => {
-      this.__trackCustomTree__();
+      this.__trackCustomTree();
 
-      let parent = this.getRootNode().host;
+      let parent = getHost(this, true);
       while (parent) {
-        if (typeof parent.__trackCustomTree__ === "function") {
-          parent.__trackCustomTree__();
+        if (typeof parent.__trackCustomTree === "function") {
+          parent.__trackCustomTree();
           break;
         }
-        parent = parent.getRootNode?.().host;
+        parent = getHost(parent, true);
       }
     });
 
@@ -156,7 +144,7 @@ function injectTreeTrackingToComponentClass(targetClass) {
       subtree: true,
     });
 
-    this.__customTreeObserver__ = observer;
+    this.__customTreeObserver = observer;
 
     if (typeof originalConnected === "function") {
       originalConnected.call(this);
@@ -165,21 +153,18 @@ function injectTreeTrackingToComponentClass(targetClass) {
 
   const originalDisconnected = targetClass.prototype.disconnectedCallback;
 
-  /**
-   * @this {ReactiveComponent}
-   */
   targetClass.prototype.disconnectedCallback = function () {
-    if (this.__customTreeObserver__) {
-      this.__customTreeObserver__.disconnect();
-      sendToExtension("tree");
+    if (this.__customTreeObserver) {
+      this.__customTreeObserver.disconnect();
+      sendToExtension(CONST.extension.tree);
     }
 
-    Piglet.mountedComponents.delete(this.__mountData);
+    window.Piglet.mountedComponents.delete(this.__mountData);
 
     if (typeof originalDisconnected === "function") {
       originalDisconnected.call(this);
     }
   };
-}
+};
 
 export { injectTreeTrackingToComponentClass, assignComponentIdToElement };

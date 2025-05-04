@@ -2,4 +2,6 @@
 
 import setupPiglet from "./builder/build.mjs";
 
-setupPiglet(import.meta.dirname);
+const args = process.argv.slice(2);
+
+setupPiglet(import.meta.dirname, args.includes("--production"));

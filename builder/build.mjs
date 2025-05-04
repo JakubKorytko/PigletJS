@@ -5,7 +5,7 @@ import path from "path";
 import readline from "readline";
 import { spawn } from "child_process";
 import CONST from "../misc/CONST.mjs";
-import "../utils/console.mjs";
+import console from "../utils/console.mjs";
 
 const CURRENT_DIR = process.cwd();
 
@@ -72,12 +72,28 @@ async function copyFileSafe(src, dest) {
  * Sets up the PigletJS environment by copying necessary files and asking the user for extra setup options.
  *
  * @param {string} pigletDir Piglet directory path
+ * @param {boolean} prod Whether to create production build
  * @returns {Promise<void>} A promise that resolves when the setup is complete.
  */
-async function setupPiglet(pigletDir) {
+async function setupPiglet(pigletDir, prod) {
   await console.printPigAscii();
 
   console.msg("builder.start");
+
+  if (prod) {
+    const prodSrc = path.join(pigletDir, "prod_start.mjs");
+    const prodDest = path.join(CURRENT_DIR, "start.mjs");
+
+    const pigletSrc = path.join(pigletDir, "piglet.mjs");
+    const pigletDest = path.join(CURRENT_DIR, "piglet.mjs");
+
+    await copyFileSafe(prodSrc, prodDest);
+    await copyFileSafe(pigletSrc, pigletDest);
+    spawn("node", [prodDest], {
+      stdio: "inherit",
+    });
+    return;
+  }
   const pigletStart = path.join(pigletDir, "start.mjs");
   const startDest = path.join(CURRENT_DIR, "start.mjs");
 
@@ -88,7 +104,7 @@ async function setupPiglet(pigletDir) {
 
   await copyFileSafe(pigletStart, startDest);
 
-  console.log("");
+  console.nl();
   const answer = await askQuestion(CONST.consoleMessages.builder.promptExtras);
   if (answer !== "y") {
     console.msg("builder.runningStart");
@@ -96,7 +112,7 @@ async function setupPiglet(pigletDir) {
     return;
   }
 
-  console.log("");
+  console.nl();
 
   const filesToCopy = [
     { src: "README.md" },

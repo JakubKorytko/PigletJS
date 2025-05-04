@@ -1,47 +1,68 @@
+/** @import {AppRootInterface, Virtual, Member} from "@jsdocs/browser/classes/AppRoot.d" */
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { fadeIn, fadeOut, toPascalCase } from "@Piglet/browser/helpers";
-import { sendToExtension } from "@Piglet/browser/extension";
-import { loadComponent } from "@Piglet/browser/loadComponent";
+import {
+  fadeIn,
+  fadeOut,
+  getHost,
+  toPascalCase,
+  sendToExtension,
+  loadComponent,
+} from "@Piglet/browser/helpers";
+import CONST from "@Piglet/browser/CONST";
 
+/**
+ * Injected using parser
+ * @type {Record<string, string>} */
+// @ts-ignore
+const _routes = routes ?? {};
+
+/** @implements {AppRootInterface} */
 class AppRoot extends ReactiveComponent {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
     this._route = "";
+    this.addPopStateListener();
+  }
 
+  static get observedAttributes() {
+    return [CONST.routeAttribute];
+  }
+
+  /**
+   * @type {Member["addPopStateListener"]["Type"]}
+   * @returns {Member["addPopStateListener"]["ReturnType"]}
+   */
+  addPopStateListener() {
     window.addEventListener("popstate", () => {
       const currentPath = window.location.pathname;
-      if (routes[currentPath] && this._route !== currentPath) {
+      if (_routes[currentPath] && this._route !== currentPath) {
         this.route = currentPath;
       }
     });
   }
 
-  // noinspection JSUnusedGlobalSymbols
-  static get observedAttributes() {
-    return ["route"];
-  }
-
-  // noinspection JSUnusedGlobalSymbols
   /**
-   * Handles changes to observed attributes (in this case, 'route').
-   * Dynamically imports the page based on the route and injects it as shadowRoot.
-   * @param {string} name - The name of the attribute.
-   * @param {string} oldValue - The previous value of the attribute.
-   * @param {string} newValue - The new value of the attribute.
+   * @type {Member["attributeChangedCallback"]["Type"]}
+   * @returns {Member["attributeChangedCallback"]["ReturnType"]}
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    if (name === "route" && oldValue !== newValue) {
+    if (name === CONST.routeAttribute && oldValue !== newValue) {
       if (oldValue === null) {
         this.loadRoute(newValue).then(this._mount.bind(this));
       } else {
-        this.changeRoute(newValue);
+        void this.changeRoute(newValue);
       }
     }
   }
 
+  /**
+   * @type {Member["changeRoute"]["Type"]}
+   * @returns {Member["changeRoute"]["ReturnType"]}
+   */
   async changeRoute(newRoute) {
-    await fadeOut(this.shadowRoot.host, 100);
+    const host = getHost(this);
+    await fadeOut(host, 100);
     this._unmount.call(this);
     this.shadowRoot.innerHTML = "";
     window.Piglet.reset();
@@ -51,84 +72,141 @@ class AppRoot extends ReactiveComponent {
   }
 
   /**
-   * Loads the route content, imports the page, and injects it into the shadowRoot.
-   * @param {string} route - The route to load.
+   * @type {Member["loadRoute"]["Type"]}
+   * @returns {Member["loadRoute"]["ReturnType"]}
    */
   async loadRoute(route) {
     this._route = route;
 
     try {
-      const routePath = routes[route];
-      const module = await import(`/component/${routePath}`);
+      const routePath = _routes[route];
+      const [module, pageSource] = await Promise.all([
+        import(`${CONST.componentRoute.base}/${routePath}`),
+        fetch(`${CONST.componentRoute.html}/${routePath}`).then((res) =>
+          res.text(),
+        ),
+      ]);
 
-      const response = await fetch(`/component/html/${routePath}`);
-      const pageSource = await response.text();
+      const tags = this.extractCustomTags(pageSource);
+      await this.loadCustomComponents(tags);
 
-      const tagRegex = /<([a-z][a-z0-9-]*)\b[^>]*\/?>/g;
-      const tags = new Set();
-      let match;
-      while ((match = tagRegex.exec(pageSource)) !== null) {
-        const tag = match[1];
-        if (!tag.includes("-")) continue;
-        tags.add(tag);
-      }
+      await this.renderComponent(module.default);
 
-      const pascalTags = Array.from(tags).map(toPascalCase);
-
-      await Promise.all(
-        Array.from(pascalTags).map(async (tag) => {
-          if (tag === "RenderIf") return;
-          try {
-            await import(`/component/${tag}`);
-          } catch (e) {
-            Piglet.log(`Unable to load component <${tag}>`, "warn", e);
-          }
-        }),
+      sendToExtension(CONST.extension.initialMessage);
+      window.Piglet.log(
+        CONST.pigletLogs.appRoot.routeLoaded(route),
+        CONST.coreLogsLevels.info,
       );
-
-      if (
-        module.default instanceof HTMLElement ||
-        typeof module.default === "function"
-      ) {
-        await loadComponent(module.default);
-        // noinspection ES6MissingAwait
-        fadeIn(this.shadowRoot.host, 100);
-        this.shadowRoot.appendChild(new module.default());
-      } else {
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = module.default || "";
-        this.shadowRoot.appendChild(wrapper);
-      }
-
-      sendToExtension("initial");
-
-      Piglet.log(`Route '${route}' loaded successfully.`, "info");
     } catch (err) {
-      Piglet.log(`Error loading route '${route}':`, "error", err);
-      this.shadowRoot.innerHTML = "<h1>Page Not Found</h1>";
+      window.Piglet.log(
+        CONST.pigletLogs.appRoot.errorLoading(route),
+        CONST.coreLogsLevels.error,
+        err,
+      );
+      this.shadowRoot.innerHTML = `<h1>${CONST.pageNotFound}</h1>`;
     }
   }
 
   /**
-   * Get the current route.
-   * @returns {string} - The current route value.
+   * @type {Member["extractCustomTags"]["Type"]}
+   * @returns {Member["extractCustomTags"]["ReturnType"]}
    */
+  extractCustomTags(pageSource) {
+    const tags = new Set();
+    let match;
+    while ((match = CONST.tagRegex.exec(pageSource)) !== null) {
+      const tag = match[1];
+      if (tag.includes("-")) {
+        tags.add(tag);
+      }
+    }
+    return Array.from(tags).map(toPascalCase);
+  }
+
+  /**
+   * @type {Member["loadCustomComponents"]["Type"]}
+   * @returns {Member["loadCustomComponents"]["ReturnType"]}
+   */
+  async loadCustomComponents(tags) {
+    await Promise.all(
+      tags.map(async (tag) => {
+        if (tag === CONST.conditionalName) return;
+        try {
+          await import(`${CONST.componentRoute.base}/${tag}`);
+        } catch (e) {
+          window.Piglet.log(
+            CONST.pigletLogs.appRoot.unableToLoadComponent(tag),
+            CONST.coreLogsLevels.warn,
+            e,
+          );
+        }
+      }),
+    );
+  }
+
+  /**
+   * @type {Member["renderComponent"]["Type"]}
+   * @returns {Member["renderComponent"]["ReturnType"]}
+   */
+  async renderComponent(component) {
+    if (component.prototype instanceof ReactiveComponent) {
+      await loadComponent(component);
+      const host = getHost(this);
+      void fadeIn(host, 100);
+      const element = new component();
+      if (element instanceof ReactiveComponent) {
+        this.shadowRoot.appendChild(element);
+      }
+    } else if (typeof component === "string") {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = component || "";
+      this.shadowRoot.appendChild(wrapper);
+    }
+  }
+
+  /** @type {Member["route"]["Type"]} */
   get route() {
     return this._route;
   }
 
-  /**
-   * Set the route and trigger the attribute change.
-   * @param {string} newRoute - The new route to set.
-   */
+  /** @param {AppRootInterface["route"]} newRoute */
   set route(newRoute) {
     if (this._route !== newRoute) {
-      this.setAttribute("route", newRoute);
+      this.setAttribute(CONST.routeAttribute, newRoute);
       if (window.location.pathname !== newRoute) {
         history.pushState({}, "", newRoute);
       }
+      this._route = newRoute;
     }
   }
+
+  /**
+   * @type {Virtual["dispatchEvent"]["Type"]}
+   * @returns {Virtual["dispatchEvent"]["ReturnType"]}
+   */
+  dispatchEvent(event) {
+    return false;
+  }
+
+  /**
+   * @type {Virtual["runScript"]["Type"]}
+   * @returns {Virtual["runScript"]["ReturnType"]}
+   */
+  runScript() {
+    return Promise.resolve(undefined);
+  }
+
+  /**
+   * @type {Virtual["onBeforeUpdate"]["Type"]}
+   * @returns {Virtual["onBeforeUpdate"]["ReturnType"]}
+   */
+  onBeforeUpdate() {}
+
+  /**
+   * @type {Virtual["onAfterUpdate"]["Type"]}
+   * @returns {Virtual["onAfterUpdate"]["ReturnType"]}
+   */
+  onAfterUpdate() {}
 }
 
 export default AppRoot;

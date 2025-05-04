@@ -1,176 +1,285 @@
+/** @import {BaseReactiveComponentInterface, VirtualReactiveComponentInterface, Member, Virtual} from "@jsdocs/browser/classes/ReactiveComponent.d" */
+
 import { assignComponentIdToElement } from "@Piglet/browser/tree";
-import { useState, useObserver } from "@Piglet/browser/state";
+import { useState, useObserver } from "@Piglet/browser/hooks";
+import { fromPigletAttr, getHost, isShadowRoot } from "@Piglet/browser/helpers";
+import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
+import CONST from "@Piglet/browser/CONST";
 
 /**
- * Base class for custom elements with reactive state and attribute tracking.
- * Child components can optionally implement `onStateChange`, `onAttributeChange`, and `reactive`.
+ * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
+  /** @type {boolean} */
+  #__pendingAttributeUpdate = false;
+
+  /** @type {Array<{newValue: string, attrName: string, oldValue: string}>} */
+  #__batchedAttributeChanges = [];
+
+  /**
+   * @type {Virtual["attributeChangedCallback"]["Type"]}
+   * @returns {Virtual["attributeChangedCallback"]["ReturnType"]}
+   * @virtual
+   */
+  attributeChangedCallback() {}
+
+  /**
+   * @type {Virtual["runScript"]["Type"]}
+   * @returns {Virtual["runScript"]["ReturnType"]}
+   * @virtual
+   */
+  runScript() {
+    return Promise.resolve();
+  }
+
+  /**
+   * @type {Virtual["onBeforeUpdate"]["Type"]}
+   * @returns {Virtual["onBeforeUpdate"]["ReturnType"]}
+   * @virtual
+   */
+  onBeforeUpdate() {}
+
+  /**
+   * @type {Virtual["onAfterUpdate"]["Type"]}
+   * @returns {Virtual["onAfterUpdate"]["ReturnType"]}
+   * @virtual
+   */
+  onAfterUpdate() {}
+
+  /**
+   * @type {Virtual["__trackCustomTree"]["Type"]}
+   * @returns {Virtual["__trackCustomTree"]["ReturnType"]}
+   * @virtual
+   */
+  __trackCustomTree() {}
+
+  /** @type {Virtual["__mountData"]["Type"]} */
+  __mountData;
+
+  /** @type {Virtual["__customTreeObserver"]["Type"]} */
+  __customTreeObserver;
+
+  /** @type {Virtual["_forwarded"]["Type"]} */
+  _forwarded = {};
+
+  /** @type {Virtual["__children"]["Type"]} */
+  __children = [];
+
+  /** @type {Virtual["__isMounted"]["Type"]} */
+  __isMounted = false;
+
+  /** @type {Virtual["__isHTMLInjected"]["Type"]} */
+  __isHTMLInjected = false;
+
+  /** @type {Virtual["__mutationObserver"]["Type"]} */
+  __mutationObserver = null;
+
+  /** @type {Virtual["__caller"]["Type"]} */
+  __caller = "";
+
+  /** @type {Virtual["__componentName"]["Type"]} */
+  __componentName = "";
+
+  /** @type {Virtual["__tree"]["Type"]} */
+  __tree = {};
+
+  /** @type {Virtual["__componentId"]["Type"]} */
+  __componentId;
+
+  /** @type {Virtual["__componentKey"]["Type"]} */
+  __componentKey = "";
+
+  /** @type {Virtual["__root"]["Type"]} */
+  __root = null;
+
+  /** @type {Virtual["__mountCallback"]["Type"]} */
+  __mountCallback = () => {};
+
+  /** @type {Virtual["__observers"]["Type"]} */
+  __observers;
+
+  /** @type {Virtual["__attrs"]["Type"]} */
+  __attrs = {};
+
+  /** @type {Virtual["__stateless"]["Type"]} */
+  __stateless;
+
   constructor() {
     super();
 
-    /** @public */
-    this._caller = this.getAttribute("host__element");
-    this.removeAttribute("host__element");
-
-    /** @private */
-    this._componentName = this.constructor.name;
-
-    /** @public */
-    this._observers = new Map();
-
-    /** @public */
-    this._attrs = {};
-
-    /** @public */
-    this.__tree = {};
-
-    /** @protected @type {Record<string, unknown>} */
-    this._forwarded = {};
-
-    /** @protected */
-    this._isMounted = false;
-
-    /** @protected */
-    this._isHTMLInjected = false;
-
-    /** @protected */
-    this._attributeQueue = [];
-
-    /** @protected */
-    this._children = [];
+    this.__caller = this.getAttribute(CONST.callerAttribute);
+    this.removeAttribute(CONST.callerAttribute);
+    this.__componentName = this.constructor.name;
+    this.__observers = new Map();
 
     /**
-     * Observes attribute changes and calls `onAttributeChange` and `reactive` if defined in child.
-     * @private
+     * Observes attribute changes.
      */
-    this._mutationObserver = new MutationObserver((mutations) => {
+    this.__mutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
           const name = mutation.attributeName;
           const oldValue = mutation.oldValue;
           const newValue = this.getAttribute(name);
 
-          this._attrs[name] = newValue;
+          if (name.startsWith(CONST.attributePrefix)) {
+            const attrName = fromPigletAttr(name);
 
-          if (typeof this.onAttributeChange === "function") {
-            this._attributeQueue.push([newValue, name, oldValue]);
-            this._clearAttributesQueue();
-          } else {
-            if (name !== "style" && name !== "route") {
-              this._attributeQueue.push([newValue, name, oldValue]);
+            this.#__batchedAttributeChanges.push({
+              newValue,
+              attrName,
+              oldValue,
+            });
+
+            this.__attrs[attrName] = newValue;
+
+            if (!this.#__pendingAttributeUpdate) {
+              this.#__pendingAttributeUpdate = true;
+
+              Promise.resolve().then(() => {
+                this.#__pendingAttributeUpdate = false;
+
+                const changes = this.#__batchedAttributeChanges;
+                this.#__batchedAttributeChanges = [];
+
+                this._mount(CONST.reason.attributesChange(changes));
+              });
             }
           }
         }
       }
     });
 
-    this._mutationObserver.observe(this, {
+    this.__mutationObserver.observe(this, {
       attributes: true,
       attributeOldValue: true,
     });
 
     for (const attr of this.attributes) {
-      this._attrs[attr.name] = attr.value;
+      if (attr.name.startsWith(CONST.attributePrefix)) {
+        const attrName = fromPigletAttr(attr.name);
+        this.__attrs[attrName] = attr.value;
+      }
     }
 
-    if (this.constructor.name === "AppRoot") {
-      /** @public */
+    if (this.constructor.name === CONST.appRootName) {
       this.__componentId = 0;
     } else {
       assignComponentIdToElement(this);
     }
 
-    /** @public */
     this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
   }
 
-  _clearAttributesQueue() {
-    if (typeof this.onAttributeChange === "function") {
-      while (this._attributeQueue.length !== 0) {
-        this.onAttributeChange(...this._attributeQueue.shift());
+  /**
+   * @type {Member["_mount"]["Type"]}
+   * @returns {Member["_mount"]["ReturnType"]}
+   */
+  _mount(reason) {
+    const parent = getHost(this, true);
 
-        // Call reactive() if it's implemented in the child component
-        if (typeof this.reactive === "function") {
-          this.reactive();
-        }
+    if (parent && parent.__isMounted && this.__isHTMLInjected) {
+      this.__isMounted = true;
+      this.__mountCallback(reason);
+      this._updateChildren(reason);
+    } else if (this.constructor.name === "AppRoot") {
+      this.__isMounted = true;
+      this._updateChildren(reason);
+    }
+  }
+
+  /**
+   * @type {Member["_updateChildren"]["Type"]}
+   * @returns {Member["_updateChildren"]["ReturnType"]}
+   */
+  _updateChildren(reason) {
+    for (const child of this.__children) {
+      if (!child.__isMounted || child.__stateless) {
+        child._mount(CONST.reason.parentUpdate(reason));
+      } else {
+        child._updateChildren(reason);
       }
     }
   }
 
   /**
-   * Marks the component as mounted and triggers mount on all children.
-   * @protected
+   * @type {Member["reloadComponent"]["Type"]}
+   * @returns {Member["reloadComponent"]["ReturnType"]}
    */
-  _mount() {
-    const parent = this.getRootNode().host;
-    if (
-      this._isHTMLInjected &&
-      typeof this.mountCallback === "function" &&
-      parent._isMounted
-    ) {
-      this._isMounted = true;
-      this.mountCallback();
-      this._updateChildren();
-    } else if (this.constructor.name === "AppRoot") {
-      this._isMounted = true;
-      this._updateChildren();
-    }
+  async reloadComponent() {
+    this.__isHTMLInjected = false;
+    this.__isMounted = false;
+    await this.runScript({ name: "reload" });
+    await this.loadContent();
   }
 
-  _updateChildren() {
-    for (const child of this._children) {
-      child._mount();
+  /**
+   * @type {Member["loadContent"]["Type"]}
+   * @returns {Member["loadContent"]["ReturnType"]}
+   */
+  async loadContent() {
+    const componentName = this.constructor.name;
+    const url = `/component/html/${componentName}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw CONST.error.failedToFetchHTML(componentName);
+      }
+
+      this.shadowRoot.innerHTML = await response.text();
+      this.__isHTMLInjected = true;
+      this._mount({ name: "loadContent" });
+    } catch (error) {
+      window.Piglet.log(CONST.pigletLogs.appRoot.errorLoading(componentName));
+      return null;
     }
   }
 
   /**
-   * Marks the component as unmounted, cleans up observers and child references.
-   * @protected
+   * @type {Member["_unmount"]["Type"]}
+   * @returns {Member["_unmount"]["ReturnType"]}
    */
   _unmount() {
-    this.mountCallback = undefined;
-    this._isMounted = false;
-    this._children = [];
-    for (const remove of this._observers.values()) {
+    this.__mountCallback = undefined;
+    this.__isMounted = false;
+    this.__children = [];
+    for (const remove of this.__observers.values()) {
       remove?.(this);
     }
-    this._observers.clear();
+    this.__observers.clear();
   }
 
   /**
-   * Lifecycle method called automatically when the component is connected to the DOM.
-   * Sets up references and registers itself as a child of its parent component if applicable.
+   * @type {Member["connectedCallback"]["Type"]}
+   * @returns {Member["connectedCallback"]["ReturnType"]}
    */
   connectedCallback() {
-    Piglet.log(`${this._componentName} connected`);
-    /** @protected */
+    window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
     this.__root = this.shadowRoot ?? this.getRootNode();
-    if (this._caller) this._caller = this.__root.host.__componentKey;
-    const parent = this.getRootNode().host;
-    if (parent && !parent._children.includes(this)) {
-      parent._children.push(this);
+    if (this.__caller) {
+      const host = getHost(this.__root);
+      this.__caller = host?.__componentKey;
     }
-    if (this.runScript) {
-      // noinspection JSIgnoredPromiseFromCall
-      this.runScript();
+    const parent = getHost(this, true);
+    if (parent && !parent.__children.includes(this)) {
+      parent.__children.push(this);
     }
+    this.runScript(CONST.reason.addedToDOM);
   }
 
   /**
-   * Registers a callback to be called when this component is mounted.
-   * If the parent is already mounted, the callback is called immediately.
-   *
-   * @param {Function} callback - The function to run when the component is mounted.
+   * @type {Member["onMount"]["Type"]}
+   * @returns {Member["onMount"]["ReturnType"]}
    */
   onMount(callback) {
-    this.mountCallback = callback;
-    this._mount();
+    this.__mountCallback = callback;
+    this._mount(CONST.reason.onMount);
   }
 
   /**
-   * Start observing a state property.
-   * @param {string} property
+   * @type {Member["observeState"]["Type"]}
+   * @returns {Member["observeState"]["ReturnType"]}
    */
   observeState(property) {
     const callback = {
@@ -179,66 +288,80 @@ class ReactiveComponent extends HTMLElement {
     };
 
     const [addObserver, removeObserver] = useObserver(
-      this._caller ?? this.__componentKey,
+      this.__caller ?? this.__componentKey,
       property,
     );
 
-    if (this._observers.has(property)) {
-      const oldRemove = this._observers.get(property);
+    if (this.__observers.has(property)) {
+      const oldRemove = this.__observers.get(property);
       oldRemove?.(this);
     }
 
     addObserver(callback);
-    this._observers.set(property, () => removeObserver(callback));
+    this.__observers.set(property, () => removeObserver(callback));
   }
 
   /**
-   * Initialize a state property with an optional initial value.
-   * @param {string} property
-   * @param {*=} initialValue
-   * @returns {*} The state value
+   * @type {Member["state"]["Type"]}
+   * @returns {Member["state"]["ReturnType"]}
    */
-  state(property, initialValue) {
+  state(property, initialValue, asRef = false) {
     const state = useState(
-      this._caller ?? this.__componentKey,
+      this.__caller ?? this.__componentKey,
       property,
       initialValue,
-      !!this._caller,
+      !!this.__caller,
+      asRef,
     );
     this.observeState(property);
     return state;
   }
 
+  #pendingStateUpdate = false;
+  #batchedChanges = [];
+
   /**
-   * Called when a watched state property changes.
-   * Should be implemented by the component if state reactions are needed.
-   * Automatically calls `reactive()` if defined in the child component.
-   * @param {*} value
-   * @param {string} property
-   * @param {*} prevValue
+   * @type {Member["stateChange"]["Type"]}
+   * @returns {Member["stateChange"]["ReturnType"]}
    */
   stateChange(value, property, prevValue) {
-    if (typeof this.onStateChange === "function") {
-      this.onStateChange(value, property, prevValue);
+    clearAllListenersForHost(this);
 
-      // Call reactive() if implemented in the child
-      if (typeof this.reactive === "function") {
-        this.reactive();
-      }
-    } else {
-      Piglet.log(
-        `[${this._caller ?? this.__componentKey}] onStateChange not implemented for: ${property}`,
-        "warn",
-      );
+    this.#batchedChanges.push({ value, property, prevValue });
+
+    if (!this.#pendingStateUpdate) {
+      this.#pendingStateUpdate = true;
+      Promise.resolve().then(() => {
+        const changes = this.#batchedChanges;
+        this.#batchedChanges = [];
+        this.#pendingStateUpdate = false;
+
+        this._mount(CONST.reason.stateChange(changes));
+      });
     }
   }
 
   /**
-   * Lifecycle method called when the component is removed from the DOM.
+   * @type {Member["disconnectedCallback"]["Type"]}
+   * @returns {Member["disconnectedCallback"]["ReturnType"]}
    */
   disconnectedCallback() {
     this._unmount();
   }
+
+  /**
+   * @type {Member["dispatchEvent"]["Type"]}
+   * @returns {Member["dispatchEvent"]["ReturnType"]}
+   */
+  dispatchEvent(event) {
+    return false;
+  }
+
+  /**
+   * @type {Member["adoptedCallback"]["Type"]}
+   * @returns {Member["adoptedCallback"]["ReturnType"]}
+   */
+  adoptedCallback() {}
 }
 
 export default ReactiveComponent;

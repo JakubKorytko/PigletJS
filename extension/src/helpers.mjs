@@ -1,5 +1,8 @@
 // noinspection JSUnresolvedReference
 
+/** @type {import("./chrome.d.js").Chrome} */
+const chromeExtension = globalThis.chrome;
+
 let pigletSupport = true;
 
 function renderTree(obj) {
@@ -64,24 +67,29 @@ function parseValue(value) {
 }
 
 const addStateListeners = (port) => {
-  document.querySelectorAll(".state-input").forEach((input) => {
-    input.addEventListener("blur", () => {
-      const key = input.dataset.key;
-      const stateName = input.dataset.parent || null;
-      const value = parseValue(input.value);
+  document.querySelectorAll(".state-input").forEach(
+    (
+      /** @type {HTMLInputElement} */
+      input,
+    ) => {
+      input.addEventListener("blur", () => {
+        const key = input.dataset.key;
+        const stateName = input.dataset.parent || null;
+        const value = parseValue(input.value);
 
-      port.postMessage({
-        type: "MODIFY_STATE",
-        payload: { key, stateName, value },
-        source: "PIGLET_PANEL",
-        tabId: chrome.devtools?.inspectedWindow?.tabId,
+        port.postMessage({
+          type: "MODIFY_STATE",
+          payload: { key, stateName, value },
+          source: "PIGLET_PANEL",
+          tabId: chromeExtension.devtools?.inspectedWindow?.tabId,
+        });
       });
-    });
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") input.blur();
-    });
-  });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
+      });
+    },
+  );
 };
 
 function renderStateTree(obj, parentKey = null) {
@@ -137,12 +145,17 @@ function updateTreePreservingUI(container, newTreeData) {
 
   const newContent = renderTree(newTreeData);
 
-  newContent.querySelectorAll("details").forEach((el) => {
-    const summary = el.querySelector("summary");
-    if (summary && openKeys.has(summary.textContent)) {
-      el.open = true;
-    }
-  });
+  if (
+    newContent instanceof HTMLElement ||
+    newContent instanceof DocumentFragment
+  ) {
+    newContent.querySelectorAll("details").forEach((el) => {
+      const summary = el.querySelector("summary");
+      if (summary && openKeys.has(summary.textContent)) {
+        el.open = true;
+      }
+    });
+  }
 
   container.replaceChildren(newContent);
 }
@@ -161,7 +174,10 @@ function updateStateTreePreservingUI(container, newState) {
   let focusParent = null;
   let selectionStart = null;
 
-  if (active?.classList.contains("state-input")) {
+  if (
+    active?.classList.contains("state-input") &&
+    active instanceof HTMLInputElement
+  ) {
     focusKey = active.dataset.key;
     focusParent = active.dataset.parent;
     selectionStart = active.selectionStart;
@@ -194,6 +210,7 @@ function updateStateTreePreservingUI(container, newState) {
 function renderDOM(id, payload) {
   const html = id === "state" ? renderStateTree(payload) : renderTree(payload);
   document.getElementById("warning").style.display = "none";
+  /** @type {HTMLElement} */
   const loader = document.getElementById(id).querySelector(".loader");
   loader ? (loader.style.display = "none") : null;
   document.getElementById(id).innerHTML = "";

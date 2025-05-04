@@ -4,6 +4,7 @@ import { processAllComponents } from "@Piglet/parser/component";
 import { watchDirectory } from "@Piglet/watcher/methods";
 import { routes } from "@Piglet/libs/routes";
 import { mergeWebTypes } from "@Piglet/builder/webTypes";
+import console from "@Piglet/utils/console";
 
 /**
  * Symbolic representation of route names defined in the application.
@@ -91,16 +92,30 @@ const proxyHandler = {
             target.listen(...args);
           })
           .catch((err) => {
-            console.error("Error in runWatcher:", err);
+            console.msg("server.errorInRunWatcher", err);
           });
       };
     }
     if (Object.values(routeNames).includes(prop)) {
       return this.customRoutes[prop];
     } else {
-      return Reflect.get(...arguments);
+      return Reflect.get(target, prop, receiver);
     }
   },
+};
+
+/**
+ * @type {(req: import("http").IncomingMessage) => req is typeof req & { socket: { server: { customRoutes: Record<symbol, Function> } } }}
+ */
+const isRequestFromServer = (req) => {
+  if ("server" in req.socket) {
+    /** @type {object} */
+    const server = req.socket.server;
+    if ("customRoutes" in server) {
+      return true;
+    }
+  }
+  return false;
 };
 
 /**
@@ -109,11 +124,12 @@ const proxyHandler = {
  *
  * @param {import("http").IncomingMessage} req - The HTTP request object.
  * @param {import("http").ServerResponse} res - The HTTP response object.
- * @returns {*}
+ * @returns {Promise<*>}
  */
 const serverHandler = async (req, res) => {
-  // noinspection JSUnresolvedReference
-  return req.socket.server.customRoutes[getRouteFromRequest(req)](req, res);
+  if (isRequestFromServer(req)) {
+    return req.socket.server.customRoutes[getRouteFromRequest(req)](req, res);
+  }
 };
 
 export {

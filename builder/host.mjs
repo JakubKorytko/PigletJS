@@ -1,6 +1,6 @@
 import os from "os";
 import fs from "fs";
-import "../utils/console.mjs";
+import console from "../utils/console.mjs";
 
 /**
  * Host entry to be added to the hosts file.
@@ -71,8 +71,7 @@ function modifyHosts() {
     fs.writeFileSync(hostsPath, updated, { encoding: "utf8" });
     console.msg("hosts.addedToHosts");
   } catch (err) {
-    console.msg("hosts.failedToAddHost");
-    console.error(err.message);
+    console.msg("hosts.failedToAddHost", err.message);
   }
 }
 

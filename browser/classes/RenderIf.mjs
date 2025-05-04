@@ -1,17 +1,18 @@
+/** @import {RenderIfInterface, Virtual, Member} from "@jsdocs/browser/classes/RenderIf.d" */
+/** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
+/** @typedef {InterfaceMethodTypes<RenderIfInterface>} RenderIfMethods */
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { getDeepValue } from "@Piglet/browser/helpers";
+import { getDeepValue, getHost } from "@Piglet/browser/helpers";
+import CONST from "@Piglet/browser/CONST";
 
-/**
- * `<render-if>` is a conditional rendering component.
- * It shows or hides itself based on the evaluation of a given boolean state or expression.
- * The `condition` attribute can be a boolean literal, a state key, or a state path (e.g., `user.loggedIn`).
- * Negation is supported by prefixing the condition with `!`.
- */
+/** @implements {RenderIfInterface} */
 class RenderIf extends ReactiveComponent {
-  // noinspection JSUnusedGlobalSymbols
   static get observedAttributes() {
-    return ["condition"];
+    return [CONST.conditionAttribute];
   }
+  _condition;
+  _fragment;
+  _template;
 
   constructor() {
     super();
@@ -19,41 +20,58 @@ class RenderIf extends ReactiveComponent {
     this._condition = false;
     this._negated = false;
     this._parts = [];
+    this.__stateless = true;
 
-    this.onMount(() => {
+    this._contentFragment = document.createDocumentFragment();
+    this._contentMounted = false;
+    this._firstContentMounted = false;
+
+    this.onMount((reason) => {
+      if (!this._firstContentMounted) {
+        this._firstContentMounted = true;
+        this._moveChildrenToFragment();
+      }
+
       super.connectedCallback();
+
       this._updateFromAttribute();
       this.updateVisibility();
     });
 
-    this._isHTMLInjected = true;
-    this._mount();
+    this.__isHTMLInjected = true;
+    this._mount(CONST.reason.onMount);
   }
 
   /**
-   * Called when an observed attribute is changed.
-   * @param {string} name - Attribute name.
-   * @param {string | null} oldValue - Previous value.
-   * @param {string | null} newValue - New value.
+   * @type {Member["_moveChildrenToFragment"]["Type"]}
+   * @returns {Member["_moveChildrenToFragment"]["ReturnType"]}
    */
-  // noinspection JSUnusedGlobalSymbols
+  _moveChildrenToFragment() {
+    while (this.firstChild) {
+      this._contentFragment.appendChild(this.firstChild);
+    }
+  }
+
+  /**
+   * @type {Member["attributeChangedCallback"]["Type"]}
+   * @returns {Member["attributeChangedCallback"]["ReturnType"]}
+   */
   attributeChangedCallback(name, oldValue, newValue) {
     if (
-      name === "condition" &&
+      name === CONST.conditionAttribute &&
       oldValue !== newValue &&
-      (!this._caller || this._caller.indexOf("_NOT_SETTLED") === -1)
+      (!this.__caller || this.__caller.indexOf(CONST.notSettledSuffix) === -1)
     ) {
       this._updateFromAttribute();
     }
   }
 
   /**
-   * Parses the `condition` attribute and sets internal state tracking.
-   * Supports boolean literals, state paths, and negation (!).
-   * @private
+   * @type {Member["_updateFromAttribute"]["Type"]}
+   * @returns {Member["_updateFromAttribute"]["ReturnType"]}
    */
   _updateFromAttribute() {
-    let conditionProperty = this.getAttribute("condition");
+    let conditionProperty = this.getAttribute(CONST.conditionAttribute);
 
     this._negated = false;
     if (conditionProperty.startsWith("!")) {
@@ -70,23 +88,42 @@ class RenderIf extends ReactiveComponent {
       return;
     }
 
+    if (!conditionProperty.startsWith("$")) {
+      this._condition = true;
+      this.updateVisibility();
+      return;
+    }
+
+    conditionProperty = conditionProperty.substring(1);
+
     const parts = conditionProperty.split(".");
+    const isAttribute = parts[0] === CONST.attributesObjectName;
+
+    if (isAttribute) {
+      conditionProperty = conditionProperty.replace(`${parts.shift()}.`, "");
+    }
 
     if (parts.length > 1) {
-      this._parts = parts.slice(1);
+      if (!isAttribute) {
+        this._parts = parts.slice(1);
+      }
       conditionProperty = parts[0];
     } else {
       this._parts = [];
     }
 
-    this._state = this.state(conditionProperty);
-    this._updateCondition(this._state.value);
+    if (isAttribute) {
+      const host = getHost(this.__root);
+      this._updateCondition(host.__attrs[conditionProperty]);
+    } else {
+      this._state = this.state(conditionProperty, undefined, true);
+      this._updateCondition(this._state.value);
+    }
   }
 
   /**
-   * Updates the condition based on the latest value and visibility rules.
-   * @param {*} value - The state value to evaluate.
-   * @private
+   * @type {Member["_updateCondition"]["Type"]}
+   * @returns {Member["_updateCondition"]["ReturnType"]}
    */
   _updateCondition(value) {
     const innerValue = getDeepValue(value, this._parts);
@@ -100,21 +137,50 @@ class RenderIf extends ReactiveComponent {
   }
 
   /**
-   * Reacts to changes in the observed state.
-   * @param {*} value - The updated value of the observed state.
+   * @type {Member["updateVisibility"]["Type"]}
+   * @returns {Member["updateVisibility"]["ReturnType"]}
    */
-  onStateChange(value) {
-    if (["true", "false"].includes(this.getAttribute("condition"))) return;
-    this._updateCondition(value);
-  }
-
   updateVisibility() {
-    this.style.display = this._condition ? "block" : "none";
+    if (this._condition) {
+      if (!this._contentMounted) {
+        this.appendChild(this._contentFragment);
+        this._contentMounted = true;
+      }
+    } else {
+      if (this._contentMounted) {
+        this._moveChildrenToFragment();
+        this._contentMounted = false;
+      }
+    }
   }
 
+  /**
+   * @type {Member["disconnectedCallback"]["Type"]}
+   * @returns {Member["disconnectedCallback"]["ReturnType"]}
+   */
   disconnectedCallback() {
     super.disconnectedCallback();
   }
+
+  /**
+   * @type {Member["runScript"]["Type"]}
+   * @returns {Member["runScript"]["ReturnType"]}
+   */
+  runScript() {
+    return Promise.resolve(undefined);
+  }
+
+  /**
+   * @type {Member["onBeforeUpdate"]["Type"]}
+   * @returns {Member["onBeforeUpdate"]["ReturnType"]}
+   */
+  onBeforeUpdate() {}
+
+  /**
+   * @type {Member["onAfterUpdate"]["Type"]}
+   * @returns {Member["onAfterUpdate"]["ReturnType"]}
+   */
+  onAfterUpdate() {}
 }
 
 export default RenderIf;

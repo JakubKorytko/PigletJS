@@ -37,8 +37,8 @@ function createWsMessage(payload) {
  * and establishes a WebSocket connection. It also adds the socket to the
  * `clientsRef.instance` array and removes it on connection close.
  *
- * @param {http.IncomingMessage} req - The HTTP request object from the WebSocket upgrade request.
- * @param {net.Socket} socket - The socket object representing the WebSocket connection.
+ * @param {import("http").IncomingMessage} req - The HTTP request object from the WebSocket upgrade request.
+ * @param {import("net").Socket} socket - The socket object representing the WebSocket connection.
  */
 const socketHandler = (req, socket) => {
   const key = req.headers["sec-websocket-key"];
@@ -120,9 +120,19 @@ const sendMessageToSocketClients = (message) => {
  */
 const runReloadClientOnWSMessageListener = () =>
   process.on("message", (msg) => {
-    if (msg.type === "reload") {
+    if (
+      typeof msg === "object" &&
+      msg !== null &&
+      "type" in msg &&
+      msg.type === "reload"
+    ) {
       reloadClients();
-    } else if (msg.type === "serverRestart") {
+    } else if (
+      typeof msg === "object" &&
+      msg !== null &&
+      "type" in msg &&
+      msg.type === "serverRestart"
+    ) {
       tellClientsAboutServerRestart();
     }
   });

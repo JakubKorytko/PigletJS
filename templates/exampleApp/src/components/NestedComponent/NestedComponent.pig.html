@@ -7,10 +7,10 @@
         Change nested component visibility!
       </button>
     </div>
-    <render-if condition="display">
+    <render-if condition="$display">
       <p>I am visible by default</p>
     </render-if>
-    <render-if condition="!nested.object.hide">
+    <render-if condition="!$nested.object.hide">
       <p>
         If previous element is not visible, I am<br />
         (and I am nested, check <code>NestedComponent.pig.html</code>)!
@@ -20,10 +20,9 @@
 </content>
 
 <script>
-  element("#callApi").on("click", function () {
-    api("/time").then((value) => {
-      element("#apiResult").ref.innerText = value.time;
-    });
+  element("#callApi").on("click", async function () {
+    const result = await api("/time");
+    element("#apiResult").innerText = result.time;
   });
 </script>
 
@@ -31,6 +30,7 @@
   @import "/public/globals.css";
 </style>
 
+<!--suppress JSUnusedGlobalSymbols -->
 <script content="description">
   export default {
     name: "NestedComponent",
