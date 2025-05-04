@@ -92,7 +92,7 @@ const proxyHandler = {
             target.listen(...args);
           })
           .catch((err) => {
-            console.error("Error in runWatcher:", err);
+            console.msg("server.errorInRunWatcher", err);
           });
       };
     }

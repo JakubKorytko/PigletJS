@@ -1,113 +1,111 @@
-/** @namespace */
-
 /**
- * @name LogLevels
  * @typedef {{
- *   info: "info",
- *   warn: "warn",
- *   error: "error"
+ *   info: "info", // Info log level
+ *   warn: "warn", // Warning log level
+ *   error: "error" // Error log level
  * }} LogLevels
+ * PigletJS log levels.
  */
 
 /**
- * @name LogLevelsAliases
  * @typedef {{
- *   info: string
+ *   info: string, // Info log level alias
  * }} LogLevelsAliases
+ * PigletJS log levels aliases used to call native console methods.
  */
 
 /**
- * @name AttributeChange
  * @typedef {{
- *   newValue: string|null,
- *   attrName: string,
- *   oldValue: string|null
+ *   newValue: string|null, // New value of the attribute
+ *   attrName: string, // Name of the attribute
+ *   oldValue: string|null // Previous value of the attribute
  * }} AttributeChange
+ * Attribute change object.
  */
 
 /**
- * @name Reason
  * @typedef {{
- *   name: string,
- *   data?: Record<string, object|string|number|boolean|null>,
- *   originalReason?: Reason
+ *   name: string, // Name of the reason
+ *   data?: Record<string, object|string|number|boolean|null>, // Data of the reason
+ *   originalReason?: Reason // Original reason
  * }} Reason
+ * Reason of mounting/re-rendering a component.
  */
 
 /**
- * @name PigletLogs
  * @typedef {{
  *   appRoot: {
- *     routeLoaded: (route: string) => string,
- *     errorLoading: (route: string) => string,
- *     unableToLoadComponent: (component: string) => string,
- *     componentConnected: (component: { _componentName: string }) => string,
- *     onStateChangeNotImplemented: (component: { _caller?: string, __componentKey: string }, key: string) => string
+ *     routeLoaded: (route: string) => string, // Route loaded log
+ *     errorLoading: (route: string) => string, // Error loading log
+ *     unableToLoadComponent: (component: string) => string, // Unable to load component log
+ *     componentConnected: (component: { __componentName: string }) => string, // Component connected log
  *   },
  *   socket: {
- *     connected: string,
- *     closed: string,
- *     error: string,
- *     reconnecting: (attempt: number, max: number) => string,
- *     maxReconnectAttempts: string,
- *     serverRestarted: string
+ *     connected: string, // Connected log
+ *     closed: string, // Closed log
+ *     error: string, // Error log
+ *     reconnecting: (attempt: number, max: number) => string, // Reconnecting log
+ *     maxReconnectAttempts: string, // Max reconnect attempts log
+ *     serverRestarted: string // Server restarted log
  *   },
- *   trackingTree: (component: { constructor: { name: string } }) => string
+ *   trackingTree: (component: { constructor: { name: string } }) => string, // Tracking tree log
  * }} PigletLogs
+ * PigletJS logs object.
  */
 
 /**
- * @name Constants
  * @typedef {{
- *   coreLogsLevels: LogLevels,
- *   coreLogLevelsAliases: LogLevelsAliases,
- *   callerAttribute: string,
- *   routeAttribute: string,
- *   pigletLogs: PigletLogs,
+ *   coreLogsLevels: LogLevels, // Core logs levels
+ *   coreLogLevelsAliases: LogLevelsAliases, // Core logs levels aliases
+ *   callerAttribute: string, // Caller attribute
+ *   routeAttribute: string, // Route attribute
+ *   pigletLogs: PigletLogs, // PigletJS logs object
  *   socket: {
  *     messageTypes: {
- *       fullReload: string,
- *       serverRestart: string,
- *       reload: string
+ *       fullReload: string, // Full reload message type
+ *       serverRestart: string, // Server restart message type
+ *       reload: string // Reload message type
  *     }
  *   },
  *   error: {
- *     failedToFetchAPI: (url: string, error: { message: string }) => Error,
- *     unsupportedExpect: (type: string) => Error,
- *     failedToParseFromURL: (url: string, type: string) => Error
+ *     failedToFetchAPI: (url: string, error: { message: string }) => Error, // Failed to fetch API error
+ *     unsupportedExpect: (type: string) => Error, // Unsupported expect error
+ *     failedToParseFromURL: (url: string, type: string) => Error, // Failed to parse from URL error
+ *     failedToFetchHTML: (componentName: string) => Error // Failed to fetch HTML error
  *   },
  *   warning: {
- *     expectedButGot: (expected: string, got: string) => string,
- *     failedToParseAs: (type: string) => string
+ *     expectedButGot: (expected: string, got: string) => string, // Expected but got warning
+ *     failedToParseAs: (type: string) => string // Failed to parse as warning
  *   },
  *   componentRoute: {
- *     base: string,
- *     html: string,
- *     script: string
+ *     base: string, // Base route
+ *     html: string, // HTML route
+ *     script: string // Script route
  *   },
- *   apiRoute: string,
- *   tagRegex: RegExp,
- *   pageNotFound: string,
+ *   apiRoute: string, // API route
+ *   tagRegex: RegExp, // Tag regex
+ *   pageNotFound: string, // Page not found message
  *   extension: {
- *     initialMessage: "initial",
- *     state: "state",
- *     tree: "tree"
+ *     initialMessage: "initial", // Initial message type
+ *     state: "state", // State message type
+ *     tree: "tree" // Tree message type
  *   },
- *   attributePrefix: string,
+ *   attributePrefix: string, // Attribute prefix
  *   reason: {
- *     attributesChange: (changes: AttributeChange[]) => Reason,
- *     parentUpdate: (reason: Reason) => Reason,
- *     addedToDOM: Reason,
- *     onMount: Reason,
- *     stateChange: (changes: Array<unknown>) => Reason
+ *     attributesChange: (changes: AttributeChange[]) => Reason, // Attributes change reason
+ *     parentUpdate: (reason: Reason) => Reason, // Parent update reason
+ *     addedToDOM: Reason, // Added to DOM reason
+ *     onMount: Reason, // On mount reason
+ *     stateChange: (changes: Array<unknown>) => Reason // State change reason
  *   },
- *   attributesObjectName: string,
- *   notSettledSuffix: string,
- *   conditionAttribute: string,
- *   conditionalName: string,
- *   appRootName: string,
- *   appRootTag: string
+ *   attributesObjectName: string, // Attributes object name
+ *   notSettledSuffix: string, // Not settled suffix
+ *   conditionAttribute: string, // Condition attribute
+ *   conditionalName: string, // Conditional name
+ *   appRootName: string, // App root name
+ *   appRootTag: string // App root tag
  * }} Constants
+ * PigletJS constants object, used to store widely used values.
  */
 
 export /** @exports LogLevels */

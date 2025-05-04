@@ -173,6 +173,14 @@ export default {
       runningStart: "\nRunning start.mjs...\n",
       startExitCode: (code) => `❌ start.mjs exited with code: ${code}`,
       start: "🔧 Running build script...\n",
+      errorParsingDescription: (err) => [
+        "❌ Error parsing description:",
+        err,
+      ],
+      errorReadingFile: (err) => [
+        "❌ Error reading file:",
+        err,
+      ],
     },
     webTypes: {
       failedToLoad: (path, err) => [`❌ Failed to load ${path}:`, err.message],
@@ -181,6 +189,24 @@ export default {
       failedToWrite: (path, err) => [
         `❌ Failed to write ${path}:`,
         err.message,
+      ],
+    },
+    watcher: {
+      errorInRunWatcher: (error) => [
+        "❌ Error in runWatcher:",
+        error,
+      ],
+      errorInCreateSubprocess: (error) => [
+        "❌ Error in createSubprocess:",
+        error,
+      ],
+      entryFileNotFound: (path) => [
+        "❌ Entry file not found:",
+        path,
+      ],
+      pleaseCreateEntryFile: (path) => [
+        "💡 Please create '@/server/index.mjs' before running the process.\n",
+        path,
       ],
     },
   },

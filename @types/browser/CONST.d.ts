@@ -25,9 +25,9 @@ interface PigletLogs {
     routeLoaded: (route: string) => string;
     errorLoading: (route: string) => string;
     unableToLoadComponent: (tag: string) => string;
-    componentConnected: (component: { _componentName: string }) => string;
+    componentConnected: (component: { __componentName: string }) => string;
     onStateChangeNotImplemented: (
-      component: { _caller?: string; __componentKey: string },
+      component: { __caller?: string; __componentKey: string },
       property: string,
     ) => string;
   };
@@ -59,6 +59,7 @@ interface Constants {
     failedToFetchAPI: (url: string, error: { message: string }) => Error;
     unsupportedExpect: (expect: string) => Error;
     failedToParseFromURL: (expected: string, url: string) => Error;
+    failedToFetchHTML: (componentName: string) => Error;
   };
   warning: {
     expectedButGot: (expected: string, got: string) => string;

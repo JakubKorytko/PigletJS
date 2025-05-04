@@ -149,7 +149,6 @@ class AppRoot extends ReactiveComponent {
    * @returns {Member["renderComponent"]["ReturnType"]}
    */
   async renderComponent(component) {
-    console.log(component.prototype instanceof ReactiveComponent);
     if (component.prototype instanceof ReactiveComponent) {
       await loadComponent(component);
       const host = getHost(this);
@@ -165,6 +164,7 @@ class AppRoot extends ReactiveComponent {
     }
   }
 
+  /** @type {Member["route"]["Type"]} */
   get route() {
     return this._route;
   }
@@ -186,30 +186,6 @@ class AppRoot extends ReactiveComponent {
    */
   dispatchEvent(event) {
     return false;
-  }
-
-  /**
-   * @type {Virtual["onAttributeChange"]["Type"]}
-   * @returns {Virtual["onAttributeChange"]["ReturnType"]}
-   */
-  onAttributeChange() {
-    return undefined;
-  }
-
-  /**
-   * @type {Virtual["onStateChange"]["Type"]}
-   * @returns {Virtual["onStateChange"]["ReturnType"]}
-   */
-  onStateChange() {
-    return undefined;
-  }
-
-  /**
-   * @type {Virtual["reactive"]["Type"]}
-   * @returns {Virtual["reactive"]["ReturnType"]}
-   */
-  reactive() {
-    return undefined;
   }
 
   /**

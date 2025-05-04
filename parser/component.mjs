@@ -121,7 +121,6 @@ function autoInjectValue(script) {
   const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
   const usageRegex = /\B(\$\w+)\b/g;
   const excludedNames = new Set([
-    "$onUpdate",
     "$onBeforeUpdate",
     "$attrs",
     "$ref",
@@ -259,25 +258,11 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
     attributes: primitiveAttributes,
     forwarded,
     component,
-    onStateChange,
-    onAttributeChange,
-    onUpdate: $onUpdate,
     $onBeforeUpdate,
     $onAfterUpdate,
     element,
     reason
   }) => {
-
-  const originalBoolean = Boolean;
-
-  Boolean = function(...args) {
-    if (args[0] && args[0].isPigletProxy) {
-      const proxyValue = args[0].valueOf()
-      return Boolean(proxyValue);
-    }
-
-    return originalBoolean(...args);
-  };
   
   const $attrs = {...forwarded, ...primitiveAttributes};
   
@@ -533,13 +518,13 @@ async function extractDescriptionsFromFile(filePath) {
         const descriptionData = new Function(`return ${raw}`)();
         descriptionMatches.push(descriptionData);
       } catch (e) {
-        console.error(`❌ Error parsing description in ${filePath}:`, e);
+        console.msg("components.errorParsingDescription", e);
       }
     }
 
     return descriptionMatches;
   } catch (err) {
-    console.error(`❌ Error reading file ${filePath}:`, err);
+    console.msg("components.errorReadingFile", err);
     return [];
   }
 }

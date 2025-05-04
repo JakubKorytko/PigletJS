@@ -1,6 +1,6 @@
 export interface StateInterface<T> {
   _state: T;
-  _observers: Array<{ stateChange(newState: T, oldState: T): void }>;
+  __observers: Array<{ stateChange(newState: T, oldState: T): void }>;
   __isCreatedByListener: boolean;
   _isRef: boolean;
 

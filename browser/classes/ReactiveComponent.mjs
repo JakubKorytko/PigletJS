@@ -10,8 +10,11 @@ import CONST from "@Piglet/browser/CONST";
  * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
-  #pendingAttributeUpdate = false;
-  #batchedAttributeChanges = [];
+  /** @type {boolean} */
+  #__pendingAttributeUpdate = false;
+
+  /** @type {Array<{newValue: string, attrName: string, oldValue: string}>} */
+  #__batchedAttributeChanges = [];
 
   /**
    * @type {Virtual["attributeChangedCallback"]["Type"]}
@@ -19,27 +22,6 @@ class ReactiveComponent extends HTMLElement {
    * @virtual
    */
   attributeChangedCallback() {}
-
-  /**
-   * @type {Virtual["onStateChange"]["Type"]}
-   * @returns {Virtual["onStateChange"]["ReturnType"]}
-   * @virtual
-   */
-  onStateChange() {}
-
-  /**
-   * @type {Virtual["onAttributeChange"]["Type"]}
-   * @returns {Virtual["onAttributeChange"]["ReturnType"]}
-   * @virtual
-   */
-  onAttributeChange() {}
-
-  /**
-   * @type {Virtual["reactive"]["Type"]}
-   * @returns {Virtual["reactive"]["ReturnType"]}
-   * @virtual
-   */
-  reactive() {}
 
   /**
    * @type {Virtual["runScript"]["Type"]}
@@ -80,23 +62,23 @@ class ReactiveComponent extends HTMLElement {
   /** @type {Virtual["_forwarded"]["Type"]} */
   _forwarded = {};
 
-  /** @type {Virtual["_children"]["Type"]} */
-  _children = [];
+  /** @type {Virtual["__children"]["Type"]} */
+  __children = [];
 
-  /** @type {Virtual["_isMounted"]["Type"]} */
-  _isMounted = false;
+  /** @type {Virtual["__isMounted"]["Type"]} */
+  __isMounted = false;
 
-  /** @type {Virtual["_isHTMLInjected"]["Type"]} */
-  _isHTMLInjected = false;
+  /** @type {Virtual["__isHTMLInjected"]["Type"]} */
+  __isHTMLInjected = false;
 
-  /** @type {Virtual["_mutationObserver"]["Type"]} */
-  _mutationObserver = null;
+  /** @type {Virtual["__mutationObserver"]["Type"]} */
+  __mutationObserver = null;
 
-  /** @type {Virtual["_caller"]["Type"]} */
-  _caller = null;
+  /** @type {Virtual["__caller"]["Type"]} */
+  __caller = "";
 
-  /** @type {Virtual["_componentName"]["Type"]} */
-  _componentName = null;
+  /** @type {Virtual["__componentName"]["Type"]} */
+  __componentName = "";
 
   /** @type {Virtual["__tree"]["Type"]} */
   __tree = {};
@@ -105,35 +87,35 @@ class ReactiveComponent extends HTMLElement {
   __componentId;
 
   /** @type {Virtual["__componentKey"]["Type"]} */
-  __componentKey = null;
+  __componentKey = "";
 
   /** @type {Virtual["__root"]["Type"]} */
   __root = null;
 
-  /** @type {Virtual["mountCallback"]["Type"]} */
-  mountCallback = null;
+  /** @type {Virtual["__mountCallback"]["Type"]} */
+  __mountCallback = () => {};
 
-  /** @type {Virtual["_observers"]["Type"]} */
-  _observers;
+  /** @type {Virtual["__observers"]["Type"]} */
+  __observers;
 
-  /** @type {Virtual["_attrs"]["Type"]} */
-  _attrs = {};
+  /** @type {Virtual["__attrs"]["Type"]} */
+  __attrs = {};
 
-  /** @type {Virtual["_stateless"]["Type"]} */
-  _stateless;
+  /** @type {Virtual["__stateless"]["Type"]} */
+  __stateless;
 
   constructor() {
     super();
 
-    this._caller = this.getAttribute(CONST.callerAttribute);
+    this.__caller = this.getAttribute(CONST.callerAttribute);
     this.removeAttribute(CONST.callerAttribute);
-    this._componentName = this.constructor.name;
-    this._observers = new Map();
+    this.__componentName = this.constructor.name;
+    this.__observers = new Map();
 
     /**
-     * Observes attribute changes and calls `onAttributeChange` and `reactive` if defined in child.
+     * Observes attribute changes.
      */
-    this._mutationObserver = new MutationObserver((mutations) => {
+    this.__mutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
           const name = mutation.attributeName;
@@ -143,30 +125,24 @@ class ReactiveComponent extends HTMLElement {
           if (name.startsWith(CONST.attributePrefix)) {
             const attrName = fromPigletAttr(name);
 
-            this.#batchedAttributeChanges.push({
+            this.#__batchedAttributeChanges.push({
               newValue,
               attrName,
               oldValue,
             });
 
-            this._attrs[attrName] = newValue;
+            this.__attrs[attrName] = newValue;
 
-            if (!this.#pendingAttributeUpdate) {
-              this.#pendingAttributeUpdate = true;
+            if (!this.#__pendingAttributeUpdate) {
+              this.#__pendingAttributeUpdate = true;
 
               Promise.resolve().then(() => {
-                this.#pendingAttributeUpdate = false;
+                this.#__pendingAttributeUpdate = false;
 
-                const changes = this.#batchedAttributeChanges;
-                this.#batchedAttributeChanges = [];
+                const changes = this.#__batchedAttributeChanges;
+                this.#__batchedAttributeChanges = [];
 
                 this._mount(CONST.reason.attributesChange(changes));
-
-                for (const { newValue, attrName, oldValue } of changes) {
-                  this.onAttributeChange(newValue, attrName, oldValue);
-                }
-
-                this.reactive();
               });
             }
           }
@@ -174,7 +150,7 @@ class ReactiveComponent extends HTMLElement {
       }
     });
 
-    this._mutationObserver.observe(this, {
+    this.__mutationObserver.observe(this, {
       attributes: true,
       attributeOldValue: true,
     });
@@ -182,7 +158,7 @@ class ReactiveComponent extends HTMLElement {
     for (const attr of this.attributes) {
       if (attr.name.startsWith(CONST.attributePrefix)) {
         const attrName = fromPigletAttr(attr.name);
-        this._attrs[attrName] = attr.value;
+        this.__attrs[attrName] = attr.value;
       }
     }
 
@@ -202,17 +178,12 @@ class ReactiveComponent extends HTMLElement {
   _mount(reason) {
     const parent = getHost(this, true);
 
-    if (
-      parent &&
-      this._isHTMLInjected &&
-      typeof this.mountCallback === "function" &&
-      parent._isMounted
-    ) {
-      this._isMounted = true;
-      this.mountCallback(reason);
+    if (parent && parent.__isMounted && this.__isHTMLInjected) {
+      this.__isMounted = true;
+      this.__mountCallback(reason);
       this._updateChildren(reason);
     } else if (this.constructor.name === "AppRoot") {
-      this._isMounted = true;
+      this.__isMounted = true;
       this._updateChildren(reason);
     }
   }
@@ -222,8 +193,8 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["_updateChildren"]["ReturnType"]}
    */
   _updateChildren(reason) {
-    for (const child of this._children) {
-      if (!child._isMounted || child._stateless) {
+    for (const child of this.__children) {
+      if (!child.__isMounted || child.__stateless) {
         child._mount(CONST.reason.parentUpdate(reason));
       } else {
         child._updateChildren(reason);
@@ -236,8 +207,8 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["reloadComponent"]["ReturnType"]}
    */
   async reloadComponent() {
-    this._isHTMLInjected = false;
-    this._isMounted = false;
+    this.__isHTMLInjected = false;
+    this.__isMounted = false;
     await this.runScript({ name: "reload" });
     await this.loadContent();
   }
@@ -253,15 +224,14 @@ class ReactiveComponent extends HTMLElement {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        // noinspection ExceptionCaughtLocallyJS
-        throw new Error(`Failed to fetch HTML for ${componentName}`);
+        throw CONST.error.failedToFetchHTML(componentName);
       }
 
       this.shadowRoot.innerHTML = await response.text();
-      this._isHTMLInjected = true;
+      this.__isHTMLInjected = true;
       this._mount({ name: "loadContent" });
     } catch (error) {
-      console.error(error);
+      window.Piglet.log(CONST.pigletLogs.appRoot.errorLoading(componentName));
       return null;
     }
   }
@@ -271,13 +241,13 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["_unmount"]["ReturnType"]}
    */
   _unmount() {
-    this.mountCallback = undefined;
-    this._isMounted = false;
-    this._children = [];
-    for (const remove of this._observers.values()) {
+    this.__mountCallback = undefined;
+    this.__isMounted = false;
+    this.__children = [];
+    for (const remove of this.__observers.values()) {
       remove?.(this);
     }
-    this._observers.clear();
+    this.__observers.clear();
   }
 
   /**
@@ -287,13 +257,13 @@ class ReactiveComponent extends HTMLElement {
   connectedCallback() {
     window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
     this.__root = this.shadowRoot ?? this.getRootNode();
-    if (this._caller) {
+    if (this.__caller) {
       const host = getHost(this.__root);
-      this._caller = host?.__componentKey;
+      this.__caller = host?.__componentKey;
     }
     const parent = getHost(this, true);
-    if (parent && !parent._children.includes(this)) {
-      parent._children.push(this);
+    if (parent && !parent.__children.includes(this)) {
+      parent.__children.push(this);
     }
     this.runScript(CONST.reason.addedToDOM);
   }
@@ -303,7 +273,7 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["onMount"]["ReturnType"]}
    */
   onMount(callback) {
-    this.mountCallback = callback;
+    this.__mountCallback = callback;
     this._mount(CONST.reason.onMount);
   }
 
@@ -318,17 +288,17 @@ class ReactiveComponent extends HTMLElement {
     };
 
     const [addObserver, removeObserver] = useObserver(
-      this._caller ?? this.__componentKey,
+      this.__caller ?? this.__componentKey,
       property,
     );
 
-    if (this._observers.has(property)) {
-      const oldRemove = this._observers.get(property);
+    if (this.__observers.has(property)) {
+      const oldRemove = this.__observers.get(property);
       oldRemove?.(this);
     }
 
     addObserver(callback);
-    this._observers.set(property, () => removeObserver(callback));
+    this.__observers.set(property, () => removeObserver(callback));
   }
 
   /**
@@ -337,10 +307,10 @@ class ReactiveComponent extends HTMLElement {
    */
   state(property, initialValue, asRef = false) {
     const state = useState(
-      this._caller ?? this.__componentKey,
+      this.__caller ?? this.__componentKey,
       property,
       initialValue,
-      !!this._caller,
+      !!this.__caller,
       asRef,
     );
     this.observeState(property);
@@ -367,25 +337,6 @@ class ReactiveComponent extends HTMLElement {
         this.#pendingStateUpdate = false;
 
         this._mount(CONST.reason.stateChange(changes));
-
-        if (typeof this.onStateChange === "function") {
-          for (const { value, property, prevValue } of changes) {
-            this.onStateChange(value, property, prevValue);
-          }
-          if (typeof this.reactive === "function") {
-            this.reactive();
-          }
-        } else {
-          for (const { property } of changes) {
-            window.Piglet.log(
-              CONST.pigletLogs.appRoot.onStateChangeNotImplemented(
-                this,
-                property,
-              ),
-              CONST.coreLogsLevels.warn,
-            );
-          }
-        }
       });
     }
   }

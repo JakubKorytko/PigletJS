@@ -17,9 +17,8 @@ const CONST = {
       routeLoaded: (route) => `Route '${route}' loaded successfully.`,
       errorLoading: (route) => `Error loading route '${route}':`,
       unableToLoadComponent: (tag) => `Unable to load component <${tag}>`,
-      componentConnected: ({ _componentName }) => `${_componentName} connected`,
-      onStateChangeNotImplemented: ({ _caller, __componentKey }, property) =>
-        `[${_caller ?? __componentKey}] onStateChange not implemented for: ${property}`,
+      componentConnected: ({ __componentName }) =>
+        `${__componentName} connected`,
     },
     socket: {
       connected: "[Socket] Connected",
@@ -46,6 +45,8 @@ const CONST = {
       new Error(`Unsupported expect type: "${expect}"`),
     failedToParseFromURL: (expected, url) =>
       new Error(`Failed to parse response as "${expected}" from ${url}`),
+    failedToFetchHTML: (componentName) =>
+      new Error(`Failed to fetch HTML for ${componentName}`),
   },
   warning: {
     expectedButGot: (expected, got) =>

@@ -40,7 +40,7 @@ class RenderIfInterface extends VirtualReactiveComponentInterface {
 
   /**
    * Updates the condition
-   * @param {unknown} value
+   * @param {unknown} value - The value to update the condition with
    * @returns {void}
    */
   _updateCondition(value) {}

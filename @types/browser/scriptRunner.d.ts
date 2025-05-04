@@ -50,12 +50,6 @@ export function clearAllListenersForHost(hostElement: ReactiveComponent): void;
 // Retrieves component data for a host element
 export function getComponentData(hostElement: ReactiveComponent): ComponentData;
 
-// Generates callback proxies for state and attribute changes in a component
-export function getCallbackProxies(): {
-  onStateChange: (value: any, property: string, prevValue: any) => void;
-  onAttributeChange: (newValue: any, property: string, prevValue: any) => void;
-};
-
 // Cleans up after a component is mounted, including removing event listeners
 export function componentMountCleanup(
   hostElement: ReactiveComponent,
@@ -84,14 +78,6 @@ export interface ComponentData {
     forwarded: Record<string, Function> | {}; // Forwarded functions for the component
   };
   callbacks: {
-    onStateChange: (value: any, property: string, prevValue: any) => void; // Callback for state changes
-    onAttributeChange: (
-      newValue: any,
-      property: string,
-      prevValue: any,
-    ) => void; // Callback for attribute changes
-    onUpdate: (callback: () => void) => void; // Callback to update the component
-    reactiveRef: { value: () => void }; // Reactive reference callback
     element: QueryElement; // Element query method
     $onBeforeUpdate: (callback: () => boolean | void) => void; // Before update callback
     $onAfterUpdate: (callback: () => void) => void; // After update callback

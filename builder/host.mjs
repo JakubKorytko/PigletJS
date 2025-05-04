@@ -71,8 +71,7 @@ function modifyHosts() {
     fs.writeFileSync(hostsPath, updated, { encoding: "utf8" });
     console.msg("hosts.addedToHosts");
   } catch (err) {
-    console.msg("hosts.failedToAddHost");
-    console.error(err.message);
+    console.msg("hosts.failedToAddHost", err.message);
   }
 }
 

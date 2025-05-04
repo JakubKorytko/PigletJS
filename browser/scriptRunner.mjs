@@ -84,9 +84,6 @@ const queryElement = function (hostElement, selector) {
               el._forwarded = {};
             }
             el._forwarded[key] = value;
-            if (el.onAttributeChange)
-              el.onAttributeChange(el._forwarded, "forwarded");
-            if (el.reactive) el.reactive();
           } else {
             const attr = toPigletAttr(key);
             el.setAttribute(attr, value);
@@ -119,63 +116,8 @@ const queryElement = function (hostElement, selector) {
   return proxy;
 };
 
-/** @type {GetCallbackProxies} */
-const getCallbackProxies = function () {
-  const stateHandlers = {};
-  const attributeHandlers = {};
-
-  const onStateChange = new Proxy(
-    (value, property, prevValue) => {
-      const handler = stateHandlers[property];
-      if (typeof handler === "function") {
-        handler(value, prevValue);
-      }
-    },
-    {
-      get(target, prop) {
-        return stateHandlers[prop];
-      },
-      set(target, prop, value) {
-        if (typeof value === "function") {
-          stateHandlers[prop] = value;
-          return true;
-        }
-        return false;
-      },
-    },
-  );
-
-  const onAttributeChange = new Proxy(
-    (newValue, property, prevValue) => {
-      const handler = attributeHandlers[property];
-      if (typeof handler === "function") {
-        handler(newValue, prevValue);
-      }
-    },
-    {
-      get(target, prop) {
-        return attributeHandlers[prop];
-      },
-      set(target, prop, value) {
-        if (typeof value === "function") {
-          attributeHandlers[prop] = value;
-          return true;
-        }
-        return false;
-      },
-    },
-  );
-
-  return { onStateChange, onAttributeChange };
-};
-
 /** @type {GetComponentData} */
 const generateComponentData = function (hostElement) {
-  /** @type {ComponentData["callbacks"]["reactiveRef"]} */
-  const reactiveRef = {
-    value: () => {},
-  };
-
   /** @type {ComponentData["callbacks"]["onBeforeUpdateRef"]} */
   const onBeforeUpdateRef = {
     value: () => {},
@@ -196,14 +138,10 @@ const generateComponentData = function (hostElement) {
       state: hostElement.state.bind(hostElement),
       element: hostElement,
       parent: getHost(hostElement, true) ?? null,
-      attributes: hostElement._attrs,
+      attributes: hostElement.__attrs,
       forwarded: hostElement._forwarded,
     },
     callbacks: {
-      ...getCallbackProxies(),
-      onUpdate: (callback) => {
-        reactiveRef.value = callback;
-      },
       $onBeforeUpdate: (callback) => {
         onBeforeUpdateRef.value = callback;
       },
@@ -211,7 +149,6 @@ const generateComponentData = function (hostElement) {
         onAfterUpdateRef.value = callback;
       },
       onAfterUpdateRef,
-      reactiveRef,
       onBeforeUpdateRef,
       element: queryElement.bind(this, hostElement),
     },
@@ -221,20 +158,10 @@ const generateComponentData = function (hostElement) {
 /** @type {ComponentMountCleanup} */
 const componentMountCleanup = function (
   hostElement,
-  {
-    reactiveRef,
-    onStateChange,
-    onAttributeChange,
-    onBeforeUpdateRef,
-    onAfterUpdateRef,
-  },
+  { onBeforeUpdateRef, onAfterUpdateRef },
 ) {
-  hostElement.reactive = reactiveRef.value;
-  hostElement.onStateChange = onStateChange;
-  hostElement.onAttributeChange = onAttributeChange;
   hostElement.onBeforeUpdate = onBeforeUpdateRef.value;
   hostElement.onAfterUpdate = onAfterUpdateRef.value;
-  hostElement.reactive();
 };
 
 /** @type {ScriptRunner} */

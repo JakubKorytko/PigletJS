@@ -1,83 +1,74 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {TreeNode} from "@jsdocs/browser/tree.d" */
 /**
- * Represents a proxy for an element with event listener methods and updates.
  * @typedef {{
  *   on: (event: string, callback: Function) => ElementProxy,  // Add an event listener
  *   off: (event: string, callback: Function) => ElementProxy,  // Remove an event listener
  *   clearListeners: () => ElementProxy,  // Clear all event listeners
  *   pass: (updates: Record<string, *>) => ElementProxy  // Pass updates to the element
  * }} ElementProxy
+ * Represents a proxy for an element with event listener methods and updates.
  */
 
 /**
- * Query for an element within a host component.
  * @typedef {(hostElement: ReactiveComponent, selector: string) => ElementProxy} QueryElement
+ * Query for an element within a host component.
  */
 
 /**
- * Context object containing element, state, and variables for script execution.
  * @typedef {{
  *   element: HTMLElement,  // The element the script operates on
  *   state: *,  // The state of the element
  *   variables: Record<string, *>  // Variables available for the script
  * }} ScriptContext
+ * Context object containing element, state, and variables for script execution.
  */
 
 /**
- * Result of running a script, including success status and potential errors.
  * @typedef {{
  *   success: boolean,  // Whether the script execution was successful
  *   error?: Error,  // Error encountered, if any
  *   result?: *  // The result of the script execution
  * }} ScriptResult
+ * Result of running a script, including success status and potential errors.
  */
 
 /**
- * Executes a script within a given context.
  * @typedef {(script: string, context: ScriptContext) => Promise<ScriptResult>} RunScript
+ * Executes a script within a given context.
  */
 
 /**
- * Evaluates an expression within the given script context.
  * @typedef {(expression: string, context: ScriptContext) => *} EvaluateExpression
+ * Evaluates an expression within the given script context.
  */
 
 /**
- * Creates a script context from an HTML element.
  * @typedef {(element: HTMLElement) => ScriptContext} CreateScriptContext
+ * Creates a script context from an HTML element.
  */
 
 /**
- * Clears all event listeners from a host element.
  * @typedef {(hostElement: ReactiveComponent) => void} ClearAllListenersForHost
+ * Clears all event listeners from a host element.
  */
 
 /**
- * Retrieves component data for a host element.
  * @typedef {(hostElement: ReactiveComponent) => ComponentData} GetComponentData
+ * Retrieves component data for a host element.
  */
 
 /**
- * Generates callback proxies for state and attribute changes in a component.
- * @typedef {() => {
- *   onStateChange: (value: *, property: string, prevValue: *) => void,  // Callback for state changes
- *   onAttributeChange: (newValue: *, property: string, prevValue: *) => void  // Callback for attribute changes
- * }} GetCallbackProxies
- */
-
-/**
- * Cleans up after a component is mounted, including removing event listeners.
  * @typedef {(hostElement: ReactiveComponent, callbacks: ComponentData["callbacks"]) => void} ComponentMountCleanup
+ * Cleans up after a component is mounted, including removing event listeners.
  */
 
 /**
- * Runs a script on a component, passing the reason for the script execution.
  * @typedef {(hostElement: ReactiveComponent, module: any, scriptReason: string) => void} ScriptRunner
+ * Runs a script on a component, passing the reason for the script execution.
  */
 
 /**
- * Contains the data related to a component's state, attributes, and lifecycle callbacks.
  * @typedef {{
  *   component: {
  *     name: string,  // Component name
@@ -92,10 +83,6 @@
  *     forwarded: Record<string, Function> | {},  // Forwarded functions for the component
  *   },
  *   callbacks: {
- *     onStateChange: (value: *, property: string, prevValue: *) => void,  // Callback for state changes
- *     onAttributeChange: (newValue: *, property: string, prevValue: *) => void,  // Callback for attribute changes
- *     onUpdate: (callback: () => void) => void,  // Callback to update the component
- *     reactiveRef: { value: () => void },  // Reactive reference callback
  *     element: QueryElement,  // Element query method
  *     $onBeforeUpdate: (callback: () => boolean|void) => void,  // Before update callback
  *     $onAfterUpdate: (callback: () => void) => void,  // After update callback
@@ -103,7 +90,8 @@
  *     onBeforeUpdateRef: { value: () => boolean|void },  // Before update reference callback
  *   }
  * }} ComponentData
- */
+ * Contains the data related to a component's state, attributes, and lifecycle callbacks.
+*/
 
 export /** @exports ScriptContext */
 /** @exports ScriptResult */

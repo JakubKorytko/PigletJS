@@ -3,7 +3,6 @@
 /** @import {TreeNode} from "@jsdocs/browser/tree.d" */
 
 /**
- * Represents a node in a component tree, holding component data and state.
  * @template T
  * @typedef {{
  *   tag: string|null,  // HTML tag of the component
@@ -14,37 +13,38 @@
  *   children: Record<string, TreeNode<T>>|{},  // Child nodes
  *   element?: T  // The element associated with the node
  * }} TreeNode
+ * Represents a node in a component tree, holding component data and state.
  */
 
 /**
- * Contains mount data for a component, including the key, tag, and reference to the component.
  * @typedef {{
  *   key: string,  // Unique key of the component
  *   tag: string,  // HTML tag of the component
  *   ref: ReactiveComponent  // Reference to the component
  * }} MountData
+ * Contains mount data for a component, including the key, tag, and reference to the component.
  */
 
 /**
- * Assigns a unique component ID to an element.
  * @typedef {(el: ReactiveComponent) => number} AssignComponentIdToElement
+ * Assigns a unique component ID to an element.
  */
 
 /**
- * Builds a custom element tree from a given root HTML element.
  * @template T
  * @typedef {(root?: HTMLElement) => Record<string, TreeNode<T>>|{}} BuildCustomElementTree
+ * Builds a custom element tree from a given root HTML element.
  */
 
 /**
- * Injects tree tracking functionality into a component class.
  * @typedef {(targetClass: typeof ReactiveComponent) => void} InjectTreeTrackingToComponentClass
+ * Injects tree tracking functionality into a component class.
  */
 
 /**
- * Traverses a node and returns its tree node representation.
  * @template T, R
  * @typedef {(node: T) => TreeNode<R> | null} Walk
+ * Traverses a node and returns its tree node representation.
  */
 
 export default {

@@ -20,7 +20,7 @@ class RenderIf extends ReactiveComponent {
     this._condition = false;
     this._negated = false;
     this._parts = [];
-    this._stateless = true;
+    this.__stateless = true;
 
     this._contentFragment = document.createDocumentFragment();
     this._contentMounted = false;
@@ -38,7 +38,7 @@ class RenderIf extends ReactiveComponent {
       this.updateVisibility();
     });
 
-    this._isHTMLInjected = true;
+    this.__isHTMLInjected = true;
     this._mount(CONST.reason.onMount);
   }
 
@@ -60,7 +60,7 @@ class RenderIf extends ReactiveComponent {
     if (
       name === CONST.conditionAttribute &&
       oldValue !== newValue &&
-      (!this._caller || this._caller.indexOf(CONST.notSettledSuffix) === -1)
+      (!this.__caller || this.__caller.indexOf(CONST.notSettledSuffix) === -1)
     ) {
       this._updateFromAttribute();
     }
@@ -114,7 +114,7 @@ class RenderIf extends ReactiveComponent {
 
     if (isAttribute) {
       const host = getHost(this.__root);
-      this._updateCondition(host._attrs[conditionProperty]);
+      this._updateCondition(host.__attrs[conditionProperty]);
     } else {
       this._state = this.state(conditionProperty, undefined, true);
       this._updateCondition(this._state.value);
@@ -134,16 +134,6 @@ class RenderIf extends ReactiveComponent {
     }
 
     this.updateVisibility();
-  }
-
-  /**
-   * @type {Member["onStateChange"]["Type"]}
-   * @returns {Member["onStateChange"]["ReturnType"]}
-   */
-  onStateChange(value, property, oldValue) {
-    if (["true", "false"].includes(this.getAttribute(CONST.conditionAttribute)))
-      return;
-    this._updateCondition(value);
   }
 
   /**
@@ -171,18 +161,6 @@ class RenderIf extends ReactiveComponent {
   disconnectedCallback() {
     super.disconnectedCallback();
   }
-
-  /**
-   * @type {Member["onAttributeChange"]["Type"]}
-   * @returns {Member["onAttributeChange"]["ReturnType"]}
-   */
-  onAttributeChange() {}
-
-  /**
-   * @type {Member["reactive"]["Type"]}
-   * @returns {Member["reactive"]["ReturnType"]}
-   */
-  reactive() {}
 
   /**
    * @type {Member["runScript"]["Type"]}

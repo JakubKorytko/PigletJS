@@ -48,7 +48,6 @@ class Socket {
 
     this.ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-
       if (message.type === CONST.socket.messageTypes.reload && message.data) {
         /** @type {ReactiveComponent[]} */
         const components = getMountedComponentsByTag(message.data);

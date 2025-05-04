@@ -2,7 +2,7 @@
 
 /**
  * @interface StateInterface
- * @template T
+ * @template T - The type of the state value.
  */
 class StateInterface {
   /**
@@ -15,7 +15,7 @@ class StateInterface {
    * List of observers
    * @type {Array<{stateChange: function(T, T): void}>}
    */
-  _observers;
+  __observers;
 
   /**
    * Whether the state was created by a listener
@@ -31,14 +31,14 @@ class StateInterface {
 
   /**
    * Adds an observer to the state
-   * @param {{stateChange: function(T, T): void}} observer
+   * @param {{stateChange: function(T, T): void}} observer - The observer to add
    * @returns {void}
    */
   addObserver(observer) {}
 
   /**
    * Removes an observer from the state
-   * @param {{stateChange: function(T, T): void}} observer
+   * @param {{stateChange: function(T, T): void}} observer - The observer to remove
    * @returns {void}
    */
   removeObserver(observer) {}
@@ -53,14 +53,14 @@ class StateInterface {
 
   /**
    * Sets a new value for the state and notifies observers
-   * @param {T} newState
+   * @param {T} newState - The new value of the state
    * @returns {void}
    */
   setState(newState) {}
 
   /**
    * Notifies all observers about a state change
-   * @param {T} oldState
+   * @param {T} oldState - The previous value of the state
    * @returns {void}
    */
   _notify(oldState) {}

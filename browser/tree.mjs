@@ -49,10 +49,10 @@ const buildCustomElementTree = function (root = document.body) {
       }
 
       let state = {};
-      if (node._observers && node.__componentKey) {
-        for (const property of node._observers.keys()) {
+      if (node.__observers && node.__componentKey) {
+        for (const property of node.__observers.keys()) {
           state[property] = useState(
-            node._caller ?? node.__componentKey,
+            node.__caller ?? node.__componentKey,
             property,
             undefined,
             true,

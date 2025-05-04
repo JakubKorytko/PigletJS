@@ -6,7 +6,7 @@
  */
 class State {
   _state;
-  _observers = [];
+  __observers = [];
   __isCreatedByListener;
   _isRef;
 
@@ -21,7 +21,7 @@ class State {
    * @returns {Member["addObserver"]["ReturnType"]}
    */
   addObserver(observer) {
-    this._observers.push(observer);
+    this.__observers.push(observer);
   }
 
   /**
@@ -29,7 +29,7 @@ class State {
    * @returns {Member["removeObserver"]["ReturnType"]}
    */
   removeObserver(observer) {
-    this._observers = this._observers.filter((obs) => obs !== observer);
+    this.__observers = this.__observers.filter((obs) => obs !== observer);
   }
 
   /**
@@ -57,7 +57,7 @@ class State {
    * @returns {Member["_notify"]["ReturnType"]}
    */
   _notify(oldState) {
-    this._observers.forEach((observer) =>
+    this.__observers.forEach((observer) =>
       observer.stateChange(this._state, oldState),
     );
   }

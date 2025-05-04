@@ -7,13 +7,14 @@
  */
 class AppRootInterface {
   /**
+   * Current route path
    * @type {string}
-   * Current route path */
+   */
   _route;
 
   /**
-   * @type {string}
    * Current route path
+   * @type {string}
    */
   route;
 

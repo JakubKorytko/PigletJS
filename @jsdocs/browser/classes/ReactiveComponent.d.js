@@ -13,25 +13,25 @@ class BaseReactiveComponentInterface {
    * The caller of the component
    * @type {string}
    */
-  _caller;
+  __caller;
 
   /**
    * The name of the component
    * @type {string}
    */
-  _componentName;
+  __componentName;
 
   /**
    * The observers of the component state
    * @type {Map<string, (component: ReactiveComponent) => void>}
    */
-  _observers;
+  __observers;
 
   /**
    * The attributes of the component
    * @type {Record<string, string>|{}}
    */
-  _attrs;
+  __attrs;
 
   /**
    * The tree of the component
@@ -49,19 +49,19 @@ class BaseReactiveComponentInterface {
    * Whether the component is mounted
    * @type {boolean}
    */
-  _isMounted;
+  __isMounted;
 
   /**
    * Whether the HTML is injected
    * @type {boolean}
    */
-  _isHTMLInjected;
+  __isHTMLInjected;
 
   /**
    * The children of the component
    * @type {Array<ReactiveComponent>}
    */
-  _children;
+  __children;
 
   /**
    * The ID of the component
@@ -83,26 +83,26 @@ class BaseReactiveComponentInterface {
 
   /**
    * The mount callback of the component
-   * @type {((reason: Reason) => void) | undefined}
+   * @type {((reason: Reason) => void)}
    */
-  mountCallback;
+  __mountCallback;
 
   /**
    * The mutation observer of the component
    * @type {MutationObserver | undefined}
    */
-  _mutationObserver;
+  __mutationObserver;
 
   /**
    * Called when the component is mounted
-   * @param {Reason} reason
+   * @param {Reason} reason - The reason for the mount
    * @returns {void}
    */
   _mount(reason) {}
 
   /**
    * Updates the children of the component
-   * @param {Reason} reason
+   * @param {Reason} reason - The reason for the update
    * @returns {void}
    */
   _updateChildren(reason) {}
@@ -140,17 +140,17 @@ class BaseReactiveComponentInterface {
 
   /**
    * Observe a state property
-   * @param {string} property
+   * @param {string} property - The property to observe
    * @returns {void}
    */
   observeState(property) {}
 
   /**
    * Get a result of useState hook & add it to the component observers
-   * @template T
-   * @param {string} property
-   * @param {*} initialValue
-   * @param {boolean} [asRef]
+   * @template T - The type of the state value.
+   * @param {string} property - The property to observe
+   * @param {*} initialValue - The initial value of the state
+   * @param {boolean} [asRef] - Whether it was called from a ref
    * @returns {{ value: T }}
    */
   state(property, initialValue, asRef) {
@@ -158,18 +158,18 @@ class BaseReactiveComponentInterface {
   }
 
   /**
-   * @template T
    * Called when the state of the component changes
-   * @param {T} value
-   * @param {string} property
-   * @param {T} prevValue
+   * @template T - The type of the state value.
+   * @param {T} value - The new value of the state
+   * @param {string} property - The property that changed
+   * @param {T} prevValue - The previous value of the state
    * @returns {void}
    */
   stateChange(value, property, prevValue) {}
 
   /**
    * Dispatch an event
-   * @param {Event} event
+   * @param {Event} event - The event to dispatch
    * @returns {boolean}
    */
   dispatchEvent(event) {
@@ -198,42 +198,16 @@ class BaseReactiveComponentInterface {
 class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
   /**
    * Called when the attribute of the component changes
-   * @param {string=} name
-   * @param {string|null=} oldValue
-   * @param {string=} newValue
+   * @param {string=} name - The name of the attribute
+   * @param {string|null=} oldValue - The previous value of the attribute
+   * @param {string=} newValue - The new value of the attribute
    * @returns {void}
    */
   attributeChangedCallback(name, oldValue, newValue) {}
 
   /**
-   * @template T
-   * Called when the state of the component changes (can be used in custom components script tag)
-   * @param {T=} [value]
-   * @param {string=} [property]
-   * @param {T=} [prevValue]
-   * @returns {void}
-   */
-  onStateChange(value, property, prevValue) {}
-
-  /**
-   * @template T
-   * Called when the attribute of the component changes (can be used in custom components script tag)
-   * @param {T=} newValue
-   * @param {string=} attrName
-   * @param {T=} oldValue
-   * @returns {void}
-   */
-  onAttributeChange(newValue, attrName, oldValue) {}
-
-  /**
-   * Called when the component state or attributes change
-   * @returns {void}
-   */
-  reactive() {}
-
-  /**
    * Run the script of the component by dynamic import
-   * @param {Reason} reason
+   * @param {Reason} reason - The reason for the script execution
    * @returns {Promise<void>}
    */
   runScript(reason) {
@@ -242,7 +216,7 @@ class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
 
   /**
    * Called when the component is before updating, can return a boolean to prevent the update
-   * @returns {boolean|void}
+   * @returns {boolean|void} - Whether to prevent the update
    */
   onBeforeUpdate() {}
 
@@ -274,7 +248,7 @@ class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
    * Is the component stateless
    * @type {boolean}
    */
-  _stateless;
+  __stateless;
 }
 
 /** @typedef {InterfaceMethodTypes<BaseReactiveComponentInterface>} Member */
