@@ -57,15 +57,42 @@ body {
 
 body {
   font-family: system-ui, sans-serif;
-  padding: 2rem;
-  background: #ffb8b8;
+  padding: 1rem;
   color: #212529;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
+  background:
+  radial-gradient(black 15%, transparent 16%) 0 0,
+  radial-gradient(black 15%, transparent 16%) 8px 8px,
+  radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 0 1px,
+  radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 8px 9px;
+  background-color:#282828;
+  background-size:16px 16px;
 }
 
 * {
   box-sizing: border-box;
 }
+
+.pigs-image {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  max-height: 30%;
+ }
+ 
+ .pig-image {
+   position: absolute;
+   left: 50%;
+   transform: translateX(-50%);
+   top: 0;
+   max-height: 100%
+ }
+ 
+ .pig-images-container {
+   position: relative;
+   width: 750px;
+   height: 700px;
+ }
