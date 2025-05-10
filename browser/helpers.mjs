@@ -9,17 +9,15 @@
  *  Api,
  *  Navigate,
  *  ToKebabCase,
- *  FadeOut,
- *  FadeIn,
  *  GetMountedComponentsByTag,
  *  SendToExtension,
- *  LoadComponent
+ *  LoadComponent,
+ *  FetchWithCache,
  * } from '@jsdocs/browser/helpers.d'
  */
 
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import CONST from "@Piglet/browser/CONST";
-import { injectTreeTrackingToComponentClass } from "@Piglet/browser/tree";
 /** @type {GetHost} */
 const getHost = function (node, parent) {
   /** @type {Node|ShadowRoot} */
@@ -94,12 +92,12 @@ const fromPigletAttr = function fromPigletAttr(pigletName) {
 };
 
 /** @type {Api} */
-const api = async function (path, expect = "json") {
+const api = async function (path, fetchOptions = {}, expect = "json") {
   const url = `${CONST.apiRoute}/${path.replace(/^\/+/, "")}`;
 
   let res;
   try {
-    res = await fetch(url);
+    res = await fetch(url, fetchOptions);
   } catch (err) {
     throw CONST.error.failedToFetchAPI(url, err);
   }
@@ -146,65 +144,18 @@ const api = async function (path, expect = "json") {
 
 /** @type {Navigate} */
 const navigate = (route) => {
-  if (!window.Piglet.tree) return;
-
-  const root = Object.values(window.Piglet.tree)[0];
-
-  if (root.componentName !== "AppRoot") return;
+  if (!window.Piglet.AppRoot) return false;
 
   window.history.pushState({}, "", route);
 
-  root.element.route = route;
+  window.Piglet.AppRoot.route = route;
+
+  return true;
 };
 
 /** @type {ToKebabCase} */
 const toKebabCase = function (str) {
   return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
-};
-
-/** @type {FadeOut} */
-const fadeOut = function (element, duration = 400) {
-  return new Promise((resolve) => {
-    element.style.opacity = "1";
-    element.style.transition = `opacity ${duration}ms`;
-
-    void element.offsetWidth;
-
-    element.style.opacity = "0";
-
-    const handleTransitionEnd = (event) => {
-      if (event.propertyName === "opacity") {
-        element.removeEventListener("transitionend", handleTransitionEnd);
-        element.style.display = "none";
-        resolve();
-      }
-    };
-
-    element.addEventListener("transitionend", handleTransitionEnd);
-  });
-};
-
-/** @type {FadeIn} */
-const fadeIn = function (element, duration = 400) {
-  if (!element) return Promise.resolve();
-  return new Promise((resolve) => {
-    element.style.display = "";
-    element.style.opacity = "0";
-    element.style.transition = `opacity ${duration}ms`;
-
-    void element.offsetWidth;
-
-    element.style.opacity = "1";
-
-    const handleTransitionEnd = (event) => {
-      if (event.propertyName === "opacity") {
-        element.removeEventListener("transitionend", handleTransitionEnd);
-        resolve();
-      }
-    };
-
-    element.addEventListener("transitionend", handleTransitionEnd);
-  });
 };
 
 /** @type {GetMountedComponentsByTag} */
@@ -222,6 +173,9 @@ const getMountedComponentsByTag = function (tagName) {
   return componentRefs;
 };
 
+/** @type {Record<string, NodeJS.Timeout>} */
+const debounceTimers = {};
+
 /** @type {SendToExtension} */
 const sendToExtension = (requestType) => {
   const api = window.Piglet?.extension;
@@ -232,9 +186,14 @@ const sendToExtension = (requestType) => {
   };
 
   const action = actions[requestType];
-  if (typeof action === "function") {
+  if (typeof action !== "function") return;
+
+  clearTimeout(debounceTimers[requestType]);
+
+  debounceTimers[requestType] = setTimeout(() => {
+    console.log("Sending to extension:", requestType);
     action();
-  }
+  }, 100);
 };
 
 /** @type {LoadComponent} */
@@ -244,12 +203,59 @@ function loadComponent(_class) {
 
   const existingClass = customElements.get(tagName);
   if (!existingClass) {
-    injectTreeTrackingToComponentClass(_class);
     customElements.define(tagName, _class);
   }
 
   return customElements.whenDefined(tagName);
 }
+
+/** @type {FetchWithCache} */
+const fetchWithCache = async (url) => {
+  if (!window.__fetchCache) {
+    window.__fetchCache = new Map();
+  }
+
+  if (!window.__fetchQueue) {
+    window.__fetchQueue = new Map(); // URL → Promise
+  }
+
+  if (window.__fetchCache.has(url)) {
+    return window.__fetchCache.get(url);
+  }
+
+  if (window.__fetchQueue.has(url)) {
+    return window.__fetchQueue.get(url);
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch from ${url}`);
+      }
+
+      const data = await response.text();
+      window.__fetchCache.set(url, data);
+      return data;
+    } finally {
+      window.__fetchQueue.delete(url);
+    }
+  })();
+
+  window.__fetchQueue.set(url, fetchPromise);
+  return fetchPromise;
+};
+
+const parseHTML = (html) => {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const fragment = document.createDocumentFragment();
+
+  [...doc.head.children, ...doc.body.children].forEach((child) =>
+    fragment.appendChild(child),
+  );
+
+  return document.createRange().createContextualFragment(html);
+};
 
 export {
   getHost,
@@ -261,9 +267,9 @@ export {
   api,
   navigate,
   toKebabCase,
-  fadeOut,
-  fadeIn,
   getMountedComponentsByTag,
   loadComponent,
   sendToExtension,
+  fetchWithCache,
+  parseHTML,
 };

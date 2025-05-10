@@ -1,4 +1,3 @@
-/** @import {Reason} from "@jsdocs/browser/CONST.d" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 import { VirtualReactiveComponentInterface } from "@jsdocs/browser/classes/ReactiveComponent.d";
 

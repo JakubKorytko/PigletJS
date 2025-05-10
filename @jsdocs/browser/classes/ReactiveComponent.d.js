@@ -1,5 +1,5 @@
 /** @import {Reason} from "@jsdocs/browser/CONST.d" */
-/** @import {TreeNode, MountData} from "@jsdocs/browser/tree.d" */
+/** @import {MountData, TreeNode} from "@jsdocs/browser/tree.d" */
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 
@@ -35,7 +35,7 @@ class BaseReactiveComponentInterface {
 
   /**
    * The tree of the component
-   * @type {Record<string, TreeNode<ReactiveComponent|Element>>}
+   * @type {TreeNode}
    */
   __tree;
 
@@ -92,6 +92,12 @@ class BaseReactiveComponentInterface {
    * @type {MutationObserver | undefined}
    */
   __mutationObserver;
+
+  /**
+   * The ID of the component
+   * @type {number}
+   */
+  __id;
 
   /**
    * Called when the component is mounted
@@ -186,9 +192,10 @@ class BaseReactiveComponentInterface {
   /**
    * Load the content of the component (HTML)
    * @async
+   * @param {boolean} [canUseMemoized] - Whether to use memoized content
    * @returns {Promise<void|null>} A promise that resolves when the HTML content is loaded, or `null` in case of an error.
    */
-  async loadContent() {}
+  async loadContent(canUseMemoized) {}
 }
 
 /**
@@ -231,18 +238,6 @@ class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
    * @type {MountData}
    */
   __mountData;
-
-  /**
-   * The method to track the custom tree of the component
-   * @type {((root?: HTMLElement) => void)}
-   */
-  __trackCustomTree;
-
-  /**
-   * The observer to track the custom tree of the component
-   * @type {MutationObserver}
-   */
-  __customTreeObserver;
 
   /**
    * Is the component stateless

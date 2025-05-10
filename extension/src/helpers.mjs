@@ -5,26 +5,31 @@ const chromeExtension = globalThis.chrome;
 
 let pigletSupport = true;
 
-function renderTree(obj) {
-  if (!obj || typeof obj !== "object") return document.createTextNode("");
+function renderTree(tree) {
+  if (!tree || typeof tree !== "object") return document.createTextNode("");
 
   const fragment = document.createDocumentFragment();
 
-  Object.entries(obj).forEach(([key, value]) => {
-    const label = `${value.componentName ?? "HTML"} (${key})`;
+  for (const [rawKey, children] of Object.entries(tree)) {
+    const isHTML = rawKey.startsWith("[HTML]");
+    const key = isHTML ? rawKey.replace("[HTML]", "") : rawKey;
 
-    const hasChildren =
-      value.children && Object.keys(value.children).length > 0;
+    const hasChildren = children && Object.keys(children).length > 0;
+
+    const label = document.createElement("span");
+    label.textContent = key;
+    label.className = isHTML ? "html-component" : "user-component";
+    label.style.color = isHTML ? "green" : "red";
 
     if (hasChildren) {
       const details = document.createElement("details");
       details.open = true;
 
       const summary = document.createElement("summary");
-      summary.textContent = label;
+      summary.appendChild(label);
 
       details.appendChild(summary);
-      details.appendChild(renderTree(value.children));
+      details.appendChild(renderTree(children));
       fragment.appendChild(details);
     } else {
       const wrapper = document.createElement("div");
@@ -32,12 +37,12 @@ function renderTree(obj) {
 
       const summary = document.createElement("p");
       summary.className = "_summary";
-      summary.textContent = label;
+      summary.appendChild(label);
 
       wrapper.appendChild(summary);
       fragment.appendChild(wrapper);
     }
-  });
+  }
 
   return fragment;
 }

@@ -1,11 +1,14 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
+
+import { VirtualReactiveComponentInterface } from "@jsdocs/browser/classes/ReactiveComponent.d";
+
 /**
  * Root component of the application, handles routing and component loading
  * @interface AppRootInterface
- * @extends {ReactiveComponent}
+ * @extends {VirtualReactiveComponentInterface}
  */
-class AppRootInterface {
+class AppRootInterface extends VirtualReactiveComponentInterface {
   /**
    * Current route path
    * @type {string}
@@ -59,9 +62,10 @@ class AppRootInterface {
   /**
    * Loads custom component modules
    * @param {string[]} tags - Array of component tag names to load
+   * @param {Set<string>} seen - Set of seen component tag names
    * @returns {Promise<void>}
    */
-  async loadCustomComponents(tags) {}
+  async loadCustomComponents(tags, seen) {}
 
   /**
    * Renders a component into the view

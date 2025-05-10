@@ -1,24 +1,7 @@
-import fs from "fs";
+import fs from "fs/promises";
 import { resolvePath } from "@Piglet/utils/paths";
-import { toKebabCase } from "@Piglet/utils/stringUtils";
 import console from "@Piglet/utils/console";
-
-/**
- * Loads the HTML content of a specific page.
- *
- * @param {string} fullPath - The name of the page to load.
- * @returns {Promise<string|false>} - The HTML content or false on failure.
- */
-async function loadPage(fullPath) {
-  "use strict";
-
-  try {
-    return await fs.promises.readFile(fullPath, "utf-8");
-  } catch (err) {
-    console.msg("pages.failedToLoad", fullPath, err);
-    return false;
-  }
-}
+import CONST from "@Piglet/misc/CONST";
 
 /**
  * Generates full HTML by injecting page content into the app shell,
@@ -26,63 +9,38 @@ async function loadPage(fullPath) {
  * and adding script tags for components.
  *
  * @param {string} route - Route path
- * @param {string} fullPath - The name of the page to render.
  * @returns {Promise<string|false>} - The full HTML content or false on failure.
  */
-async function generateAppHtml(route, fullPath) {
+async function generateAppHtml(route) {
   "use strict";
+
+  /** @type {Array<[RegExp, (match: string, attributes: string) => string]>} */
+  const replacements = [
+    [
+      /<App([^>]*)\/>/g,
+      (match, attributes) => `<app-root${attributes}></app-root>`,
+    ],
+    [/<App([^>]*)>/g, (match, attributes) => `<app-root${attributes}>`],
+    [/<\/App>/g, () => `</app-root>`],
+    [
+      /<app-root([^>]*)>/g,
+      (match, attributes) => `<app-root${attributes} route="${route}">`,
+    ],
+    [
+      /<\/body>/g,
+      () =>
+        `<script type="module" src="${CONST.customRouteAliases.piglet}"></script></body>`,
+    ],
+  ];
 
   const appHtmlPath = resolvePath("@/Pig.html");
   try {
-    let appHtml = await fs.promises.readFile(appHtmlPath, "utf-8");
-    let pageContent = await loadPage(fullPath);
+    const appHtml = await fs.readFile(appHtmlPath, "utf-8");
 
-    if (!pageContent) {
-      return false;
-    }
-
-    const componentTags = new Set(["App"]);
-    const tagRegex =
-      /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
-    let match;
-
-    while ((match = tagRegex.exec(pageContent)) !== null) {
-      const pascalTag = match[1] || match[2];
-      componentTags.add(pascalTag);
-    }
-
-    componentTags.forEach((tag) => {
-      const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag);
-
-      const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
-      appHtml = appHtml.replace(
-        selfClosingTagRegex,
-        `<${kebabTag}$1></${kebabTag}>`,
-      );
-
-      appHtml = appHtml.replace(
-        new RegExp(`<${tag}([^>]*)>`, "g"),
-        `<${kebabTag}$1>`,
-      );
-      appHtml = appHtml.replace(new RegExp(`</${tag}>`, "g"), `</${kebabTag}>`);
-    });
-
-    appHtml = appHtml.replace(/<app-root([^>]*)>/g, (match, attributes) => {
-      return `<app-root${attributes} route="${route}">`;
-    });
-
-    appHtml = appHtml.replace(
-      /<app([^>]*)>(.*?)<\/app>/is,
-      `<app$1>${pageContent}</app>`,
+    return replacements.reduce(
+      (html, [regex, replacement]) => html.replace(regex, replacement),
+      appHtml,
     );
-
-    // noinspection HtmlUnknownTarget
-    appHtml = appHtml.replace(
-      "</body>",
-      `<script type="module" src="/Piglet"></script></body>`,
-    );
-
-    return appHtml;
   } catch (err) {
     console.msg("pages.htmlGeneratingError", err);
     return false;

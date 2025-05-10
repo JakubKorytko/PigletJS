@@ -1,16 +1,4 @@
 import { ReactiveComponent } from "./ReactiveComponent";
-import { State } from "./hooks";
-
-// Type definition for a tree node in the component tree
-interface TreeNode<T> {
-  tag: string | null; // HTML tag of the component
-  componentName?: string | null; // Name of the component
-  componentId?: number | null; // Component ID
-  key: string | null; // Unique key for the node
-  state?: Record<string, State<T>>; // State of the component
-  children: Record<string, TreeNode<T>>; // Child nodes (subcomponents)
-  element?: T; // The element associated with the node (e.g., HTMLElement)
-}
 
 // Definition of mount data for a component
 interface MountData {
@@ -19,23 +7,18 @@ interface MountData {
   ref: ReactiveComponent; // Reference to the ReactiveComponent instance
 }
 
-// Function to assign a unique ID to a component
-declare function assignComponentIdToElement(el: ReactiveComponent): number;
+// Definition of a tree node
+interface TreeNode {
+  [key: string]: TreeNode | string;
+}
 
-// Function to build a tree of custom elements based on the root element
-declare function buildCustomElementTree<T>(
-  root?: HTMLElement,
-): Record<string, TreeNode<T>>;
+// Builds a tree of components from a root component
+type BuildComponentTree = (node: ReactiveComponent) => Record<string, TreeNode>;
 
-// Function to inject tree tracking into a component class
-declare function injectTreeTrackingToComponentClass(
-  targetClass: typeof ReactiveComponent,
-): void;
+// Gets the key of a node
+type GetNodeKey = (node: ReactiveComponent | Element) => string;
 
-export {
-  assignComponentIdToElement,
-  buildCustomElementTree,
-  injectTreeTrackingToComponentClass,
-  TreeNode,
-  MountData,
-};
+// Recursively builds the tree
+type Recurse = (currentNode: ReactiveComponent | Element) => TreeNode | {};
+
+export type { MountData, TreeNode, BuildComponentTree, GetNodeKey, Recurse };

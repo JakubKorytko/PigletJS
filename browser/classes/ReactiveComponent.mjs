@@ -1,8 +1,12 @@
 /** @import {BaseReactiveComponentInterface, VirtualReactiveComponentInterface, Member, Virtual} from "@jsdocs/browser/classes/ReactiveComponent.d" */
 
-import { assignComponentIdToElement } from "@Piglet/browser/tree";
 import { useState, useObserver } from "@Piglet/browser/hooks";
-import { fromPigletAttr, getHost, isShadowRoot } from "@Piglet/browser/helpers";
+import {
+  fromPigletAttr,
+  getHost,
+  parseHTML,
+  sendToExtension,
+} from "@Piglet/browser/helpers";
 import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
 import CONST from "@Piglet/browser/CONST";
 
@@ -46,18 +50,11 @@ class ReactiveComponent extends HTMLElement {
    */
   onAfterUpdate() {}
 
-  /**
-   * @type {Virtual["__trackCustomTree"]["Type"]}
-   * @returns {Virtual["__trackCustomTree"]["ReturnType"]}
-   * @virtual
-   */
-  __trackCustomTree() {}
+  /** @type {number} */
+  __id;
 
   /** @type {Virtual["__mountData"]["Type"]} */
   __mountData;
-
-  /** @type {Virtual["__customTreeObserver"]["Type"]} */
-  __customTreeObserver;
 
   /** @type {Virtual["_forwarded"]["Type"]} */
   _forwarded = {};
@@ -104,8 +101,32 @@ class ReactiveComponent extends HTMLElement {
   /** @type {Virtual["__stateless"]["Type"]} */
   __stateless;
 
+  __waitingForScript = [];
+
+  __killed = false;
+
+  __useFragment = false;
+
+  get __isKilled() {
+    const parent = getHost(this, true);
+    const grandParent = getHost(parent ?? this, true);
+
+    return this.__killed || parent?.__killed || grandParent?.__killed;
+  }
+
+  kill() {
+    this.__killed = true;
+    this.remove();
+  }
+
+  disableHMR() {
+    this.__preventReload = true;
+  }
+
   constructor() {
     super();
+
+    if (this.__isKilled) return;
 
     this.__caller = this.getAttribute(CONST.callerAttribute);
     this.removeAttribute(CONST.callerAttribute);
@@ -164,8 +185,8 @@ class ReactiveComponent extends HTMLElement {
 
     if (this.constructor.name === CONST.appRootName) {
       this.__componentId = 0;
-    } else {
-      assignComponentIdToElement(this);
+    } else if (this.__componentId === undefined) {
+      this.__componentId = ++window.Piglet.componentCounter;
     }
 
     this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
@@ -207,27 +228,37 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["reloadComponent"]["ReturnType"]}
    */
   async reloadComponent() {
+    if (this.__isKilled || this.__preventReload) {
+      return;
+    }
     this.__isHTMLInjected = false;
     this.__isMounted = false;
     await this.runScript({ name: "reload" });
-    await this.loadContent();
+    await this.loadContent(false);
   }
 
   /**
    * @type {Member["loadContent"]["Type"]}
    * @returns {Member["loadContent"]["ReturnType"]}
    */
-  async loadContent() {
+  async loadContent(canUseMemoized) {
     const componentName = this.constructor.name;
     const url = `/component/html/${componentName}`;
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw CONST.error.failedToFetchHTML(componentName);
+      let html;
+
+      if (canUseMemoized) {
+        html = await window.fetchWithCache(url);
+      } else {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw CONST.error.failedToFetchHTML(componentName);
+        }
+        html = await response.text();
       }
 
-      this.shadowRoot.innerHTML = await response.text();
+      this.shadowRoot.innerHTML = html;
       this.__isHTMLInjected = true;
       this._mount({ name: "loadContent" });
     } catch (error) {
@@ -255,6 +286,18 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["connectedCallback"]["ReturnType"]}
    */
   connectedCallback() {
+    this.__mountData = {
+      key: this.__componentKey,
+      tag: this.tagName,
+      ref: this,
+    };
+
+    window.Piglet.mountedComponents.add(this.__mountData);
+
+    if (this.__isKilled) {
+      this.remove();
+      return;
+    }
     window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
     this.__root = this.shadowRoot ?? this.getRootNode();
     if (this.__caller) {
@@ -265,7 +308,16 @@ class ReactiveComponent extends HTMLElement {
     if (parent && !parent.__children.includes(this)) {
       parent.__children.push(this);
     }
-    this.runScript(CONST.reason.addedToDOM);
+    this.runScript(CONST.reason.addedToDOM).then(() => {
+      this.__ranScript = true;
+      if (this.__waitingForScript.length > 0) {
+        for (const child of this.__waitingForScript) {
+          child.loadContent(true);
+        }
+        this.__waitingForScript = [];
+      }
+    });
+    sendToExtension(CONST.extension.tree);
   }
 
   /**
@@ -346,7 +398,11 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["disconnectedCallback"]["ReturnType"]}
    */
   disconnectedCallback() {
-    this._unmount();
+    if (window.Piglet.componentsCount?.[this.__componentName] > 0) {
+      window.Piglet.componentsCount[this.__componentName]--;
+    }
+    window.Piglet.mountedComponents.delete(this.__mountData);
+    sendToExtension(CONST.extension.tree);
   }
 
   /**

@@ -1,9 +1,6 @@
 /** @import {AppRootInterface, Virtual, Member} from "@jsdocs/browser/classes/AppRoot.d" */
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import {
-  fadeIn,
-  fadeOut,
-  getHost,
   toPascalCase,
   sendToExtension,
   loadComponent,
@@ -61,10 +58,8 @@ class AppRoot extends ReactiveComponent {
    * @returns {Member["changeRoute"]["ReturnType"]}
    */
   async changeRoute(newRoute) {
-    const host = getHost(this);
-    await fadeOut(host, 100);
     this._unmount.call(this);
-    this.shadowRoot.innerHTML = "";
+    this.shadowRoot.replaceChildren();
     window.Piglet.reset();
     super.connectedCallback();
     await this.loadRoute(newRoute);
@@ -79,7 +74,10 @@ class AppRoot extends ReactiveComponent {
     this._route = route;
 
     try {
-      const routePath = _routes[route];
+      let routePath = _routes[route];
+      if (!routePath) {
+        routePath = "NotFound";
+      }
       const [module, pageSource] = await Promise.all([
         import(`${CONST.componentRoute.base}/${routePath}`),
         fetch(`${CONST.componentRoute.html}/${routePath}`).then((res) =>
@@ -88,7 +86,7 @@ class AppRoot extends ReactiveComponent {
       ]);
 
       const tags = this.extractCustomTags(pageSource);
-      await this.loadCustomComponents(tags);
+      await this.loadCustomComponents(tags, new Set());
 
       await this.renderComponent(module.default);
 
@@ -127,12 +125,22 @@ class AppRoot extends ReactiveComponent {
    * @type {Member["loadCustomComponents"]["Type"]}
    * @returns {Member["loadCustomComponents"]["ReturnType"]}
    */
-  async loadCustomComponents(tags) {
+  async loadCustomComponents(tags, seen = new Set()) {
     await Promise.all(
       tags.map(async (tag) => {
-        if (tag === CONST.conditionalName) return;
+        if (tag === CONST.conditionalName || seen.has(tag)) return;
+        seen.add(tag);
+
         try {
           await import(`${CONST.componentRoute.base}/${tag}`);
+
+          const html = await fetch(`${CONST.componentRoute.html}/${tag}`).then(
+            (res) => res.text(),
+          );
+
+          const nestedTags = this.extractCustomTags(html);
+
+          await this.loadCustomComponents(nestedTags, seen);
         } catch (e) {
           window.Piglet.log(
             CONST.pigletLogs.appRoot.unableToLoadComponent(tag),
@@ -144,6 +152,10 @@ class AppRoot extends ReactiveComponent {
     );
   }
 
+  connectedCallback() {
+    window.Piglet.AppRoot = this;
+  }
+
   /**
    * @type {Member["renderComponent"]["Type"]}
    * @returns {Member["renderComponent"]["ReturnType"]}
@@ -151,8 +163,6 @@ class AppRoot extends ReactiveComponent {
   async renderComponent(component) {
     if (component.prototype instanceof ReactiveComponent) {
       await loadComponent(component);
-      const host = getHost(this);
-      void fadeIn(host, 100);
       const element = new component();
       if (element instanceof ReactiveComponent) {
         this.shadowRoot.appendChild(element);

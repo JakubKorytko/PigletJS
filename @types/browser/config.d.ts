@@ -1,4 +1,5 @@
-import { Navigate } from "./helpers";
+import { Navigate, FetchWithCache } from "./helpers";
+import ReactiveComponent from "./classes/ReactiveComponent";
 
 export interface Config {
   allowDebugging: boolean;
@@ -19,6 +20,8 @@ export interface Config {
     tag: string;
     ref: HTMLElement | ReactiveComponent;
   }>;
+  componentsCount: Record<string, number>;
+  AppRoot: ReactiveComponent | undefined;
   log: (
     message: string,
     severity?: "info" | "warn" | "error",
@@ -30,7 +33,10 @@ export interface Config {
 declare global {
   interface Window {
     Piglet: Config;
-    navigate: Navigate;
+    $navigate: Navigate;
+    fetchWithCache: FetchWithCache;
+    __fetchCache: Map<string, string>;
+    __fetchQueue: Map<string, Promise<string>>;
   }
 }
 

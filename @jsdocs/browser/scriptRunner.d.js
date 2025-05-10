@@ -71,19 +71,14 @@
 /**
  * @typedef {{
  *   component: {
- *     name: string,  // Component name
- *     id: number,  // Component ID
- *     tree: Record<string, TreeNode<ReactiveComponent | Element>>,  // Component tree
- *     shadowRoot: ShadowRoot|null,  // Shadow root of the component
- *     key: string,  // Unique component key
- *     state: Function,  // State function
- *     element: ReactiveComponent,  // Component element
- *     parent: ReactiveComponent|null|Element,  // Parent element of the component
- *     attributes: Record<string, *> | {},  // Component attributes
- *     forwarded: Record<string, Function> | {},  // Forwarded functions for the component
+ *     $id: number,  // Component ID
+ *     $key: string,  // Unique component key
+ *     $state: Function,  // State function
+ *     $element: ReactiveComponent,  // Component element
+ *     $attrs: Record<string, *> | {},  // Component attributes
  *   },
  *   callbacks: {
- *     element: QueryElement,  // Element query method
+ *     $element: QueryElement,  // Element query method
  *     $onBeforeUpdate: (callback: () => boolean|void) => void,  // Before update callback
  *     $onAfterUpdate: (callback: () => void) => void,  // After update callback
  *     onAfterUpdateRef: { value: () => void },  // After update reference callback

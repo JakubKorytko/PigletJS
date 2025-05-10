@@ -43,8 +43,10 @@ export function parseRoutes(html, pagesDir) {
     const pathValue = match[1];
     const componentName = match[2];
 
-    const componentFile = componentFiles.find((file) =>
-      file.toLowerCase().includes(componentName.toLowerCase()),
+    const componentFile = componentFiles.find(
+      (file) =>
+        path.basename(file, ".pig.html").toLowerCase() ===
+        componentName.toLowerCase(),
     );
 
     if (componentFile) {

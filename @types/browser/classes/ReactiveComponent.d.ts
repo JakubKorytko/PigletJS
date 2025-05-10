@@ -41,6 +41,9 @@ declare class ReactiveComponent extends HTMLElement {
   /** Root node of the component (ShadowRoot or regular Node) */
   protected __root: ShadowRoot | Node;
 
+  /** The ID of the component */
+  public __id: number;
+
   /** Optional callback executed on mount */
   protected __mountCallback?: (reason: Reason) => void;
 
@@ -83,6 +86,21 @@ declare class ReactiveComponent extends HTMLElement {
   /** Observe changes to a specific state property */
   observeState(property: string): void;
 
+  /** Dispatch an event */
+  dispatchEvent(event: Event): boolean;
+
+  /** Reload the component */
+  reloadComponent(): Promise<void>;
+
+  /** Load the content of the component (HTML) */
+  loadContent(canUseMemoized?: boolean): Promise<void | null>;
+
+  /** Called when the component is before updating, can return a boolean to prevent the update */
+  onBeforeUpdate(): boolean | void;
+
+  /** Called when the component is after updating */
+  onAfterUpdate(): void;
+
   /** Define or access a reactive state property */
   state<T>(property: string, initialValue?: T, asRef?: boolean): { value: T };
 
@@ -94,12 +112,6 @@ declare class ReactiveComponent extends HTMLElement {
 
   /** Mount metadata for the component */
   abstract __mountData: MountData;
-
-  /** Function to track the custom element tree */
-  abstract __trackCustomTree: (root?: HTMLElement) => void;
-
-  /** Observer for tracking the custom component tree */
-  abstract __customTreeObserver: MutationObserver;
 }
 
 export default ReactiveComponent;

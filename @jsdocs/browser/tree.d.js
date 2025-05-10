@@ -1,20 +1,4 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
-/** @import {StateInterface} from "@jsdocs/browser/classes/State.d" */
-/** @import {TreeNode} from "@jsdocs/browser/tree.d" */
-
-/**
- * @template T
- * @typedef {{
- *   tag: string|null,  // HTML tag of the component
- *   componentName?: string|null,  // Name of the component
- *   componentId?: number|null,  // Unique ID of the component
- *   key: string|null,  // Unique key for the node
- *   state?: Record<string, StateInterface<T>>|{},  // Component state
- *   children: Record<string, TreeNode<T>>|{},  // Child nodes
- *   element?: T  // The element associated with the node
- * }} TreeNode
- * Represents a node in a component tree, holding component data and state.
- */
 
 /**
  * @typedef {{
@@ -26,32 +10,35 @@
  */
 
 /**
- * @typedef {(el: ReactiveComponent) => number} AssignComponentIdToElement
- * Assigns a unique component ID to an element.
- */
-
-/**
  * @template T
- * @typedef {(root?: HTMLElement) => Record<string, TreeNode<T>>|{}} BuildCustomElementTree
- * Builds a custom element tree from a given root HTML element.
+ * @typedef {Record<string, string | T>} StringRecord<T>
+ * A record of strings and other records
  */
 
 /**
- * @typedef {(targetClass: typeof ReactiveComponent) => void} InjectTreeTrackingToComponentClass
- * Injects tree tracking functionality into a component class.
+ * @typedef {StringRecord<StringRecord<string>>} TreeNode
+ * A tree node is a record of strings and other tree nodes
  */
 
 /**
- * @template T, R
- * @typedef {(node: T) => TreeNode<R> | null} Walk
- * Traverses a node and returns its tree node representation.
+ * @typedef {(node: ReactiveComponent) => Record<string, TreeNode>} BuildComponentTree
+ * Builds a tree of components from a root component
+ */
+
+/**
+ * @typedef {(node: ReactiveComponent | Element) => string} GetNodeKey
+ * Gets the key of a node
+ */
+
+/**
+ * @typedef {(currentNode: ReactiveComponent | Element) => TreeNode|{}} Recurse
+ * Recursively builds the tree
  */
 
 export default {
-  /** @exports TreeNode */
   /** @exports MountData */
-  /** @exports AssignComponentIdToElement */
-  /** @exports BuildCustomElementTree */
-  /** @exports InjectTreeTrackingToComponentClass */
-  /** @exports Walk */
+  /** @exports BuildComponentTree */
+  /** @exports TreeNode */
+  /** @exports GetNodeKey */
+  /** @exports Recurse */
 };

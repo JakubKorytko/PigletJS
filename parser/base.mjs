@@ -24,9 +24,30 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
    */
   constructor() {
     super();
+
+    if (this.__isKilled) {
+      this.remove();
+      return;
+    }
+
     this.attachShadow({ mode: "open" });
+
+    if (window.Piglet.componentsCount[this.__componentName] === undefined) {
+      window.Piglet.componentsCount[this.__componentName] = 0;
+    } else {
+      window.Piglet.componentsCount[this.__componentName]++;
+    }
+
+    this.__id = window.Piglet.componentsCount[this.__componentName];
+
+    const parent = getHost(this, true);
+    if (parent instanceof ReactiveComponent && !parent.__ranScript) {
+      parent.__waitingForScript.push(this);
+      return;
+    }
+
     // noinspection JSIgnoredPromiseFromCall
-    this.loadContent();
+    this.loadContent(true);
   }
 
   /**
@@ -39,7 +60,10 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
   async runScript(reason) {
     scriptRunner(
       getHost(this),
-      await import(`/component/script/COMPONENT_NAME?noCache=${Date.now()}`),
+      // we want to disable cache only if it was reloaded
+      await import(
+        `/component/script/COMPONENT_NAME${reason.name === "reload" ? `?noCache=${Date.now()}` : ""}`
+      ),
       reason,
     );
   }

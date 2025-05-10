@@ -20,7 +20,7 @@ const notFound = async (res) => {
     return;
   }
 
-  const html = await generateAppHtml("/notfound", notFoundPath);
+  const html = await generateAppHtml("/notfound");
 
   res.writeHead(404, { "Content-Type": "text/html" });
   res.end(html);
