@@ -14,12 +14,6 @@ import CONST from "@Piglet/browser/CONST";
  * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
-  /** @type {boolean} */
-  #__pendingAttributeUpdate = false;
-
-  /** @type {Array<{newValue: string, attrName: string, oldValue: string}>} */
-  #__batchedAttributeChanges = [];
-
   /**
    * @type {Virtual["attributeChangedCallback"]["Type"]}
    * @returns {Virtual["attributeChangedCallback"]["ReturnType"]}
@@ -50,23 +44,8 @@ class ReactiveComponent extends HTMLElement {
    */
   onAfterUpdate() {}
 
-  /** @type {number} */
+  /** @type {Virtual["__id"]["Type"]} */
   __id;
-
-  /** @type {Virtual["__mountData"]["Type"]} */
-  __mountData;
-
-  /** @type {Virtual["_forwarded"]["Type"]} */
-  _forwarded = {};
-
-  /** @type {Virtual["__children"]["Type"]} */
-  __children = [];
-
-  /** @type {Virtual["__isMounted"]["Type"]} */
-  __isMounted = false;
-
-  /** @type {Virtual["__isHTMLInjected"]["Type"]} */
-  __isHTMLInjected = false;
 
   /** @type {Virtual["__mutationObserver"]["Type"]} */
   __mutationObserver = null;
@@ -86,27 +65,55 @@ class ReactiveComponent extends HTMLElement {
   /** @type {Virtual["__componentKey"]["Type"]} */
   __componentKey = "";
 
-  /** @type {Virtual["__root"]["Type"]} */
-  __root = null;
+  /** @type {Virtual["__stateless"]["Type"]} */
+  __stateless;
 
   /** @type {Virtual["__mountCallback"]["Type"]} */
   __mountCallback = () => {};
 
-  /** @type {Virtual["__observers"]["Type"]} */
+  /** @type {Member["__mountData"]["Type"]} */
+  __mountData;
+
+  /** @type {Member["_forwarded"]["Type"]} */
+  _forwarded = {};
+
+  /** @type {Member["__children"]["Type"]} */
+  __children = [];
+
+  /** @type {Member["__isMounted"]["Type"]} */
+  __isMounted = false;
+
+  /** @type {Member["__isHTMLInjected"]["Type"]} */
+  __isHTMLInjected = false;
+
+  /** @type {Member["__root"]["Type"]} */
+  __root = null;
+
+  /** @type {Member["__observers"]["Type"]} */
   __observers;
 
-  /** @type {Virtual["__attrs"]["Type"]} */
+  /** @type {Member["__attrs"]["Type"]} */
   __attrs = {};
 
-  /** @type {Virtual["__stateless"]["Type"]} */
-  __stateless;
+  /** @type {Member["__pendingAttributeUpdate"]["Type"]} */
+  __pendingAttributeUpdate = false;
 
+  /** @type {Member["__batchedAttributeChanges"]["Type"]} */
+  __batchedAttributeChanges = [];
+
+  /** @type {Member["__waitingForScript"]["Type"]} */
   __waitingForScript = [];
 
+  /** @type {Member["__killed"]["Type"]} */
   __killed = false;
 
+  /** @type {Member["__useFragment"]["Type"]} */
   __useFragment = false;
 
+  /**
+   * @type {Member["__isKilled"]["Type"]}
+   * @returns {Member["__killed"]["Type"]}
+   */
   get __isKilled() {
     const parent = getHost(this, true);
     const grandParent = getHost(parent ?? this, true);
@@ -114,18 +121,55 @@ class ReactiveComponent extends HTMLElement {
     return this.__killed || parent?.__killed || grandParent?.__killed;
   }
 
+  /**
+   * @type {Member["kill"]["Type"]}
+   * @returns {Member["kill"]["ReturnType"]}
+   */
   kill() {
     this.__killed = true;
     this.remove();
   }
 
+  /**
+   * @type {Member["disableHMR"]["Type"]}
+   * @returns {Member["disableHMR"]["ReturnType"]}
+   */
   disableHMR() {
     this.__preventReload = true;
+  }
+
+  /**
+   * @type {Member["injectFragment"]["Type"]}
+   * @returns {Member["injectFragment"]["ReturnType"]}
+   */
+  injectFragment() {
+    if (this.__useFragment && this.__fragment) {
+      this.__useFragment = false;
+      this.shadowRoot.appendChild(this.__fragment);
+      this._mount({ name: "loadContent" });
+    }
+  }
+
+  /**
+   * @type {Member["isInDocumentFragmentDeep"]["Type"]}
+   * @returns {Member["isInDocumentFragmentDeep"]["ReturnType"]}
+   */
+  isInDocumentFragmentDeep() {
+    let currentRoot = getHost(this, true);
+
+    while (currentRoot) {
+      if (currentRoot.__useFragment) {
+        return currentRoot;
+      }
+      currentRoot = getHost(currentRoot, true);
+    }
+    return false;
   }
 
   constructor() {
     super();
 
+    this.__useFragment = this.getAttribute("fragment") !== null;
     if (this.__isKilled) return;
 
     this.__caller = this.getAttribute(CONST.callerAttribute);
@@ -146,7 +190,7 @@ class ReactiveComponent extends HTMLElement {
           if (name.startsWith(CONST.attributePrefix)) {
             const attrName = fromPigletAttr(name);
 
-            this.#__batchedAttributeChanges.push({
+            this.__batchedAttributeChanges.push({
               newValue,
               attrName,
               oldValue,
@@ -154,14 +198,14 @@ class ReactiveComponent extends HTMLElement {
 
             this.__attrs[attrName] = newValue;
 
-            if (!this.#__pendingAttributeUpdate) {
-              this.#__pendingAttributeUpdate = true;
+            if (!this.__pendingAttributeUpdate) {
+              this.__pendingAttributeUpdate = true;
 
               Promise.resolve().then(() => {
-                this.#__pendingAttributeUpdate = false;
+                this.__pendingAttributeUpdate = false;
 
-                const changes = this.#__batchedAttributeChanges;
-                this.#__batchedAttributeChanges = [];
+                const changes = this.__batchedAttributeChanges;
+                this.__batchedAttributeChanges = [];
 
                 this._mount(CONST.reason.attributesChange(changes));
               });
@@ -258,7 +302,14 @@ class ReactiveComponent extends HTMLElement {
         html = await response.text();
       }
 
-      this.shadowRoot.innerHTML = html;
+      const fragment = parseHTML(html, this);
+
+      if (this.__useFragment) {
+        this.__fragment = fragment;
+      } else {
+        this.shadowRoot.replaceChildren();
+        this.shadowRoot.appendChild(fragment);
+      }
       this.__isHTMLInjected = true;
       this._mount({ name: "loadContent" });
     } catch (error) {

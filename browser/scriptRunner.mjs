@@ -30,7 +30,10 @@ export const clearAllListenersForHost = function (hostElement) {
 
 /** @type {QueryElement} */
 const queryElement = function (hostElement, selector) {
-  const el = hostElement.shadowRoot.querySelector(selector);
+  const root = hostElement.__useFragment
+    ? hostElement.__fragment
+    : hostElement.shadowRoot;
+  const el = root.querySelector(selector);
   if (!el) return undefined;
 
   if (!hostToElements.has(hostElement)) {

@@ -1,6 +1,9 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { getHost, loadComponent } from "@Piglet/browser/helpers";
-// noinspection ES6UnusedImports
+import {
+  assignIdToComponent,
+  getHost,
+  loadComponent,
+} from "@Piglet/browser/helpers";
 import scriptRunner from "@Piglet/browser/scriptRunner";
 
 // noinspection JSClosureCompilerSyntax
@@ -32,22 +35,28 @@ class COMPONENT_CLASS_NAME extends ReactiveComponent {
 
     this.attachShadow({ mode: "open" });
 
-    if (window.Piglet.componentsCount[this.__componentName] === undefined) {
-      window.Piglet.componentsCount[this.__componentName] = 0;
-    } else {
-      window.Piglet.componentsCount[this.__componentName]++;
-    }
+    assignIdToComponent(this);
 
-    this.__id = window.Piglet.componentsCount[this.__componentName];
+    window.Piglet.component[this.__componentKey] = this;
+
+    this.__isInFragment = this.isInDocumentFragmentDeep();
 
     const parent = getHost(this, true);
     if (parent instanceof ReactiveComponent && !parent.__ranScript) {
       parent.__waitingForScript.push(this);
+
+      if (this.__isInFragment) {
+        this.connectedCallback();
+      }
+
       return;
     }
 
-    // noinspection JSIgnoredPromiseFromCall
     this.loadContent(true);
+
+    if (this.__isInFragment) {
+      this.connectedCallback();
+    }
   }
 
   /**

@@ -32,6 +32,8 @@ const config = {
 
   componentsCount: {},
 
+  component: {},
+
   log(message, severity = CONST.coreLogsLevels.info, ...args) {
     if (!this.enableCoreLogs[severity]) return;
 
@@ -50,6 +52,10 @@ const config = {
     this.state = {};
     this.componentCounter = 0;
   },
+
+  __fetchCache: new Map(),
+
+  __fetchQueue: new Map(),
 };
 
 export default config;

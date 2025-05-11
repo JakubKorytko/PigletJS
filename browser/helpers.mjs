@@ -38,6 +38,11 @@ const getHost = function (node, parent) {
     return target.host;
   }
 
+  if (target instanceof DocumentFragment) {
+    const contextValue = target.querySelector("context-parent")?.textContent;
+    return window.Piglet.component[contextValue];
+  }
+
   return null;
 };
 
@@ -61,6 +66,16 @@ const getDeepValue = function (obj, pathParts) {
   }
 
   return result;
+};
+
+const assignIdToComponent = function (component) {
+  if (window.Piglet.componentsCount[component.__componentName] === undefined) {
+    window.Piglet.componentsCount[component.__componentName] = 0;
+  } else {
+    window.Piglet.componentsCount[component.__componentName]++;
+  }
+
+  component.__id = window.Piglet.componentsCount[component.__componentName];
 };
 
 /** @type {ToPascalCase} */
@@ -211,20 +226,20 @@ function loadComponent(_class) {
 
 /** @type {FetchWithCache} */
 const fetchWithCache = async (url) => {
-  if (!window.__fetchCache) {
-    window.__fetchCache = new Map();
+  if (!window.Piglet.__fetchCache) {
+    window.Piglet.__fetchCache = new Map();
   }
 
-  if (!window.__fetchQueue) {
-    window.__fetchQueue = new Map(); // URL → Promise
+  if (!window.Piglet.__fetchQueue) {
+    window.Piglet.__fetchQueue = new Map(); // URL → Promise
   }
 
-  if (window.__fetchCache.has(url)) {
-    return window.__fetchCache.get(url);
+  if (window.Piglet.__fetchCache.has(url)) {
+    return window.Piglet.__fetchCache.get(url);
   }
 
-  if (window.__fetchQueue.has(url)) {
-    return window.__fetchQueue.get(url);
+  if (window.Piglet.__fetchQueue.has(url)) {
+    return window.Piglet.__fetchQueue.get(url);
   }
 
   const fetchPromise = (async () => {
@@ -235,30 +250,27 @@ const fetchWithCache = async (url) => {
       }
 
       const data = await response.text();
-      window.__fetchCache.set(url, data);
+      window.Piglet.__fetchCache.set(url, data);
       return data;
     } finally {
-      window.__fetchQueue.delete(url);
+      window.Piglet.__fetchQueue.delete(url);
     }
   })();
 
-  window.__fetchQueue.set(url, fetchPromise);
+  window.Piglet.__fetchQueue.set(url, fetchPromise);
   return fetchPromise;
 };
 
-const parseHTML = (html) => {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const fragment = document.createDocumentFragment();
-
-  [...doc.head.children, ...doc.body.children].forEach((child) =>
-    fragment.appendChild(child),
+const parseHTML = (html, owner) => {
+  const range = owner.ownerDocument.createRange();
+  return range.createContextualFragment(
+    `${owner.__isInFragment || owner.__useFragment ? `<context-parent style="display: none">${owner.__componentKey}</context-parent>\n` : ""}${html}`,
   );
-
-  return document.createRange().createContextualFragment(html);
 };
 
 export {
   getHost,
+  assignIdToComponent,
   isShadowRoot,
   getDeepValue,
   toPascalCase,

@@ -21,6 +21,7 @@ export interface Config {
     ref: HTMLElement | ReactiveComponent;
   }>;
   componentsCount: Record<string, number>;
+  component: Record<string, ReactiveComponent>;
   AppRoot: ReactiveComponent | undefined;
   log: (
     message: string,
@@ -28,6 +29,8 @@ export interface Config {
     ...args: unknown[]
   ) => void;
   reset: () => void;
+  __fetchCache: Map<string, string>;
+  __fetchQueue: Map<string, Promise<string>>;
 }
 
 declare global {
@@ -35,8 +38,6 @@ declare global {
     Piglet: Config;
     $navigate: Navigate;
     fetchWithCache: FetchWithCache;
-    __fetchCache: Map<string, string>;
-    __fetchQueue: Map<string, Promise<string>>;
   }
 }
 

@@ -28,10 +28,13 @@
  *     tag: string, // The tag of the component
  *     ref: HTMLElement|ReactiveComponent // The reference to the component
  *   }>,
- *   componentsCount: Record<string, number>,
+ *   componentsCount: Record<string, number>, // The number of components by tag
+ *   component: Record<string, ReactiveComponent>, // Constructed components
  *   AppRoot: ReactiveComponent | undefined, // The AppRoot component
  *   log: (message: string, severity: "info"|"warn"|"error", ...args: any[]) => void, // Log a message with a severity
- *   reset: () => void // Reset the PigletJS configuration
+ *   reset: () => void // Reset the PigletJS configuration,
+ *   __fetchCache: Map<string, string>, // The fetch cache,
+ *   __fetchQueue: Map<string, Promise<string>>, // The fetch queue,
  * }} Config
  * PigletJS configuration object.
  */
@@ -52,8 +55,6 @@
  *   $navigate: Navigate, // Navigate to a route
  *   Piglet: Config, // PigletJS configuration object,
  *   fetchWithCache: FetchWithCache, // Fetch a resource with a cache,
- *   __fetchCache: Map<string, string>, // The fetch cache,
- *   __fetchQueue: Map<string, Promise<string>>, // The fetch queue,
  * }} PigletWindow
  * PigletJS window object.
  */
