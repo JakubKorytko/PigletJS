@@ -228,4 +228,39 @@ export default {
       "setup.mjs",
     ]),
   },
+  pageTransitionCss: `:host { animation: waitForCss 0.1s forwards; } @keyframes waitForCss { from { opacity: 0; } to { opacity: 1; } }`,
+  regex: {
+    assignments: /let\s*\$(\w+)\s*=\s*({[\s\S]*?}|[^\n;]+)/gm,
+    declarations: /let\s+((?:\$\w+\s*(?:,\s*)?)+)(;|$)/,
+    refCall: /^\$ref\s*\((.*)\)$/,
+  },
+  parserStrings: {
+    exportBeforeScript: `
+      export default function({
+      $state,
+      $attrs,  
+      $onBeforeUpdate,
+      $onAfterUpdate,
+      $element,
+      $reason,
+      $id,
+      $key,
+    }) {
+    `,
+    hardcodedImports: `
+    import { api as $api } from "/Piglet/helpers";
+    `,
+  },
+  reservedNames: new Set([
+    "$onBeforeUpdate",
+    "$attrs",
+    "$ref",
+    "$state",
+    "$element",
+    "$reason",
+    "$id",
+    "$api",
+    "$key",
+    "$navigate",
+  ]),
 };

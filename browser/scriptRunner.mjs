@@ -30,7 +30,10 @@ export const clearAllListenersForHost = function (hostElement) {
 
 /** @type {QueryElement} */
 const queryElement = function (hostElement, selector) {
-  const el = hostElement.shadowRoot.querySelector(selector);
+  const root = hostElement.__useFragment
+    ? hostElement.__fragment
+    : hostElement.shadowRoot;
+  const el = root.querySelector(selector);
   if (!el) return undefined;
 
   if (!hostToElements.has(hostElement)) {
@@ -130,16 +133,11 @@ const generateComponentData = function (hostElement) {
 
   return {
     component: {
-      name: hostElement.constructor.name,
-      id: hostElement.__componentId,
-      tree: hostElement.__tree,
-      shadowRoot: hostElement.shadowRoot,
-      key: hostElement.__componentKey,
-      state: hostElement.state.bind(hostElement),
-      element: hostElement,
-      parent: getHost(hostElement, true) ?? null,
-      attributes: hostElement.__attrs,
-      forwarded: hostElement._forwarded,
+      $attrs: { ...hostElement._forwarded, ...hostElement.__attrs },
+      $id: hostElement.__id,
+      $key: hostElement.__componentKey,
+      $state: hostElement.state.bind(hostElement),
+      $element: hostElement,
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {
@@ -150,7 +148,7 @@ const generateComponentData = function (hostElement) {
       },
       onAfterUpdateRef,
       onBeforeUpdateRef,
-      element: queryElement.bind(this, hostElement),
+      $element: queryElement.bind(this, hostElement),
     },
   };
 };
@@ -170,32 +168,35 @@ const scriptRunner = function (hostElement, module, scriptReason) {
     return;
   }
 
-  hostElement.onMount((mountReason) => {
-    const { component, callbacks } = generateComponentData(hostElement);
+  function mountCallback(mountReason) {
+    const { component, callbacks } = generateComponentData(this);
 
     let shouldRender = true;
 
     if (typeof hostElement.onBeforeUpdate === "function") {
-      shouldRender = hostElement.onBeforeUpdate() !== false;
+      shouldRender = this.onBeforeUpdate() !== false;
     }
 
     if (!shouldRender) {
       return;
     }
 
-    module.default({
+    const moduleFunction = module.default.bind(this);
+
+    moduleFunction({
       ...component,
       ...callbacks,
-      component,
-      reason: mountReason ?? scriptReason,
+      $reason: mountReason ?? scriptReason,
     });
 
-    componentMountCleanup(hostElement, callbacks);
+    componentMountCleanup(this, callbacks);
 
-    if (typeof hostElement.onAfterUpdate === "function") {
-      hostElement.onAfterUpdate();
+    if (typeof this.onAfterUpdate === "function") {
+      this.onAfterUpdate();
     }
-  });
+  }
+
+  hostElement.onMount(mountCallback.bind(hostElement));
 };
 
 export default scriptRunner;

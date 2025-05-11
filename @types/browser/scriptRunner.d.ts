@@ -1,5 +1,4 @@
 import { ReactiveComponent } from "@Piglet/browser/classes/ReactiveComponent";
-import { TreeNode } from "@jsdocs/browser/tree.d";
 
 // Proxy for an element with event listener methods and updates
 export interface ElementProxy {

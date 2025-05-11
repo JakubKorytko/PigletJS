@@ -2,7 +2,7 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import { resolvePath } from "@Piglet/utils/paths";
-import { indent, toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
+import { toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
 import { formatHTML, formatJS } from "@Piglet/parser/format";
 import CONST from "@Piglet/misc/CONST";
@@ -86,19 +86,6 @@ const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
 
 /**
- * Escapes backticks and `${}` placeholders in a string to safely include it in a template literal.
- *
- * @param {string} str - The string to escape.
- * @returns {string} The escaped string.
- */
-function escapeTemplateLiteral(str) {
-  return str
-    .replace(/\\/g, "\\\\")
-    .replace(/`/g, "\\`")
-    .replace(/\$\{/g, "\\${");
-}
-
-/**
  * Injects a `host__element` attribute into all occurrences of a given tag in the HTML content,
  * unless the attribute is already present.
  *
@@ -120,7 +107,6 @@ function injectHostElementAttribute(content, tagName, componentName) {
 function autoInjectValue(script) {
   const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
   const usageRegex = /\B(\$\w+)\b/g;
-  const excludedNames = new Set(["$onBeforeUpdate", "$attrs", "$ref"]);
 
   const declarationRanges = [];
 
@@ -151,7 +137,7 @@ function autoInjectValue(script) {
     const name = match[1];
 
     const inDeclaration = isInRanges(start, end, declarationRanges);
-    const inExcluded = excludedNames.has(name);
+    const inExcluded = CONST.reservedNames.has(name);
     const inString = isInRanges(start, end, stringRanges);
 
     const isInTemplateExpr = (() => {
@@ -184,28 +170,25 @@ function autoInjectValue(script) {
  * @returns {string} The transformed JavaScript code.
  */
 const transformScript = (fullScript) => {
-  const assignmentsRegex = /let\s*\$(\w+)\s*=\s*(.+?(?=;|$))/gm;
-  const declarationsRegex = /let\s+((?:\$\w+\s*(?:,\s*)?)+)(;|$)/;
+  const assignmentsRegex = CONST.regex.assignments;
+  const declarationsRegex = CONST.regex.declarations;
 
   return autoInjectValue(fullScript)
     .replace(assignmentsRegex, (_, name, value) => {
       const trimmed = value.trim();
 
-      // Obsługa: let $x = $ref(...)
-      const refCallMatch = /^\$ref\s*\((.*)\)$/.exec(trimmed);
+      const refCallMatch = CONST.regex.refCall.exec(trimmed);
       if (refCallMatch) {
         const inner = refCallMatch[1].trim();
         const hasValue = inner.length > 0;
-        return `let $${name} = state("${name}", ${hasValue ? inner : "undefined"}, true)`;
+        return `let $${name} = $state("${name}", ${hasValue ? inner : "undefined"}, true)`;
       }
 
-      // Obsługa: let $x = $ref;
       if (trimmed === "$ref") {
-        return `let $${name} = state("${name}", undefined, true)`;
+        return `let $${name} = $state("${name}", undefined, true)`;
       }
 
-      // Domyślna obsługa: let $x = coś
-      return `let $${name} = state("${name}", ${value})`;
+      return `let $${name} = $state("${name}", ${value})`;
     })
     .replace(declarationsRegex, (_, group) => {
       const variables = group
@@ -216,7 +199,7 @@ const transformScript = (fullScript) => {
       return variables
         .map((v) => {
           const name = v.slice(1);
-          return `let $${name} = state("${name}")`;
+          return `let $${name} = $state("${name}")`;
         })
         .join("\n");
     });
@@ -246,22 +229,9 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   const outputPath = resolvePath(`@/builtScript/${componentName}.mjs`);
 
   const scriptForFile = formatJS(`
-  import { api } from "/Piglet/helpers";
+  ${CONST.parserStrings.hardcodedImports}
   ${imports.join("\n")}
-  
-  export default ({
-    state,
-    attributes: primitiveAttributes,
-    forwarded,
-    component,
-    $onBeforeUpdate,
-    $onAfterUpdate,
-    element,
-    reason
-  }) => {
-  
-  const $attrs = {...forwarded, ...primitiveAttributes};
-  
+  ${CONST.parserStrings.exportBeforeScript}
   ${cleanedCode}\n}`);
 
   return fs.promises.writeFile(outputPath, scriptForFile);
@@ -292,7 +262,7 @@ const injectInnerHTMLToComponent = (
     componentName,
   );
 
-  const componentTags = new Set(["App"]);
+  const componentTags = new Set();
   const tagRegex =
     /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
   let match;
@@ -303,7 +273,7 @@ const injectInnerHTMLToComponent = (
   }
 
   componentTags.forEach((tag) => {
-    const kebabTag = tag === "App" ? "app-root" : toKebabCase(tag);
+    const kebabTag = toKebabCase(tag);
 
     const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
     modifiedContent = modifiedContent.replace(
@@ -328,7 +298,8 @@ const injectInnerHTMLToComponent = (
 
   return `
   <style>
-  ${styleCSS}
+   ${styleCSS}
+   ${CONST.pageTransitionCss} 
   </style>
   
   ${modifiedContent}
@@ -379,7 +350,6 @@ const generateOutput = async (_, ...args) => {
 
   const isAppComponent = componentName === "App";
   const className = isAppComponent ? "AppRoot" : componentName;
-  const tagName = isAppComponent ? "app-root" : toKebabCase(componentName);
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";

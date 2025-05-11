@@ -1,0 +1,105 @@
+<content>
+    <div class="main-container">
+        <img class="pig-with-key" src="/public/pig_with_key.png" />
+        <div class="input-container">
+            <input type="text" id="textInput" placeholder="Enter text to hash" />
+            <button id="hashButton" title="Hash"><i class="fa fa-key"></i></button>
+        </div>
+        <textarea id="hashResult" readonly>Hash will appear here</textarea>
+    </div>
+</content>
+
+<script>
+    $element("#hashButton").on("click", async function () {
+        const text = $element("#textInput").value;
+        $element("#hashResult").innerText = await $api("/crypto", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({text})
+        }, "text");
+    });
+</script>
+
+<style>
+    @import "/public/page.css";
+    @import "/public/font-awesome/css/font-awesome.min.css";
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: #1e1e1e;
+        font-family: system-ui, sans-serif;
+        color: #fff;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .main-container {
+        background-color: #2a2a2a;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.2rem;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .pig-with-key {
+        width: 60px;
+        margin-bottom: 0.5rem;
+    }
+
+    .input-container {
+        display: flex;
+        width: 100%;
+    }
+
+    input {
+        flex: 1;
+        padding: 0.6rem 1rem;
+        border: 2px solid #f2772e;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+        background: #1e1e1e;
+        color: white;
+        font-size: 1rem;
+        outline: none;
+    }
+
+    button {
+        padding: 0 1rem;
+        border: 2px solid #f2772e;
+        border-left: none;
+        background-color: #f2772e;
+        color: white;
+        border-radius: 0 8px 8px 0;
+        font-size: 1rem;
+        transition: background-color 0.2s ease;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #ff934c;
+    }
+
+    textarea {
+        width: 100%;
+        height: 100px;
+        padding: 0.75rem;
+        background: #1e1e1e;
+        border: 2px solid #f2772e;
+        border-radius: 0.5rem;
+        color: white;
+        resize: none;
+        font-size: 0.95rem;
+    }
+</style>

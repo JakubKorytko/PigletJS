@@ -100,9 +100,9 @@ function formatCSS(css) {
     if (line.endsWith("{")) {
       line = line.replace(/\s+{/g, " {");
       formatted.push("  ".repeat(indent) + line);
-      indent++;
+      indent = Math.max(indent + 1, 1);
     } else if (line.endsWith("}")) {
-      indent--;
+      indent = Math.max(indent - 1, 1);
       formatted.push("  ".repeat(indent) + line);
       formatted.push("");
     } else {

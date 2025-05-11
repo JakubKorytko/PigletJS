@@ -10,7 +10,7 @@ export default (req, res) => {
     notFound(res);
     return;
   }
-  const filePath = resolvePath(`@${req.url}`);
+  const filePath = resolvePath(`@${req.url.split("?")[0]}`);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/octet-stream";
 

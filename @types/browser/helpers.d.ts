@@ -1,9 +1,3 @@
-/** Fades in an element over a specified duration */
-export function fadeIn(element: HTMLElement, duration: number): Promise<void>;
-
-/** Fades out an element over a specified duration */
-export function fadeOut(element: HTMLElement, duration: number): Promise<void>;
-
 /** Converts a string to PascalCase format */
 export function toPascalCase(str: string): string;
 
@@ -44,6 +38,9 @@ export function isShadowRoot(node: Node): boolean;
 
 /** Sends a message to the extension */
 export function sendToExtension(message: string): void;
+
+/** Fetch a resource with a cache */
+export function fetchWithCache(url: string): Promise<string>;
 
 /** Loads a component from a given path */
 export function loadComponent(

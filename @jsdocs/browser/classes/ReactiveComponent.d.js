@@ -1,5 +1,5 @@
 /** @import {Reason} from "@jsdocs/browser/CONST.d" */
-/** @import {TreeNode, MountData} from "@jsdocs/browser/tree.d" */
+/** @import {MountData, TreeNode} from "@jsdocs/browser/tree.d" */
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 
@@ -9,6 +9,18 @@
  * @interface BaseReactiveComponentInterface
  */
 class BaseReactiveComponentInterface {
+  /**
+   * Whether the component is pending an attribute update
+   * @type {boolean}
+   */
+  __pendingAttributeUpdate;
+
+  /**
+   * The batched attribute changes of the component
+   * @type {Array<{newValue: string, attrName: string, oldValue: string}>}
+   */
+  __batchedAttributeChanges;
+
   /**
    * The caller of the component
    * @type {string}
@@ -35,7 +47,7 @@ class BaseReactiveComponentInterface {
 
   /**
    * The tree of the component
-   * @type {Record<string, TreeNode<ReactiveComponent|Element>>}
+   * @type {TreeNode}
    */
   __tree;
 
@@ -92,6 +104,30 @@ class BaseReactiveComponentInterface {
    * @type {MutationObserver | undefined}
    */
   __mutationObserver;
+
+  /**
+   * Components that are waiting for the script to be loaded
+   * @type {Array<VirtualReactiveComponentInterface>}
+   */
+  __waitingForScript;
+
+  /**
+   * @type {boolean}
+   * Whether the component is using fragment
+   */
+  __useFragment;
+
+  /**
+   * Whether the component is killed
+   * @type {boolean}
+   */
+  __killed;
+
+  /**
+   * The mount data of the component
+   * @type {MountData}
+   */
+  __mountData;
 
   /**
    * Called when the component is mounted
@@ -186,9 +222,45 @@ class BaseReactiveComponentInterface {
   /**
    * Load the content of the component (HTML)
    * @async
+   * @param {boolean} [canUseMemoized] - Whether to use memoized content
    * @returns {Promise<void|null>} A promise that resolves when the HTML content is loaded, or `null` in case of an error.
    */
-  async loadContent() {}
+  async loadContent(canUseMemoized) {}
+
+  /**
+   * Inject the fragment of the component
+   * @returns {void}
+   */
+  injectFragment() {}
+
+  /**
+   * Check if the component is in a document fragment any level deep
+   * Return the component if it is in a document fragment
+   * @returns {boolean|VirtualReactiveComponentInterface}
+   */
+  isInDocumentFragmentDeep() {
+    return false;
+  }
+
+  /**
+   * Kill the component
+   * @returns {void}
+   */
+  kill() {}
+
+  /**
+   * Disable HMR for the component
+   * @returns {void}
+   */
+  disableHMR() {}
+
+  /**
+   * Whether the component is killed (getter)
+   * @returns {boolean}
+   */
+  get __isKilled() {
+    return;
+  }
 }
 
 /**
@@ -196,6 +268,18 @@ class BaseReactiveComponentInterface {
  * @extends {BaseReactiveComponentInterface}
  */
 class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
+  /**
+   * Is the component stateless
+   * @type {boolean}
+   */
+  __stateless;
+
+  /**
+   * The ID of the component
+   * @type {number}
+   */
+  __id;
+
   /**
    * Called when the attribute of the component changes
    * @param {string=} name - The name of the attribute
@@ -225,30 +309,6 @@ class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
    * @returns {void}
    */
   onAfterUpdate() {}
-
-  /**
-   * The mount data of the component
-   * @type {MountData}
-   */
-  __mountData;
-
-  /**
-   * The method to track the custom tree of the component
-   * @type {((root?: HTMLElement) => void)}
-   */
-  __trackCustomTree;
-
-  /**
-   * The observer to track the custom tree of the component
-   * @type {MutationObserver}
-   */
-  __customTreeObserver;
-
-  /**
-   * Is the component stateless
-   * @type {boolean}
-   */
-  __stateless;
 }
 
 /** @typedef {InterfaceMethodTypes<BaseReactiveComponentInterface>} Member */

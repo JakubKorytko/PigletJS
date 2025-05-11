@@ -31,28 +31,18 @@
  */
 
 /**
- * @typedef {(path: string, expect?: 'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData') => Promise<any>} Api
+ * @typedef {(path: string, fetchOptions?: RequestInit, expect?: 'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData') => Promise<any>} Api
  * Makes an API request and returns a promise resolving to the response data.
  */
 
 /**
- * @typedef {(route: string) => void} Navigate
+ * @typedef {(route: string) => boolean} Navigate
  * Navigates to a given route.
  */
 
 /**
  * @typedef {(str: string) => string} ToKebabCase
  * Converts a string to kebab-case format.
- */
-
-/**
- * @typedef {(element: Partial<ReactiveComponent> | HTMLElement, duration?: number) => Promise<void>} FadeOut
- * Fades out an element over a specified duration.
- */
-
-/**
- * @typedef {(element: Partial<ReactiveComponent> | HTMLElement, duration?: number) => Promise<void>} FadeIn
- * Fades in an element over a specified duration.
  */
 
 /**
@@ -70,6 +60,11 @@
  * Loads a component from a given path.
  */
 
+/**
+ * @typedef {(url: string) => Promise<string>} FetchWithCache
+ * Fetch a resource with a cache.
+ */
+
 export /** @exports GetHost */
 /** @exports IsShadowRoot */
 /** @exports GetDeepValue */
@@ -79,8 +74,7 @@ export /** @exports GetHost */
 /** @exports Api */
 /** @exports Navigate */
 /** @exports ToKebabCase */
-/** @exports FadeOut */
-/** @exports FadeIn */
 /** @exports GetMountedComponentsByTag */
 /** @exports SendToExtension */
-/** @exports LoadComponent */ {};
+/** @exports LoadComponent */
+/** @exports FetchWithCache */ {};

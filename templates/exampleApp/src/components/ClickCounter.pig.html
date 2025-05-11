@@ -1,33 +1,82 @@
 <content>
-  <div>
-    <p id="clickCount">You clicked the button in my parent 0 times</p>
-    <render-if condition="$display">
-      <h4>You clicked more than 5 times!</h4>
-    </render-if>
-    <render-if condition="$attrs.display">
-      <h4>I am visible because my dad says so!</h4>
-    </render-if>
+  <div class="pig-images-container">
+    <div class="pig-image-container">
+      <img src="/public/pig.png" usemap="#pig-map" class="pig-image-element">
+      <map name="pig-map">
+        <area alt="BigPig" title="BigPig"
+          coords="7,22,35,154,82,223,129,227,116,291,118,373,135,407,126,505,138,543,155,547,173,646,162,763,145,810,156,830,183,834,230,811,232,787,244,796,255,715,258,620,300,636,348,642,321,719,325,737,350,738,381,727,387,707,398,711,406,630,413,626,405,671,399,727,388,792,394,823,402,837,465,839,470,802,479,798,477,707,516,597,511,696,523,739,546,746,576,743,576,713,581,694,576,561,614,385,608,298,588,244,547,207,581,161,592,71,608,42,592,17,472,44,437,74,395,59,344,41,247,48,207,64,182,72,135,40,74,10,11,-1"
+          shape="poly" id="bigPig" class="pig-image">
+      </map>
+    </div>
+    <div class="pigs-image-container">
+      <img src="/public/pigs.png" usemap="#pigs-map" class="pig-image-element">
+      <map name="pigs-map">
+        <area alt="FirstPig" title="FirstPig"
+          coords="100,149,87,195,101,266,122,292,108,332,136,359,163,466,199,485,217,460,193,380,241,380,226,440,219,502,229,512,258,510,278,466,283,419,310,426,323,403,339,303,339,395,337,439,349,453,366,449,374,403,387,303,410,181,377,106,338,86,338,2,264,18,243,40,183,26,132,46,74,15,8,8,4,25,20,71,46,126,68,144,88,135,99,135"
+          shape="poly" id="firstPig" class="pig-image">
+        <area alt="SecondPig" title="SecondPig"
+          coords="396,281,413,176,383,109,433,78,496,67,542,82,554,130,575,149,571,174,561,199,552,217,558,242,565,255,548,326,552,351,544,365,525,378,509,370,517,353,525,288,519,245,509,257,515,274,509,299,496,334,484,351,461,361,454,347,467,326,483,297,475,265,463,278,456,299,446,320,440,349,442,374,427,388,406,393,396,382,406,355,410,317,410,280"
+          shape="poly" id="secondPig" class="pig-image">
+        <area alt="ThirdPig" title="ThirdPig"
+          coords="542,74,535,52,557,47,604,79,675,70,698,72,742,41,779,45,773,72,763,122,756,139,781,210,771,275,761,314,763,329,750,335,746,391,748,406,731,414,738,452,736,467,713,467,692,442,694,400,698,356,673,366,667,394,656,410,640,408,642,444,631,462,600,464,604,410,590,329,571,316,579,254,563,241,556,214,571,191,577,156,567,137,554,120"
+          shape="poly" id="thirdPig" class="pig-image">
+        <area alt="FourthPig" title="FourthPig"
+          coords="1035,337,1010,428,1012,465,1006,497,978,499,971,473,972,443,971,374,941,377,922,374,911,423,905,456,892,476,862,479,857,460,875,422,874,357,862,340,863,299,828,296,797,291,780,265,780,238,797,224,817,199,826,170,814,130,799,109,816,96,843,101,871,127,922,125,941,105,971,101,1003,107,1024,122,1015,147,1035,156,1070,170,1087,195,1092,253,1089,293,1079,337,1075,359,1073,390,1078,440,1076,462,1047,457,1043,423"
+          shape="poly" id="fourthPig" class="pig-image">
+      </map>
+    </div>
   </div>
 </content>
 
+<style>
+  .pigs-image-container {
+    position: absolute;
+    right: 25px;
+    bottom: -15px;
+    transform-origin: bottom right;
+    transform: scale(0.24);
+  }
+
+  .pig-image-container {
+    transform-origin: top left;
+    transform: scale(0.48);
+    width: calc(100% / 0.48);
+    height: calc(100% / 0.48);
+  }
+
+  .pig-images-container {
+    position: relative;
+    width: 294px;
+    height: 400px;
+  }
+
+  .pig-image {
+    cursor: pointer;
+  }
+
+  .pig-image-element {
+    cursor: default;
+    user-select: none;
+  }
+</style>
+
 <script>
-  const { clickCount, parentMethod } = $attrs;
+  const { updatePigsCounter } = $attrs;
 
-  // noinspection JSUnusedAssignment
-  let $display = $ref;
+  console.log(this);
 
-  $display = clickCount > 5;
+  const pigs = [
+    "bigPig",
+    "firstPig",
+    "secondPig",
+    "thirdPig",
+    "fourthPig"
+  ];
 
-  element("#clickCount").innerText =
-    `You clicked the button in my parent ${clickCount} times`;
+  for (const pig of pigs) {
+    $element(`#${pig}`).on("click", function () {
+      updatePigsCounter(pig, 1);
+    });
+  }
 
-  parentMethod();
-</script>
-
-<!--suppress JSUnusedGlobalSymbols -->
-<script content="description">
-  export default {
-    name: "ClickCounter",
-    description: "Click counter",
-  };
 </script>
