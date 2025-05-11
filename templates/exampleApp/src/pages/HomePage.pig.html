@@ -1,58 +1,77 @@
 <content>
-  <div class="container">
-    <img src="/public/logo.png" alt="PigletJS Logo" />
-    <div class="welcomeMessage">
-      <div>
-        <h1>Welcome to PigletJS</h1>
-        <p>This is the homepage of your app.</p>
-        <br />
-        <p>Edit <code>src/HomePage.pig.html</code> to see changes.</p>
-      </div>
-      <div class="d-flex f-column">
-        <button id="showTreeBtn">🔍 Display component tree in console</button>
-        <button id="clickMe" type="button">
-          Click me to increase the count below!
-        </button>
-        <ClickCounter id="clickCounter" />
-        <button id="navigate" class="mt-0">Navigate to the other route!</button>
-      </div>
+    <div class="container">
+        <img alt="PigletJS Logo" src="/public/logo.png"/>
+        <div class="welcomeMessage">
+            <div>
+                <h1>Welcome to PigletJS</h1>
+                <p>This is the homepage of your app.</p>
+                <br/>
+                <p>
+                    Edit
+                    &nbsp;
+                    <code>src/pages/HomePage.pig.html</code>
+                    &nbsp;
+                    to see changes on this page.
+                </p>
+                <br/>
+                <a href="https://github.com/JakubKorytko/PigletJS" target="_blank">
+                <div class="github">
+                    <i aria-hidden="true" class="fa fa-github-square"></i>
+                    <div class="github-bg"></div>
+                </div>
+                &nbsp;
+                <span>Official repository & documentation</span>
+                </a>
+            </div>
+        </div>
     </div>
-  </div>
 </content>
 
-<!--suppress NpmUsedModulesInstalled -->
-<script>
-  import consoleTree from "@/modules/consoleTree.pig";
+<style>
+    .fa-github-square {
+        color: #000000;
+        font-size: 3rem;
+    }
 
-  let $clickCount = 0;
+    .fa-github-square div {
+        background-color: #ffffff;
+        width: 20px;
+        height: 20px;
+    }
 
-  element("#clickCounter").pass({
-    parentMethod: () => {
-      console.log("I was called in my child!", $clickCount);
-    },
-    clickCount: $clickCount,
-    display: true,
-  });
+    a {
+        text-decoration: none;
+    }
 
-  $onBeforeUpdate(() => {
-    console.log("I am called before update!");
-  });
+    span {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        font-weight: 600;
+    }
 
-  element("#showTreeBtn").on("click", consoleTree);
+    .github {
+        width: fit-content;
+        height: fit-content;
+        vertical-align: middle;
+        position: relative;
+        display: inline-block;
+    }
 
-  element("#navigate").on("click", function () {
-    navigate("/nested");
-  });
-
-  element("#clickMe").on("click", function () {
-    $clickCount += 1;
-  });
-</script>
+    .github-bg {
+        position: absolute;
+        top: 15%;
+        left: 15%;
+        width: 70%;
+        height: 70%;
+        background-color: white;
+        z-index: -1;
+    }
+</style>
 
 <!--suppress JSUnusedGlobalSymbols -->
 <script content="description">
-  export default {
-    name: "HomePage",
-    description: "Home page",
-  };
+    export default {
+        name: "HomePage",
+        description: "Home page",
+    };
 </script>

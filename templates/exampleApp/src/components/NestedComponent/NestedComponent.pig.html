@@ -20,9 +20,9 @@
 </content>
 
 <script>
-  element("#callApi").on("click", async function () {
-    const result = await api("/time");
-    element("#apiResult").innerText = result.time;
+  $element("#callApi").on("click", async function () {
+    const result = await $api("/time");
+    $element("#apiResult").innerText = result.time;
   });
 </script>
 

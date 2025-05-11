@@ -1,5 +1,7 @@
 @import "/public/globals.css";
 @import "/public/page.css";
+@import "/public/font-awesome/css/font-awesome.min.css";
+
 
 @keyframes move {
   0% {
@@ -22,6 +24,7 @@
 .container img {
   width: 200px;
   animation: move 3s ease-in-out infinite;
+  margin-bottom: 1rem;
 }
 
 .welcomeMessage {
@@ -32,11 +35,12 @@
 
 h1 {
   font-size: 2rem;
-  margin-bottom: 1rem;
+  margin-bottom: 3rem;
   color: #ffff;
 }
 
-p {
+p, span {
   font-size: 1.1rem;
   color: #ffff;
 }
+

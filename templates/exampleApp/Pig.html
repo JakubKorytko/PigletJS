@@ -1,17 +1,35 @@
 <!doctype html>
 <html lang="pl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>PigletJS app</title>
-    <link rel="icon" type="image/png" href="/public/favicon.ico" />
-    <link href="/public/main.css" rel="stylesheet" />
-  </head>
-  <body>
-    <div class="pig-images-container">
-      <img src="/public/pig.png" class="pig-image">
-      <img src="/public/pigs.png" class="pigs-image">
-    </div>
-    <App />
-  </body>
+    <link rel="icon" type="image/png" href="/public/favicon.ico"/>
+    <link href="/public/main.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/public/font-awesome/css/font-awesome.min.css">
+</head>
+
+<body>
+    <nav class="nav-bar" id="navBar">
+        <img src="/public/logo.png" class="logo">
+        <div class="nav-bar-links" id="navLinks">
+            <span class="nav-bar-link" data-route="/"><i class="fa fa-home" aria-hidden="true"></i>HomePage</span>
+            <span class="nav-bar-link" data-route="/pigs"><i class="fa fa-star" aria-hidden="true"></i>Stateful pigs</span>
+            <span class="nav-bar-link" data-route="/keyGeneration"><i class="fa fa-key" aria-hidden="true"></i>Generate SHA256 via API</span>
+            <span class="nav-bar-link" data-route="/easyPerformance"><i class="fa fa-bolt" aria-hidden="true"></i>Render performance test</span>
+            <span class="nav-bar-link" data-route="/performance"><i class="fa fa-bolt" aria-hidden="true"></i>Nested components performance test</span>
+            <span class="nav-bar-link" data-route="/pageThatDoesNotExist"><i class="fa fa-times" aria-hidden="true"></i>Non-existing page</span>
+
+            <div class="nav-bar-link dropdown" id="moreMenu">
+                <i class="fa fa-ellipsis-h"></i> More
+                <div class="dropdown-content" id="moreLinks"></div>
+            </div>
+        </div>
+    </nav>
+
+    <App/>
+
+    <script src="/public/pig.js" type="application/javascript"></script>
+</body>
 </html>
