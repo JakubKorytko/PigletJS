@@ -1,0 +1,35 @@
+@import "/public/font-awesome/css/font-awesome.min.css";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.f-column {
+  flex-direction: column;
+}
+
+.mt-0 {
+  margin-top: 0;
+}
+
+.gap-1 {
+  gap: 1rem;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.w-fit-content {
+  width: fit-content;
+}
+
+.mt-1 {
+  margin-top: 1rem;
+}

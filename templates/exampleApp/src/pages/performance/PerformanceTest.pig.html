@@ -1,0 +1,66 @@
+<content>
+  <div class="performance-test-wrapper">
+    <h1 id="componentCount">Rendering...</h1>
+    <div id="performance-test">
+      <PerformanceComponent fragment />
+    </div>
+  </div>
+</content>
+
+<script>
+  this.disableHMR();
+
+  const performanceComponent = $element("PerformanceComponent");
+  const componentCount = $element("#componentCount");
+
+  console.profile("PerformanceTest");
+  console.time("PerformanceTest");
+  const start = performance.now();
+
+  const result = (id, time) =>
+    `Rendered stateful component tree of <span>${id - 1}</span> levels deep with text, image, styles` +
+    `& callback passed from top-most parent to most nested child that returned to root in <span>${time}ms</span>`;
+
+  performanceComponent.pass({
+    reachedEnd: (id) => {
+      performanceComponent.injectFragment();
+      console.profileEnd("PerformanceTest");
+      console.timeEnd("PerformanceTest");
+      const end = performance.now();
+      componentCount.innerHTML = result(id - 1, Math.round(end - start));
+    },
+  });
+</script>
+
+<style>
+  #performance-test {
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+  }
+
+  .performance-test-wrapper {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+    color: white;
+    border-radius: 15px;
+  }
+
+  #componentCount {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  #componentCount span:nth-child(1),
+  #componentCount span:nth-child(2) {
+    color: #f2772e;
+    font-weight: bold;
+  }
+</style>

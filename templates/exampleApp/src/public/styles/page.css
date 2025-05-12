@@ -1,3 +1,5 @@
+@import "/public/styles/globals.css";
+
 :host {
   font-family: system-ui, sans-serif;
   padding: 2rem;

@@ -1,0 +1,47 @@
+<content>
+  <div class="performance-test-wrapper">
+    <h1 id="componentCount">Rendering...</h1>
+    <div id="performance-test"></div>
+  </div>
+</content>
+
+<style>
+  @import "/public/styles/globals.css";
+
+  #performance-test {
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+  }
+
+  .performance-test-wrapper {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+    color: white;
+    border-radius: 15px;
+  }
+
+  #componentCount {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  #componentCount span:nth-child(1),
+  #componentCount span:nth-child(2) {
+    color: #f2772e;
+    font-weight: bold;
+  }
+
+  #performance-test > easy-performance-component:hover {
+    transform: scale(1.1);
+    background-color: #ff8c42;
+    transition: transform 0.1s ease;
+  }
+</style>
