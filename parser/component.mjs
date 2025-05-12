@@ -24,8 +24,8 @@ function extractAndRemoveImports(code) {
     let importStatement = match[0];
 
     importStatement = importStatement
-      .replace(/["@']@Piglet\/browser\//g, '"/Piglet/')
-      .replace(/["@']@\/modules\//g, '"/module/');
+      .replace(/(['"])@Piglet\/browser\//g, "$1/Piglet/")
+      .replace(/(['"])@\/modules\//g, "$1/module/");
 
     imports.push(importStatement);
   }
@@ -39,7 +39,7 @@ function extractAndRemoveImports(code) {
 }
 
 async function findMatchingExternalFile(rootDir, baseName, extension) {
-  const files = await fs.promises.readdir(rootDir, { withFileTypes: true });
+  const files = await fsp.readdir(rootDir, { withFileTypes: true });
 
   for (const file of files) {
     const fullPath = path.join(rootDir, file.name);
@@ -223,7 +223,7 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
 
   const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
 
-  await fs.promises.mkdir(resolvePath("@/builtScript"), {
+  await fsp.mkdir(resolvePath("@/builtScript"), {
     recursive: true,
   });
   const outputPath = resolvePath(`@/builtScript/${componentName}.mjs`);
@@ -234,7 +234,7 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   ${CONST.parserStrings.exportBeforeScript}
   ${cleanedCode}\n}`);
 
-  return fs.promises.writeFile(outputPath, scriptForFile);
+  return fsp.writeFile(outputPath, scriptForFile);
 };
 
 /**
@@ -364,11 +364,11 @@ const generateOutput = async (_, ...args) => {
     ).trim(),
   );
 
-  await fs.promises.mkdir(resolvePath("@/builtHTML"), {
+  await fsp.mkdir(resolvePath("@/builtHTML"), {
     recursive: true,
   });
   const outputPath = resolvePath(`@/builtHTML/${componentName}.html`);
-  await fs.promises.writeFile(outputPath, innerHTML);
+  await fsp.writeFile(outputPath, innerHTML);
 
   return await injectIntoComponentTemplate({
     className,
@@ -400,7 +400,7 @@ async function buildComponent(filePath) {
   "use strict";
 
   try {
-    const html = await fs.promises.readFile(filePath, "utf-8");
+    const html = await fsp.readFile(filePath, "utf-8");
     const content = getContentTag(html);
 
     if (!content) {
@@ -425,11 +425,11 @@ async function buildComponent(filePath) {
     let externalJS = "";
 
     if (fs.existsSync(externalCSSPath)) {
-      externalCSS = await fs.promises.readFile(externalCSSPath, "utf-8");
+      externalCSS = await fsp.readFile(externalCSSPath, "utf-8");
     }
 
     if (fs.existsSync(externalJSPath)) {
-      externalJS = await fs.promises.readFile(externalJSPath, "utf-8");
+      externalJS = await fsp.readFile(externalJSPath, "utf-8");
     }
 
     const output = await generateOutput`
@@ -437,11 +437,11 @@ async function buildComponent(filePath) {
     Component content: ${html}${content}
     External data: ${externalCSS}${externalJS}`;
 
-    await fs.promises.mkdir(resolvePath("@/builtComponents"), {
+    await fsp.mkdir(resolvePath("@/builtComponents"), {
       recursive: true,
     });
     const outputPath = resolvePath(`@/builtComponents/${componentName}.mjs`);
-    await fs.promises.writeFile(outputPath, output);
+    await fsp.writeFile(outputPath, output);
     console.msg("components.generated", outputPath);
   } catch (err) {
     if (err.message === "components.outputGenerationError") {
@@ -461,7 +461,7 @@ async function buildComponent(filePath) {
  */
 async function extractDescriptionsFromFile(filePath) {
   try {
-    const fileContent = await fs.promises.readFile(filePath, "utf-8");
+    const fileContent = await fsp.readFile(filePath, "utf-8");
     const descriptionMatches = [];
     const regex = /<script\s+content="description">([\s\S]*?)<\/script>/g;
 
@@ -510,17 +510,21 @@ async function processAllComponents(dir = resolvePath("@/components")) {
     // Process the App.pig.html file if it exists
     if (fs.existsSync(appPath) && Object.values(arguments).length === 0) {
       console.msg("components.generatingFrom", "App.pig.html");
-      const appHtml = await fs.promises.readFile(appPath, "utf-8");
+      const appHtml = await fsp.readFile(appPath, "utf-8");
       parseRoutes(appHtml, pagesDir);
       for (const route of Object.values(routes)) {
         await buildComponent(route);
         const pageDescriptions = await extractDescriptionsFromFile(route);
-        descriptions.push(...pageDescriptions);
+        if (pageDescriptions.length === 0) {
+          descriptions.push(CONST.defaultWebType(route));
+        } else {
+          descriptions.push(...pageDescriptions);
+        }
       }
     }
 
     // Process the directory of components recursively
-    const files = await fs.promises.readdir(dir, { withFileTypes: true });
+    const files = await fsp.readdir(dir, { withFileTypes: true });
 
     for (const file of files) {
       const filePath = path.join(dir, file.name);
@@ -535,7 +539,12 @@ async function processAllComponents(dir = resolvePath("@/components")) {
         // Extract descriptions from this component
         const componentDescriptions =
           await extractDescriptionsFromFile(filePath);
-        descriptions.push(...componentDescriptions);
+
+        if (componentDescriptions.length === 0) {
+          descriptions.push(CONST.defaultWebType(filePath));
+        } else {
+          descriptions.push(...componentDescriptions);
+        }
       }
     }
   } catch (err) {

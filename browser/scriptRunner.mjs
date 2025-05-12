@@ -1,7 +1,8 @@
 /** @import {ClearAllListenersForHost, QueryElement, GetCallbackProxies, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner} from "@jsdocs/browser/scriptRunner.d" */
 
-import { toPigletAttr, getHost } from "@Piglet/browser/helpers";
+import { toKebabCase, toPigletAttr } from "@Piglet/browser/helpers";
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import CONST from "@Piglet/browser/CONST";
 
 const elementListeners = new WeakMap(); // el -> Map<event, Set<callback>>
 const allTrackedElements = new Set(); // All els with listeners
@@ -33,7 +34,10 @@ const queryElement = function (hostElement, selector) {
   const root = hostElement.__useFragment
     ? hostElement.__fragment
     : hostElement.shadowRoot;
-  const el = root.querySelector(selector);
+
+  const isCustom = CONST.pascalCaseRegex.test(selector);
+  const el = root.querySelector(isCustom ? toKebabCase(selector) : selector);
+
   if (!el) return undefined;
 
   if (!hostToElements.has(hostElement)) {
@@ -131,9 +135,21 @@ const generateComponentData = function (hostElement) {
     value: () => {},
   };
 
+  const initialAttributes = [...hostElement.attributes].reduce(
+    (attrs, attr) => {
+      attrs[attr.name] = attr.value;
+      return attrs;
+    },
+    {},
+  );
+
   return {
     component: {
-      $attrs: { ...hostElement._forwarded, ...hostElement.__attrs },
+      $attrs: {
+        ...initialAttributes,
+        ...hostElement._forwarded,
+        ...hostElement.__attrs,
+      },
       $id: hostElement.__id,
       $key: hostElement.__componentKey,
       $state: hostElement.state.bind(hostElement),

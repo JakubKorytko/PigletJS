@@ -162,6 +162,7 @@ const navigate = (route) => {
   if (!window.Piglet.AppRoot) return false;
 
   window.history.pushState({}, "", route);
+  window.dispatchEvent(new PopStateEvent("popstate"));
 
   window.Piglet.AppRoot.route = route;
 
@@ -268,6 +269,44 @@ const parseHTML = (html, owner) => {
   );
 };
 
+/** @type {(strings: TemplateStringsArray, ...values: any[]) => HTMLElement} */
+const createElement = function (strings, ...values) {
+  const html = String.raw(strings, ...values).trim();
+
+  const tagMatch = html.match(/^<([a-zA-Z0-9_-]+)(\s[^>]*)?\/?>$/);
+
+  if (!tagMatch) {
+    throw new Error(`Invalid component markup: "${html}"`);
+  }
+
+  const originalTag = tagMatch[1];
+  const kebabTag = originalTag
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .toLowerCase();
+
+  if (!customElements.get(kebabTag)) {
+    if (typeof loadComponent === "function") {
+      import(`${CONST.componentRoute.base}/${originalTag}`).then((module) => {
+        loadComponent(module.default);
+      });
+    } else {
+      throw new Error("window.loadComponent is not defined");
+    }
+  }
+
+  const el = document.createElement(kebabTag);
+
+  let attrString = tagMatch[2] || "";
+  attrString = attrString.replace(/\/\s*$/, "");
+  const attrRegex = /([^\s=]+)(?:="([^"]*)")?/g;
+  let match;
+  while ((match = attrRegex.exec(attrString)) !== null) {
+    const [_, key, value = ""] = match;
+    el.setAttribute(key, value);
+  }
+  return el;
+};
+
 export {
   getHost,
   assignIdToComponent,
@@ -284,4 +323,5 @@ export {
   sendToExtension,
   fetchWithCache,
   parseHTML,
+  createElement,
 };

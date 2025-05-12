@@ -263,4 +263,8 @@ export default {
     "$key",
     "$navigate",
   ]),
+  defaultWebType: (fileName) => ({
+    name: path.basename(fileName, ".pig.html"),
+    description: "No description found",
+  }),
 };
