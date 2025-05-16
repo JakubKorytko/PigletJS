@@ -1,5 +1,7 @@
 /** @import {Constants} from "@jsdocs/browser/CONST.d" */
 
+const cacheKey = () => `?noCache=${Date.now()}`;
+
 /** @type {Constants} */
 const CONST = {
   coreLogsLevels: {
@@ -10,7 +12,11 @@ const CONST = {
   coreLogLevelsAliases: {
     info: "log",
   },
-  callerAttribute: "host__element",
+  componentNotFound: "export default false;",
+  fragmentRootTagName: "fragment-parent",
+  fragmentParentTagName: "fragment-direct-parent",
+  reasonCache: ({ name }) => name !== "WS Reload",
+  cacheKey,
   routeAttribute: "route",
   pigletLogs: {
     appRoot: {
@@ -29,7 +35,10 @@ const CONST = {
       maxReconnectAttempts: "[Socket] Max reconnect attempts reached",
       serverRestarted: "[Socket] Server restart detected!",
     },
+    sendToExtension: "Sending to extension:",
     trackingTree: ({ constructor: { name } }) => `[${name}] tracking tree`,
+    errorLoadingScript: "Error loading script:",
+    errorInComponentScript: "Error in component script:",
   },
   socket: {
     messageTypes: {
@@ -47,6 +56,8 @@ const CONST = {
       new Error(`Failed to parse response as "${expected}" from ${url}`),
     failedToFetchHTML: (componentName) =>
       new Error(`Failed to fetch HTML for ${componentName}`),
+    invalidMarkup: (html) => new Error(`Invalid component markup: "${html}"`),
+    failedToFetch: (url) => new Error(`Failed to fetch from ${url}`),
   },
   warning: {
     expectedButGot: (expected, got) =>
@@ -74,23 +85,22 @@ const CONST = {
       name: "Attributes changed",
       data: changes,
     }),
-    parentUpdate: (reason) => ({
-      name: "Parent updated",
-      originalReason: reason,
-    }),
-    addedToDOM: {
-      name: "Added to DOM",
+    parentUpdate: {
+      name: "Parent mounted - waiter callback",
     },
     onMount: {
       name: "Component rendered",
+    },
+    WSReload: {
+      name: "WS Reload",
     },
     stateChange: (changes) => ({
       name: "stateChange",
       data: changes,
     }),
+    fragmentInjected: { name: "Injected fragment" },
   },
   attributesObjectName: "attrs",
-  notSettledSuffix: "_NOT_SETTLED",
   conditionAttribute: "condition",
   conditionalName: "RenderIf",
   appRootName: "AppRoot",

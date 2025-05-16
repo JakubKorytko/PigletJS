@@ -3,12 +3,8 @@
  *  GetHost,
  *  IsShadowRoot,
  *  GetDeepValue,
- *  ToPascalCase,
- *  ToPigletAttr,
- *  FromPigletAttr,
  *  Api,
  *  Navigate,
- *  ToKebabCase,
  *  GetMountedComponentsByTag,
  *  SendToExtension,
  *  LoadComponent,
@@ -18,8 +14,32 @@
 
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import CONST from "@Piglet/browser/CONST";
+import {
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+} from "@Piglet/browser/sharedHelpers";
+
+/** @type {(target: DocumentFragment) => ReactiveComponent | null} */
+const contextParent = (target) => {
+  const contextValue = target.querySelector(
+    CONST.fragmentRootTagName,
+  )?.textContent;
+  return window.Piglet.constructedComponents[contextValue];
+};
+
+/** @type {(target: DocumentFragment) => ReactiveComponent | null} */
+const directParent = (target) => {
+  const contextValue = target.querySelector(
+    CONST.fragmentParentTagName,
+  )?.textContent;
+  return window.Piglet.constructedComponents[contextValue];
+};
+
 /** @type {GetHost} */
 const getHost = function (node, parent) {
+  if (!node) return null;
+
   /** @type {Node|ShadowRoot} */
   let target;
 
@@ -39,8 +59,7 @@ const getHost = function (node, parent) {
   }
 
   if (target instanceof DocumentFragment) {
-    const contextValue = target.querySelector("context-parent")?.textContent;
-    return window.Piglet.component[contextValue];
+    return contextParent(target);
   }
 
   return null;
@@ -66,44 +85,6 @@ const getDeepValue = function (obj, pathParts) {
   }
 
   return result;
-};
-
-const assignIdToComponent = function (component) {
-  if (window.Piglet.componentsCount[component.__componentName] === undefined) {
-    window.Piglet.componentsCount[component.__componentName] = 0;
-  } else {
-    window.Piglet.componentsCount[component.__componentName]++;
-  }
-
-  component.__id = window.Piglet.componentsCount[component.__componentName];
-};
-
-/** @type {ToPascalCase} */
-const toPascalCase = function (str) {
-  return str
-    .split(/[-_]/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-};
-
-/** @type {ToPigletAttr} */
-const toPigletAttr = function (name) {
-  if (name.includes("-") || name.toLowerCase() === name) {
-    return `${CONST.attributePrefix}${name}`;
-  }
-
-  const transformed = name.replace(/([A-Z])/g, "_$1").toLowerCase();
-  return `${CONST.attributePrefix}${transformed}`;
-};
-
-/** @type {FromPigletAttr} */
-const fromPigletAttr = function fromPigletAttr(pigletName) {
-  if (!pigletName.startsWith(CONST.attributePrefix)) {
-    return "";
-  }
-  let raw = pigletName.slice(7);
-
-  return raw.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
 };
 
 /** @type {Api} */
@@ -169,11 +150,6 @@ const navigate = (route) => {
   return true;
 };
 
-/** @type {ToKebabCase} */
-const toKebabCase = function (str) {
-  return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
-};
-
 /** @type {GetMountedComponentsByTag} */
 const getMountedComponentsByTag = function (tagName) {
   const componentRefs = [];
@@ -189,7 +165,7 @@ const getMountedComponentsByTag = function (tagName) {
   return componentRefs;
 };
 
-/** @type {Record<string, NodeJS.Timeout>} */
+/** @type {Record<string, NodeJS.Timeout | number>} */
 const debounceTimers = {};
 
 /** @type {SendToExtension} */
@@ -207,13 +183,17 @@ const sendToExtension = (requestType) => {
   clearTimeout(debounceTimers[requestType]);
 
   debounceTimers[requestType] = setTimeout(() => {
-    console.log("Sending to extension:", requestType);
+    window.Piglet.log(
+      CONST.pigletLogs.sendToExtension,
+      CONST.coreLogsLevels.info,
+      requestType,
+    );
     action();
-  }, 100);
+  }, 300);
 };
 
 /** @type {LoadComponent} */
-function loadComponent(_class) {
+const loadComponent = function (_class) {
   const className = _class.name;
   const tagName = toKebabCase(className);
 
@@ -223,7 +203,7 @@ function loadComponent(_class) {
   }
 
   return customElements.whenDefined(tagName);
-}
+};
 
 /** @type {FetchWithCache} */
 const fetchWithCache = async (url) => {
@@ -247,7 +227,7 @@ const fetchWithCache = async (url) => {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch from ${url}`);
+        throw CONST.error.failedToFetch(url);
       }
 
       const data = await response.text();
@@ -264,19 +244,25 @@ const fetchWithCache = async (url) => {
 
 const parseHTML = (html, owner) => {
   const range = owner.ownerDocument.createRange();
+  const fragmentRootName = owner.internal.fragment.enabled
+    ? owner.__componentKey
+    : owner.internal.fragment.fragmentRoot?.__componentKey;
+
+  const fragmentRoot = `<${CONST.fragmentRootTagName} style="display: none">${fragmentRootName}</${CONST.fragmentRootTagName}>`;
+  const fragmentParent = `<${CONST.fragmentParentTagName} style="display: none;">${owner.__componentKey}</${CONST.fragmentParentTagName}>`;
+
   return range.createContextualFragment(
-    `${owner.__isInFragment || owner.__useFragment ? `<context-parent style="display: none">${owner.__componentKey}</context-parent>\n` : ""}${html}`,
+    `${!!fragmentRootName ? `${fragmentRoot}\n${fragmentParent}\n` : ""}${html}`,
   );
 };
 
 /** @type {(strings: TemplateStringsArray, ...values: any[]) => HTMLElement} */
-const createElement = function (strings, ...values) {
-  const html = String.raw(strings, ...values).trim();
+const $create = function (strings, ...values) {
+  const rawHtml = strings.join("$$SLOT$$").trim();
 
-  const tagMatch = html.match(/^<([a-zA-Z0-9_-]+)(\s[^>]*)?\/?>$/);
-
+  const tagMatch = rawHtml.match(/^<([a-zA-Z0-9_-]+)\s*\$\$SLOT\$\$\s*\/?>$/);
   if (!tagMatch) {
-    throw new Error(`Invalid component markup: "${html}"`);
+    throw CONST.error.invalidMarkup(rawHtml);
   }
 
   const originalTag = tagMatch[1];
@@ -284,44 +270,74 @@ const createElement = function (strings, ...values) {
     .replace(/([a-z])([A-Z])/g, "$1-$2")
     .toLowerCase();
 
-  if (!customElements.get(kebabTag)) {
-    if (typeof loadComponent === "function") {
-      import(`${CONST.componentRoute.base}/${originalTag}`).then((module) => {
-        loadComponent(module.default);
-      });
-    } else {
-      throw new Error("window.loadComponent is not defined");
+  const el = document.createElement(kebabTag);
+
+  const attrs = values.find((v) => typeof v === "object" && v !== null);
+  el.attrs = { ...(attrs || {}) };
+
+  return el;
+};
+
+/** @type {(componentName: string, types: string[], shouldCache?: boolean) => Promise<{ html?: string, script?: Function, base?: ReactiveComponent }>} */
+const fetchComponentData = async (componentName, types, shouldCache = true) => {
+  const data = {
+    html: undefined,
+    script: undefined,
+    base: undefined,
+  };
+
+  if (!types.length) {
+    return data;
+  }
+
+  if (types.includes(CONST.componentRoute.html)) {
+    const res = await fetch(
+      `${CONST.componentRoute.html}/${componentName}${!shouldCache ? CONST.cacheKey() : ""}`,
+    );
+    const html = await res.text();
+
+    if (html !== "export default false;" && html !== "") {
+      data.html = html;
     }
   }
 
-  const el = document.createElement(kebabTag);
-
-  let attrString = tagMatch[2] || "";
-  attrString = attrString.replace(/\/\s*$/, "");
-  const attrRegex = /([^\s=]+)(?:="([^"]*)")?/g;
-  let match;
-  while ((match = attrRegex.exec(attrString)) !== null) {
-    const [_, key, value = ""] = match;
-    el.setAttribute(key, value);
+  if (types.includes(CONST.componentRoute.script)) {
+    const module = await import(
+      `${CONST.componentRoute.script}/${componentName}${!shouldCache ? CONST.cacheKey() : ""}`
+    );
+    if (module.default !== false) {
+      data.script = module.default;
+    }
   }
-  return el;
+
+  if (types.includes(CONST.componentRoute.base)) {
+    const module = await import(
+      `${CONST.componentRoute.base}/${componentName}${!shouldCache ? CONST.cacheKey() : ""}`
+    );
+    if (module.default !== false) {
+      data.base = module.default;
+    }
+  }
+
+  return data;
 };
 
 export {
   getHost,
-  assignIdToComponent,
   isShadowRoot,
   getDeepValue,
-  toPascalCase,
-  toPigletAttr,
-  fromPigletAttr,
   api,
   navigate,
-  toKebabCase,
   getMountedComponentsByTag,
   loadComponent,
   sendToExtension,
   fetchWithCache,
   parseHTML,
-  createElement,
+  $create,
+  contextParent,
+  directParent,
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+  fetchComponentData,
 };

@@ -26,10 +26,6 @@ interface PigletLogs {
     errorLoading: (route: string) => string;
     unableToLoadComponent: (tag: string) => string;
     componentConnected: (component: { __componentName: string }) => string;
-    onStateChangeNotImplemented: (
-      component: { __caller?: string; __componentKey: string },
-      property: string,
-    ) => string;
   };
   socket: {
     connected: string;
@@ -45,7 +41,6 @@ interface PigletLogs {
 interface Constants {
   coreLogsLevels: LogLevels;
   coreLogLevelsAliases: LogLevelsAliases;
-  callerAttribute: string;
   routeAttribute: string;
   pigletLogs: PigletLogs;
   socket: {
@@ -81,13 +76,13 @@ interface Constants {
   attributePrefix: string;
   reason: {
     attributesChange: (changes: AttributeChange[]) => Reason;
-    parentUpdate: (reason: Reason) => Reason;
-    addedToDOM: Reason;
+    parentUpdate: Reason;
     onMount: Reason;
     stateChange: (changes: Array<unknown>) => Reason;
+    fragmentInjected: Reason;
+    WSReload: Reason;
   };
   attributesObjectName: string;
-  notSettledSuffix: string;
   conditionAttribute: string;
   conditionalName: string;
   appRootName: string;
@@ -95,5 +90,11 @@ interface Constants {
 }
 
 declare const CONST: Constants;
-export type { Reason };
+export type {
+  LogLevelsAliases,
+  AttributeChange,
+  Reason,
+  PigletLogs,
+  Constants,
+};
 export default CONST;

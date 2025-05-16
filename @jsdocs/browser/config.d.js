@@ -28,9 +28,8 @@
  *     tag: string, // The tag of the component
  *     ref: HTMLElement|ReactiveComponent // The reference to the component
  *   }>,
- *   componentsCount: Record<string, number>, // The number of components by tag
- *   component: Record<string, ReactiveComponent>, // Constructed components
- *   AppRoot: ReactiveComponent | undefined, // The AppRoot component
+ *   AppRoot: AppRoot | undefined, // The AppRoot component
+ *   constructedComponents: Record<string, ReactiveComponent>, // The constructed components
  *   log: (message: string, severity: "info"|"warn"|"error", ...args: any[]) => void, // Log a message with a severity
  *   reset: () => void // Reset the PigletJS configuration,
  *   __fetchCache: Map<string, string>, // The fetch cache,

@@ -14,40 +14,10 @@ export type QueryElement = (
   selector: string,
 ) => ElementProxy;
 
-// Context object containing element, state, and variables for script execution
-export interface ScriptContext {
-  element: HTMLElement; // The element the script operates on
-  state: any; // The state of the element
-  [key: string]: any; // Additional properties for script context
-}
-
-// Result of running a script, including success status and potential errors
-export interface ScriptResult {
-  success: boolean; // Whether the script execution was successful
-  error?: Error; // Error encountered, if any
-  result?: any; // The result of the script execution
-}
-
-// Executes a script within a given context
-export function runScript(
-  script: string,
-  context: ScriptContext,
-): Promise<ScriptResult>;
-
-// Evaluates an expression within the given script context
-export function evaluateExpression(
-  expression: string,
-  context: ScriptContext,
-): any;
-
-// Creates a script context from an HTML element
-export function createScriptContext(element: HTMLElement): ScriptContext;
-
 // Clears all event listeners from a host element
-export function clearAllListenersForHost(hostElement: ReactiveComponent): void;
-
-// Retrieves component data for a host element
-export function getComponentData(hostElement: ReactiveComponent): ComponentData;
+export declare function clearAllListenersForHost(
+  hostElement: ReactiveComponent,
+): void;
 
 // Cleans up after a component is mounted, including removing event listeners
 export function componentMountCleanup(
@@ -65,19 +35,12 @@ export function scriptRunner(
 // Contains the data related to a component's state, attributes, and lifecycle callbacks
 export interface ComponentData {
   component: {
-    name: string; // Component name
-    id: number; // Component ID
-    tree: Record<string, TreeNode<ReactiveComponent | Element>>; // Component tree
-    shadowRoot: ShadowRoot | null; // Shadow root of the component
-    key: string; // Unique component key
-    state: Function; // State function
-    element: ReactiveComponent; // Component element
-    parent: ReactiveComponent | null | Element; // Parent element of the component
-    attributes: Record<string, any> | {}; // Component attributes
-    forwarded: Record<string, Function> | {}; // Forwarded functions for the component
+    $state: Function; // State function
+    $element: ReactiveComponent; // Component element
+    $attrs: Record<string, unknown> | {}; // Component attributes
   };
   callbacks: {
-    element: QueryElement; // Element query method
+    $element: QueryElement; // Element query method
     $onBeforeUpdate: (callback: () => boolean | void) => void; // Before update callback
     $onAfterUpdate: (callback: () => void) => void; // After update callback
     onAfterUpdateRef: { value: () => void }; // After update reference callback

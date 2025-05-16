@@ -27,8 +27,8 @@ export default (req, res) => {
 
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      // noinspection JSIgnoredPromiseFromCall
-      notFound(res);
+      res.writeHead(200, { "Content-Type": "application/javascript" });
+      res.end(CONST.browser.componentNotFound);
     } else {
       const ext = filePath.split(".").pop();
       let contentType = "text/plain";

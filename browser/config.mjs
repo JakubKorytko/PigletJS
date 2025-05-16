@@ -30,9 +30,7 @@ const config = {
 
   mountedComponents: new Set(),
 
-  componentsCount: {},
-
-  component: {},
+  constructedComponents: {},
 
   log(message, severity = CONST.coreLogsLevels.info, ...args) {
     if (!this.enableCoreLogs[severity]) return;

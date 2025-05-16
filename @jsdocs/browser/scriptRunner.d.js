@@ -16,46 +16,8 @@
  */
 
 /**
- * @typedef {{
- *   element: HTMLElement,  // The element the script operates on
- *   state: *,  // The state of the element
- *   variables: Record<string, *>  // Variables available for the script
- * }} ScriptContext
- * Context object containing element, state, and variables for script execution.
- */
-
-/**
- * @typedef {{
- *   success: boolean,  // Whether the script execution was successful
- *   error?: Error,  // Error encountered, if any
- *   result?: *  // The result of the script execution
- * }} ScriptResult
- * Result of running a script, including success status and potential errors.
- */
-
-/**
- * @typedef {(script: string, context: ScriptContext) => Promise<ScriptResult>} RunScript
- * Executes a script within a given context.
- */
-
-/**
- * @typedef {(expression: string, context: ScriptContext) => *} EvaluateExpression
- * Evaluates an expression within the given script context.
- */
-
-/**
- * @typedef {(element: HTMLElement) => ScriptContext} CreateScriptContext
- * Creates a script context from an HTML element.
- */
-
-/**
  * @typedef {(hostElement: ReactiveComponent) => void} ClearAllListenersForHost
  * Clears all event listeners from a host element.
- */
-
-/**
- * @typedef {(hostElement: ReactiveComponent) => ComponentData} GetComponentData
- * Retrieves component data for a host element.
  */
 
 /**
@@ -71,8 +33,6 @@
 /**
  * @typedef {{
  *   component: {
- *     $id: number,  // Component ID
- *     $key: string,  // Unique component key
  *     $state: Function,  // State function
  *     $element: ReactiveComponent,  // Component element
  *     $attrs: Record<string, *> | {},  // Component attributes

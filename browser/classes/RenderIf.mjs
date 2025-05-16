@@ -1,46 +1,22 @@
 /** @import {RenderIfInterface, Virtual, Member} from "@jsdocs/browser/classes/RenderIf.d" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 /** @typedef {InterfaceMethodTypes<RenderIfInterface>} RenderIfMethods */
-import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { getDeepValue, getHost } from "@Piglet/browser/helpers";
+import { getDeepValue } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
+import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
 
 /** @implements {RenderIfInterface} */
-class RenderIf extends ReactiveComponent {
+class RenderIf extends ReactiveDummyComponent {
+  // noinspection JSUnusedGlobalSymbols
   static get observedAttributes() {
     return [CONST.conditionAttribute];
   }
+
   _condition;
-  _fragment;
-  _template;
-
-  constructor() {
-    super();
-
-    this._condition = false;
-    this._negated = false;
-    this._parts = [];
-    this.__stateless = true;
-
-    this._contentFragment = document.createDocumentFragment();
-    this._contentMounted = false;
-    this._firstContentMounted = false;
-
-    this.onMount((reason) => {
-      if (!this._firstContentMounted) {
-        this._firstContentMounted = true;
-        this._moveChildrenToFragment();
-      }
-
-      super.connectedCallback();
-
-      this._updateFromAttribute();
-      this.updateVisibility();
-    });
-
-    this.__isHTMLInjected = true;
-    this._mount(CONST.reason.onMount);
-  }
+  _negated = false;
+  _parts = [];
+  _contentFragment = document.createDocumentFragment();
+  _contentMounted = true;
 
   /**
    * @type {Member["_moveChildrenToFragment"]["Type"]}
@@ -60,7 +36,7 @@ class RenderIf extends ReactiveComponent {
     if (
       name === CONST.conditionAttribute &&
       oldValue !== newValue &&
-      (!this.__caller || this.__caller.indexOf(CONST.notSettledSuffix) === -1)
+      this._parent
     ) {
       this._updateFromAttribute();
     }
@@ -113,11 +89,14 @@ class RenderIf extends ReactiveComponent {
     }
 
     if (isAttribute) {
-      const host = getHost(this.__root);
-      this._updateCondition(host.__attrs[conditionProperty]);
+      this._updateCondition(this._parent.attrs[conditionProperty]);
     } else {
-      this._state = this.state(conditionProperty, undefined);
-      this._updateCondition(this._state.value);
+      this._state =
+        window.Piglet.state[this._parent.__componentKey][
+          conditionProperty
+        ]._state;
+      super.observeState(conditionProperty);
+      this._updateCondition(this._state);
     }
   }
 
@@ -141,46 +120,22 @@ class RenderIf extends ReactiveComponent {
    * @returns {Member["updateVisibility"]["ReturnType"]}
    */
   updateVisibility() {
-    if (this._condition) {
-      if (!this._contentMounted) {
-        this.appendChild(this._contentFragment);
-        this._contentMounted = true;
-      }
-    } else {
-      if (this._contentMounted) {
-        this._moveChildrenToFragment();
-        this._contentMounted = false;
-      }
+    if (this._condition && !this._contentMounted) {
+      this.appendChild(this._contentFragment);
+      this._contentMounted = true;
+    } else if (!this._condition && this._contentMounted) {
+      this._moveChildrenToFragment();
+      this._contentMounted = false;
     }
   }
 
-  /**
-   * @type {Member["disconnectedCallback"]["Type"]}
-   * @returns {Member["disconnectedCallback"]["ReturnType"]}
-   */
-  disconnectedCallback() {
-    super.disconnectedCallback();
+  _mount(reason) {
+    this._updateFromAttribute();
   }
 
-  /**
-   * @type {Member["runScript"]["Type"]}
-   * @returns {Member["runScript"]["ReturnType"]}
-   */
-  runScript() {
-    return Promise.resolve(undefined);
+  _update(value) {
+    this._updateCondition(value);
   }
-
-  /**
-   * @type {Member["onBeforeUpdate"]["Type"]}
-   * @returns {Member["onBeforeUpdate"]["ReturnType"]}
-   */
-  onBeforeUpdate() {}
-
-  /**
-   * @type {Member["onAfterUpdate"]["Type"]}
-   * @returns {Member["onAfterUpdate"]["ReturnType"]}
-   */
-  onAfterUpdate() {}
 }
 
 export default RenderIf;

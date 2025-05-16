@@ -1,5 +1,6 @@
 import { Navigate, FetchWithCache } from "./helpers";
 import ReactiveComponent from "./classes/ReactiveComponent";
+import AppRoot from "./classes/AppRoot";
 
 export interface Config {
   allowDebugging: boolean;
@@ -20,9 +21,8 @@ export interface Config {
     tag: string;
     ref: HTMLElement | ReactiveComponent;
   }>;
-  componentsCount: Record<string, number>;
-  component: Record<string, ReactiveComponent>;
-  AppRoot: ReactiveComponent | undefined;
+  constructedComponents: Record<string, ReactiveComponent>;
+  AppRoot: AppRoot | undefined;
   log: (
     message: string,
     severity?: "info" | "warn" | "error",

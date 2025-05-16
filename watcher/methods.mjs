@@ -5,7 +5,7 @@ import { getRootDirFromArgv, resolvePath } from "@Piglet/utils/paths";
 import { buildComponent } from "@Piglet/parser/component";
 import { subprocessRef } from "@Piglet/watcher/subprocessRef";
 import { reloadClients, fullReload } from "@Piglet/libs/socket";
-import { toKebabCase } from "@Piglet/utils/stringUtils";
+import { toKebabCase } from "@Piglet/libs/helpers";
 import console from "@Piglet/utils/console";
 /**
  * Creates a subprocess for running the server.

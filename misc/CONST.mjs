@@ -243,8 +243,6 @@ export default {
       $onAfterUpdate,
       $element,
       $reason,
-      $id,
-      $key,
     }) {
     `,
     hardcodedImports: `
@@ -258,9 +256,7 @@ export default {
     "$state",
     "$element",
     "$reason",
-    "$id",
     "$api",
-    "$key",
     "$navigate",
   ]),
   defaultWebType: (fileName) => ({

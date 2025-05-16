@@ -1,10 +1,11 @@
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import scriptRunner from "@Piglet/browser/scriptRunner";
 import {
-  assignIdToComponent,
-  getHost,
+  extractComponentTagsFromString,
+  fetchComponentData,
   loadComponent,
 } from "@Piglet/browser/helpers";
-import scriptRunner from "@Piglet/browser/scriptRunner";
+import CONST from "@Piglet/browser/CONST";
 
 // noinspection JSClosureCompilerSyntax
 /**
@@ -20,65 +21,32 @@ import scriptRunner from "@Piglet/browser/scriptRunner";
  */
 class COMPONENT_CLASS_NAME extends ReactiveComponent {
   /**
-   * Creates an instance of the component and attaches a shadow DOM.
-   * It also loads the component's content via the `loadContent` method.
-   *we
-   * @constructor
-   */
-  constructor() {
-    super();
-
-    if (this.__isKilled) {
-      this.remove();
-      return;
-    }
-
-    this.attachShadow({ mode: "open" });
-
-    assignIdToComponent(this);
-
-    window.Piglet.component[this.__componentKey] = this;
-
-    this.__isInFragment = this.isInDocumentFragmentDeep();
-
-    const parent = getHost(this, true);
-    if (parent instanceof ReactiveComponent && !parent.__ranScript) {
-      parent.__waitingForScript.push(this);
-
-      if (this.__isInFragment) {
-        this.connectedCallback();
-      }
-
-      return;
-    }
-
-    this.loadContent(true);
-
-    if (this.__isInFragment) {
-      this.connectedCallback();
-    }
-  }
-
-  /**
-   * Runs the JavaScript for the component by importing its associated script
-   * and passing the host element to the `scriptRunner`.
-   *
-   * @async
-   * @returns {Promise<void>} A promise that resolves when the script has been executed.
+   * @param {Reason} reason
+   * @returns {Promise<void>}
    */
   async runScript(reason) {
-    scriptRunner(
-      getHost(this),
-      // we want to disable cache only if it was reloaded
-      await import(
-        `/component/script/COMPONENT_NAME${reason.name === "reload" ? `?noCache=${Date.now()}` : ""}`
-      ),
-      reason,
-    );
+    try {
+      const { script } = await fetchComponentData(
+        "COMPONENT_NAME",
+        [CONST.componentRoute.script],
+        CONST.reasonCache(reason),
+      );
+      if (!script) {
+        return;
+      }
+      const tags = extractComponentTagsFromString(script.toString());
+      await window.Piglet.AppRoot?.loadCustomComponents(tags);
+      scriptRunner(this, script, reason);
+    } catch (error) {
+      window.Piglet.log(
+        CONST.pigletLogs.errorLoadingScript,
+        CONST.coreLogsLevels.warn,
+        error,
+      );
+    }
   }
 }
 
 // Replaced with component name by parser
-// noinspection JSUnresolvedReference,JSUnusedGlobalSymbols
-// @ts-ignore
+// noinspection JSUnresolvedReference
 export default COMPONENT_NAME;

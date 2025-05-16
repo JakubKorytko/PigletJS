@@ -62,7 +62,7 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
   /**
    * Loads custom component modules
    * @param {string[]} tags - Array of component tag names to load
-   * @param {Set<string>} seen - Set of seen component tag names
+   * @param {Set<string>=} seen - Set of seen component tag names
    * @returns {Promise<void>}
    */
   async loadCustomComponents(tags, seen) {}

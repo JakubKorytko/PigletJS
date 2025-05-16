@@ -3,30 +3,41 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 
+import { getHost } from "@Piglet/browser/helpers";
+
+/**
+ * @typedef {
+ * {
+ *  owner: ReactiveComponent|undefined,
+ *  HMR: boolean,
+ *  mounted: boolean,
+ *  children: Array<ReactiveComponent>,
+ *  waiters: Array<ReactiveComponent>,
+ *  fragment:
+ *    {
+ *      content: DocumentFragment|undefined,
+ *      enabled: boolean,
+ *      fragmentRoot: ReactiveComponent|undefined,
+ *    },
+ *  readonly parent: ReactiveComponent|null}
+ * } Internal
+ */
+
+/** @typedef {
+ * {
+ *  ref: ReactiveComponent|null,
+ *  updates: Record<string, any>,
+ *  delayed: boolean
+ * }
+ *} PassInfo
+ */
+
 /**
  * A base class for reactive web components in the Piglet framework.
  * Handles state management, lifecycle hooks, and component tree tracking.
  * @interface BaseReactiveComponentInterface
  */
 class BaseReactiveComponentInterface {
-  /**
-   * Whether the component is pending an attribute update
-   * @type {boolean}
-   */
-  __pendingAttributeUpdate;
-
-  /**
-   * The batched attribute changes of the component
-   * @type {Array<{newValue: string, attrName: string, oldValue: string}>}
-   */
-  __batchedAttributeChanges;
-
-  /**
-   * The caller of the component
-   * @type {string}
-   */
-  __caller;
-
   /**
    * The name of the component
    * @type {string}
@@ -43,37 +54,7 @@ class BaseReactiveComponentInterface {
    * The attributes of the component
    * @type {Record<string, string>|{}}
    */
-  __attrs;
-
-  /**
-   * The tree of the component
-   * @type {TreeNode}
-   */
-  __tree;
-
-  /**
-   * The forwarded functions of the component
-   * @type {Record<string, Function>|{}}
-   */
-  _forwarded;
-
-  /**
-   * Whether the component is mounted
-   * @type {boolean}
-   */
-  __isMounted;
-
-  /**
-   * Whether the HTML is injected
-   * @type {boolean}
-   */
-  __isHTMLInjected;
-
-  /**
-   * The children of the component
-   * @type {Array<ReactiveComponent>}
-   */
-  __children;
+  attrs;
 
   /**
    * The ID of the component
@@ -88,40 +69,10 @@ class BaseReactiveComponentInterface {
   __componentKey;
 
   /**
-   * The root element of the component
-   * @type {ShadowRoot | Node}
-   */
-  __root;
-
-  /**
    * The mount callback of the component
    * @type {((reason: Reason) => void)}
    */
   __mountCallback;
-
-  /**
-   * The mutation observer of the component
-   * @type {MutationObserver | undefined}
-   */
-  __mutationObserver;
-
-  /**
-   * Components that are waiting for the script to be loaded
-   * @type {Array<VirtualReactiveComponentInterface>}
-   */
-  __waitingForScript;
-
-  /**
-   * @type {boolean}
-   * Whether the component is using fragment
-   */
-  __useFragment;
-
-  /**
-   * Whether the component is killed
-   * @type {boolean}
-   */
-  __killed;
 
   /**
    * The mount data of the component
@@ -137,17 +88,10 @@ class BaseReactiveComponentInterface {
   _mount(reason) {}
 
   /**
-   * Updates the children of the component
-   * @param {Reason} reason - The reason for the update
-   * @returns {void}
-   */
-  _updateChildren(reason) {}
-
-  /**
    * Called when the component is unmounted
    * @returns {void}
    */
-  _unmount() {}
+  unmount() {}
 
   /**
    * Called when the component is connected to the DOM
@@ -160,19 +104,6 @@ class BaseReactiveComponentInterface {
    * @returns {void}
    */
   disconnectedCallback() {}
-
-  /**
-   * Called when the component is adopted
-   * @returns {void}
-   */
-  adoptedCallback() {}
-
-  /**
-   * Set the callback to be called when the component is mounted
-   * @param {(reason: Reason) => void} callback
-   * @returns {void}
-   */
-  onMount(callback) {}
 
   /**
    * Observe a state property
@@ -204,22 +135,6 @@ class BaseReactiveComponentInterface {
   stateChange(value, property, prevValue) {}
 
   /**
-   * Dispatch an event
-   * @param {Event} event - The event to dispatch
-   * @returns {boolean}
-   */
-  dispatchEvent(event) {
-    return true;
-  }
-
-  /**
-   * Reload the component
-   * @async
-   * @returns {Promise<void>}
-   */
-  async reloadComponent() {}
-
-  /**
    * Load the content of the component (HTML)
    * @async
    * @param {boolean} [canUseMemoized] - Whether to use memoized content
@@ -234,33 +149,33 @@ class BaseReactiveComponentInterface {
   injectFragment() {}
 
   /**
-   * Check if the component is in a document fragment any level deep
-   * Return the component if it is in a document fragment
-   * @returns {boolean|VirtualReactiveComponentInterface}
-   */
-  isInDocumentFragmentDeep() {
-    return false;
-  }
-
-  /**
-   * Kill the component
-   * @returns {void}
-   */
-  kill() {}
-
-  /**
    * Disable HMR for the component
    * @returns {void}
    */
   disableHMR() {}
 
+  /** @type {Internal} */
+  internal = {
+    owner: undefined,
+    HMR: true,
+    mounted: false,
+    children: [],
+    waiters: [],
+    fragment: {
+      content: undefined,
+      enabled: false,
+      fragmentRoot: undefined,
+    },
+    get parent() {
+      return getHost(this.owner, true);
+    },
+  };
+
   /**
-   * Whether the component is killed (getter)
-   * @returns {boolean}
+   * The pending attributes update of the component
+   * @type {Array<PassInfo>}
    */
-  get __isKilled() {
-    return;
-  }
+  forwardedQueue = [];
 }
 
 /**
@@ -268,18 +183,6 @@ class BaseReactiveComponentInterface {
  * @extends {BaseReactiveComponentInterface}
  */
 class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
-  /**
-   * Is the component stateless
-   * @type {boolean}
-   */
-  __stateless;
-
-  /**
-   * The ID of the component
-   * @type {number}
-   */
-  __id;
-
   /**
    * Called when the attribute of the component changes
    * @param {string=} name - The name of the attribute

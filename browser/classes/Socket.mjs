@@ -50,13 +50,16 @@ class Socket {
       const message = JSON.parse(event.data);
       if (message.type === CONST.socket.messageTypes.reload && message.data) {
         /** @type {ReactiveComponent[]} */
-        const components = getMountedComponentsByTag(message.data);
+        const components = getMountedComponentsByTag(message.data).filter(
+          (component) => component.internal.HMR,
+        );
         for (const component of components) {
-          component.reloadComponent();
+          component._mount(CONST.reason.WSReload);
         }
       } else if (message.type === CONST.socket.messageTypes.reload) {
         /** @type {AppRoot} */
         const appRoot = document.querySelector(CONST.appRootTag);
+        // noinspection JSIgnoredPromiseFromCall
         appRoot.changeRoute(appRoot._route);
       }
 

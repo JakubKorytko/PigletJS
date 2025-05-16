@@ -21,16 +21,6 @@
  */
 
 /**
- * @typedef {(name: string) => string} ToPigletAttr
- * Converts a Piglet attribute name to the corresponding HTML attribute format.
- */
-
-/**
- * @typedef {(pigletName: string) => string} FromPigletAttr
- * Converts an HTML attribute name to the corresponding Piglet attribute format.
- */
-
-/**
  * @typedef {(path: string, fetchOptions?: RequestInit, expect?: 'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData') => Promise<any>} Api
  * Makes an API request and returns a promise resolving to the response data.
  */
@@ -69,8 +59,6 @@ export /** @exports GetHost */
 /** @exports IsShadowRoot */
 /** @exports GetDeepValue */
 /** @exports ToPascalCase */
-/** @exports ToPigletAttr */
-/** @exports FromPigletAttr */
 /** @exports Api */
 /** @exports Navigate */
 /** @exports ToKebabCase */

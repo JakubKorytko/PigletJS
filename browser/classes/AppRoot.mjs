@@ -4,6 +4,7 @@ import {
   toPascalCase,
   sendToExtension,
   loadComponent,
+  fetchComponentData,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 
@@ -15,10 +16,10 @@ const _routes = routes ?? {};
 
 /** @implements {AppRootInterface} */
 class AppRoot extends ReactiveComponent {
+  _route = "";
+
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
-    this._route = "";
     this.addPopStateListener();
   }
 
@@ -46,7 +47,7 @@ class AppRoot extends ReactiveComponent {
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === CONST.routeAttribute && oldValue !== newValue) {
       if (oldValue === null) {
-        this.loadRoute(newValue).then(this._mount.bind(this));
+        this.loadRoute(newValue).then(this.appRootConnected.bind(this));
       } else {
         void this.changeRoute(newValue);
       }
@@ -58,12 +59,11 @@ class AppRoot extends ReactiveComponent {
    * @returns {Member["changeRoute"]["ReturnType"]}
    */
   async changeRoute(newRoute) {
-    this._unmount.call(this);
+    this.internal.mounted = true;
     this.shadowRoot.replaceChildren();
     window.Piglet.reset();
-    super.connectedCallback();
+    this.appRootConnected();
     await this.loadRoute(newRoute);
-    this._mount.call(this);
   }
 
   /**
@@ -78,17 +78,24 @@ class AppRoot extends ReactiveComponent {
       if (!routePath) {
         routePath = "NotFound";
       }
-      const [module, pageSource] = await Promise.all([
-        import(`${CONST.componentRoute.base}/${routePath}`),
-        fetch(`${CONST.componentRoute.html}/${routePath}`).then((res) =>
-          res.text(),
-        ),
+
+      const { base, html } = await fetchComponentData(routePath, [
+        CONST.componentRoute.base,
+        CONST.componentRoute.html,
       ]);
 
-      const tags = this.extractCustomTags(pageSource);
-      await this.loadCustomComponents(tags, new Set());
+      if (html) {
+        const tags = this.extractCustomTags(html);
+        await this.loadCustomComponents(tags);
+      }
 
-      await this.renderComponent(module.default);
+      if (base) {
+        await this.renderComponent(base);
+      }
+
+      if (!base && !html) {
+        return;
+      }
 
       sendToExtension(CONST.extension.initialMessage);
       window.Piglet.log(
@@ -132,11 +139,10 @@ class AppRoot extends ReactiveComponent {
         seen.add(tag);
 
         try {
-          await import(`${CONST.componentRoute.base}/${tag}`);
-
-          const html = await fetch(`${CONST.componentRoute.html}/${tag}`).then(
-            (res) => res.text(),
-          );
+          const { html } = await fetchComponentData(tag, [
+            CONST.componentRoute.base,
+            CONST.componentRoute.html,
+          ]);
 
           const nestedTags = this.extractCustomTags(html);
 
@@ -150,6 +156,13 @@ class AppRoot extends ReactiveComponent {
         }
       }),
     );
+  }
+
+  appRootConnected() {
+    this.internal.mounted = true;
+    while (this.internal.waiters.length > 0) {
+      this.internal.waiters.shift()._mount(CONST.reason.parentUpdate);
+    }
   }
 
   connectedCallback() {
@@ -190,33 +203,17 @@ class AppRoot extends ReactiveComponent {
     }
   }
 
-  /**
-   * @type {Virtual["dispatchEvent"]["Type"]}
-   * @returns {Virtual["dispatchEvent"]["ReturnType"]}
-   */
-  dispatchEvent(event) {
-    return false;
+  onAfterUpdate() {
+    return true;
   }
 
-  /**
-   * @type {Virtual["runScript"]["Type"]}
-   * @returns {Virtual["runScript"]["ReturnType"]}
-   */
-  runScript() {
+  onBeforeUpdate() {
+    return true;
+  }
+
+  async runScript(reason) {
     return Promise.resolve(undefined);
   }
-
-  /**
-   * @type {Virtual["onBeforeUpdate"]["Type"]}
-   * @returns {Virtual["onBeforeUpdate"]["ReturnType"]}
-   */
-  onBeforeUpdate() {}
-
-  /**
-   * @type {Virtual["onAfterUpdate"]["Type"]}
-   * @returns {Virtual["onAfterUpdate"]["ReturnType"]}
-   */
-  onAfterUpdate() {}
 }
 
 export default AppRoot;

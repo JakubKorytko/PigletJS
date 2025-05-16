@@ -1,11 +1,14 @@
 /** @import {ClearAllListenersForHost, QueryElement, GetCallbackProxies, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner} from "@jsdocs/browser/scriptRunner.d" */
 
-import { toKebabCase, toPigletAttr } from "@Piglet/browser/helpers";
+import { toKebabCase } from "@Piglet/browser/helpers";
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import CONST from "@Piglet/browser/CONST";
 
+/** @type {WeakMap<ReactiveComponent, Map<string, Set<Function>>>} */
 const elementListeners = new WeakMap(); // el -> Map<event, Set<callback>>
+/** @type {WeakSet<ReactiveComponent>} */
 const allTrackedElements = new Set(); // All els with listeners
+/** @type {WeakMap<ReactiveComponent, Set<ReactiveComponent>>} */
 const hostToElements = new WeakMap(); // host -> Set<shadowEl>
 
 /** @type {ClearAllListenersForHost} */
@@ -31,8 +34,8 @@ export const clearAllListenersForHost = function (hostElement) {
 
 /** @type {QueryElement} */
 const queryElement = function (hostElement, selector) {
-  const root = hostElement.__useFragment
-    ? hostElement.__fragment
+  const root = hostElement.internal.fragment.enabled
+    ? hostElement.internal.fragment.content
     : hostElement.shadowRoot;
 
   const isCustom = CONST.pascalCaseRegex.test(selector);
@@ -85,17 +88,21 @@ const queryElement = function (hostElement, selector) {
     },
     pass(updates) {
       if (el && el instanceof ReactiveComponent) {
+        const passInfo = {
+          ref: el,
+          updates: {},
+          delayed: updates.delayed,
+        };
         for (const [key, value] of Object.entries(updates)) {
-          if (typeof value === "function") {
-            if (!el._forwarded) {
-              el._forwarded = {};
-            }
-            el._forwarded[key] = value;
-          } else {
-            const attr = toPigletAttr(key);
-            el.setAttribute(attr, value);
+          const previousValue = el.attrs[key];
+          if (previousValue !== value) {
+            passInfo.updates[key] = value;
           }
         }
+        if (Object.keys(passInfo.updates).length === 0) {
+          return proxy;
+        }
+        hostElement.forwardedQueue.push(passInfo);
       }
       return proxy;
     },
@@ -111,7 +118,7 @@ const queryElement = function (hostElement, selector) {
         return typeof value === "function" ? value.bind(el) : value;
       }
     },
-    set(target, prop, value, receiver) {
+    set(target, prop, value) {
       if (el) {
         el[prop] = value;
         return true;
@@ -135,23 +142,9 @@ const generateComponentData = function (hostElement) {
     value: () => {},
   };
 
-  const initialAttributes = [...hostElement.attributes].reduce(
-    (attrs, attr) => {
-      attrs[attr.name] = attr.value;
-      return attrs;
-    },
-    {},
-  );
-
   return {
     component: {
-      $attrs: {
-        ...initialAttributes,
-        ...hostElement._forwarded,
-        ...hostElement.__attrs,
-      },
-      $id: hostElement.__id,
-      $key: hostElement.__componentKey,
+      $attrs: hostElement.attrs,
       $state: hostElement.state.bind(hostElement),
       $element: hostElement,
     },
@@ -180,10 +173,6 @@ const componentMountCleanup = function (
 
 /** @type {ScriptRunner} */
 const scriptRunner = function (hostElement, module, scriptReason) {
-  if (typeof module.default !== "function") {
-    return;
-  }
-
   function mountCallback(mountReason) {
     const { component, callbacks } = generateComponentData(this);
 
@@ -197,22 +186,40 @@ const scriptRunner = function (hostElement, module, scriptReason) {
       return;
     }
 
-    const moduleFunction = module.default.bind(this);
+    const moduleFunction = module.bind(this);
 
-    moduleFunction({
-      ...component,
-      ...callbacks,
-      $reason: mountReason ?? scriptReason,
-    });
+    try {
+      moduleFunction({
+        ...component,
+        ...callbacks,
+        $reason: mountReason ?? scriptReason,
+      });
+    } catch (e) {
+      console.error(CONST.pigletLogs.errorInComponentScript, e);
+    }
 
     componentMountCleanup(this, callbacks);
 
     if (typeof this.onAfterUpdate === "function") {
       this.onAfterUpdate();
     }
+
+    while (this.forwardedQueue.length) {
+      const { ref, delayed, updates } = this.forwardedQueue.shift();
+      ref.attrs = { ...ref.attrs, ...updates };
+      if (ref?.internal?.mounted) {
+        if (delayed) {
+          setTimeout(() => {
+            ref.__mountCallback(CONST.reason.attributesChange(updates));
+          }, 0);
+        } else {
+          ref.__mountCallback(CONST.reason.attributesChange(updates));
+        }
+      }
+    }
   }
 
-  hostElement.onMount(mountCallback.bind(hostElement));
+  hostElement.__mountCallback = mountCallback.bind(hostElement);
 };
 
 export default scriptRunner;

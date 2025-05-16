@@ -21,7 +21,7 @@ declare class AppRoot extends ReactiveComponent {
   extractCustomTags(pageSource: string): string[];
 
   /** Loads custom component modules */
-  loadCustomComponents(tags: string[], seen: Set<string>): Promise<void>;
+  loadCustomComponents(tags: string[], seen?: Set<string>): Promise<void>;
 
   /** Renders a component into the view */
   renderComponent(component: typeof HTMLElement | undefined): Promise<void>;

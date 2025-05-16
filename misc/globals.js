@@ -28,7 +28,7 @@
  */
 
 /** @type {StateProxy} */
-let state;
+let $state;
 
 /**
  * Selects an element inside the component's shadow DOM and provides
@@ -60,27 +60,7 @@ let state;
  * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} off - Removes an event listener.
  * @property {(attrName: string, value: any) => ElementWrapper} pass - Passes a static value  an attribute/property.
  */
-let element;
-
-/**
- * @typedef {Object} ConnectedComponent
- * @property {string} name - The component's constructor name.
- * @property {number|string} id - The component's internal ID (`__componentId`).
- * @property {Object} tree - The component's tracked tree structure (`__tree`).
- * @property {ShadowRoot|null} shadowRoot - The component's shadow root, if present.
- * @property {string} key - Unique component key (`__componentKey`).
- * @property {Function} state - Bound `state` method of the component (for accessing reactive state).
- * @property {typeof ReactiveComponent} element - The actual host element instance.
- * @property {typeof ReactiveComponent|null} parent - The parent custom element hosting this component, if any.
- */
-let component;
-
-/**
- * Initializes the state with a default value.
- * @param {any} value - The default value for the state.
- * @returns {any} The initialized state.
- */
-let init;
+let $element;
 
 /** @type {Function} */
 let $ref;
@@ -99,29 +79,7 @@ let $ref;
  *
  * console.log(attributes.someAttribute); // Logs the value of the dynamic attribute
  */
-let attributes;
-
-/**
- * An object that contains methods forwarded from the parent component.
- * The `forwarded` object exclusively contains methods that are made available
- * by the parent component for the child component to invoke. This allows the
- * child component to call functions or interact with the parent component's behavior
- * or state without directly accessing the parent component.
- *
- * @typedef {Object} ForwardedMethods
- * @property {Function} [methodName] - A method forwarded from the parent component.
- * This method can be called by the child component to perform actions in the parent
- * or retrieve data. The exact methods available depend on the parent component's implementation.
- *
- * @example
- *
- * forwarded.someMethod(); // Calls the `someMethod` function defined in the parent component
- */
-
-/**
- * @type {Record<string, Function>}
- */
-let forwarded;
+let $attrs;
 
 /**
  * Fetches data from a given API path and parses the response into the expected format.
@@ -140,7 +98,7 @@ let forwarded;
  * @example
  * const rawText = await
  */
-let api;
+let $api;
 
 /**
  * An object to store the route-to-component mappings.

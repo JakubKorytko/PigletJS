@@ -5,6 +5,11 @@ import { watchDirectory } from "@Piglet/watcher/methods";
 import { routes } from "@Piglet/libs/routes";
 import { mergeWebTypes } from "@Piglet/builder/webTypes";
 import console from "@Piglet/utils/console";
+import {
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+} from "@Piglet/browser/sharedHelpers";
 
 /**
  * Symbolic representation of route names defined in the application.
@@ -138,4 +143,7 @@ export {
   getRouteFromRequest,
   serverHandler,
   runWatcher,
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
 };

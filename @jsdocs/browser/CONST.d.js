@@ -57,9 +57,14 @@
  * @typedef {{
  *   coreLogsLevels: LogLevels, // Core logs levels
  *   coreLogLevelsAliases: LogLevelsAliases, // Core logs levels aliases
- *   callerAttribute: string, // Caller attribute
+ *   fragmentRootTagName: string, // Fragment root tag name
+ *   fragmentParentTagName: string, // Fragment parent tag name
+ *   cacheKey: () => string, // Cache key
+ *   reasonCache: (name: Reason) => boolean, // Reason cache function
+ *   componentNotFound: string, // Component not found message
  *   routeAttribute: string, // Route attribute
  *   pigletLogs: PigletLogs, // PigletJS logs object
+ *   pascalCaseRegex: RegExp, // Pascal case regex
  *   socket: {
  *     messageTypes: {
  *       fullReload: string, // Full reload message type
@@ -93,13 +98,12 @@
  *   attributePrefix: string, // Attribute prefix
  *   reason: {
  *     attributesChange: (changes: AttributeChange[]) => Reason, // Attributes change reason
- *     parentUpdate: (reason: Reason) => Reason, // Parent update reason
- *     addedToDOM: Reason, // Added to DOM reason
- *     onMount: Reason, // On mount reason
- *     stateChange: (changes: Array<unknown>) => Reason // State change reason
+ *     parentUpdate: Reason, // Parent update reason
+ *     stateChange: (changes: Array<unknown>) => Reason, // State change reason
+ *     fragmentInjected: Reason, // Fragment injected reason
+ *     WSReload: Reason
  *   },
  *   attributesObjectName: string, // Attributes object name
- *   notSettledSuffix: string, // Not settled suffix
  *   conditionAttribute: string, // Condition attribute
  *   conditionalName: string, // Conditional name
  *   appRootName: string, // App root name

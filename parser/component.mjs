@@ -2,7 +2,11 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import { resolvePath } from "@Piglet/utils/paths";
-import { toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
+import {
+  toKebabCase,
+  toPascalCase,
+  extractComponentTagsFromString,
+} from "@Piglet/libs/helpers";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
 import { formatHTML, formatJS } from "@Piglet/parser/format";
 import CONST from "@Piglet/misc/CONST";
@@ -85,26 +89,8 @@ const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
  */
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
 
-/**
- * Injects a `host__element` attribute into all occurrences of a given tag in the HTML content,
- * unless the attribute is already present.
- *
- * @param {string} content - The HTML content.
- * @param {string} tagName - The tag name to target (e.g. "div", "span").
- * @param {string} componentName - The name of the component to use in the attribute value.
- * @returns {string} The modified HTML content.
- */
-function injectHostElementAttribute(content, tagName, componentName) {
-  const regex = new RegExp(`<${tagName}([^>]*)>`, "g");
-
-  return content.replace(regex, (match, attrs) => {
-    if (new RegExp(`${CONST.browser.callerAttribute}\\s*=`).test(attrs))
-      return match;
-    return `<${tagName} ${CONST.browser.callerAttribute}="${componentName}_NOT_SETTLED"${attrs}>`;
-  });
-}
-
-function autoInjectValue(script) {
+/** @type {(script: string) => string} */
+const autoInjectValue = function (script) {
   const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
   const usageRegex = /\B(\$\w+)\b/g;
 
@@ -154,7 +140,7 @@ function autoInjectValue(script) {
 
   result += script.slice(lastIndex);
   return result;
-}
+};
 
 /**
  * Transforms destructuring of the `state` object into individual state declarations.
@@ -256,21 +242,9 @@ const injectInnerHTMLToComponent = (
   componentName,
   externalCSS,
 ) => {
-  let modifiedContent = injectHostElementAttribute(
-    content,
-    "render-if",
-    componentName,
-  );
+  let modifiedContent = content;
 
-  const componentTags = new Set();
-  const tagRegex =
-    /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
-  let match;
-
-  while ((match = tagRegex.exec(modifiedContent)) !== null) {
-    const pascalTag = match[1] || match[2];
-    componentTags.add(pascalTag);
-  }
+  const componentTags = extractComponentTagsFromString(html);
 
   componentTags.forEach((tag) => {
     const kebabTag = toKebabCase(tag);

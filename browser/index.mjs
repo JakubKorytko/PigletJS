@@ -3,7 +3,7 @@ import {
   navigate,
   loadComponent,
   fetchWithCache,
-  createElement,
+  $create,
 } from "@Piglet/browser/helpers";
 
 import AppRoot from "@Piglet/browser/classes/AppRoot";
@@ -21,7 +21,7 @@ new Socket();
 
 window.fetchWithCache = fetchWithCache;
 window.Piglet = Piglet;
-window.$ = createElement;
+window.$ = $create;
 
 // noinspection JSIgnoredPromiseFromCall
 loadCoreComponents();

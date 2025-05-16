@@ -2,33 +2,25 @@
 
 import { useState, useObserver } from "@Piglet/browser/hooks";
 import {
-  fromPigletAttr,
   getHost,
   parseHTML,
   sendToExtension,
+  contextParent,
+  directParent,
 } from "@Piglet/browser/helpers";
-import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
 import CONST from "@Piglet/browser/CONST";
+import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
 
 /**
  * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
   /**
-   * @type {Virtual["attributeChangedCallback"]["Type"]}
-   * @returns {Virtual["attributeChangedCallback"]["ReturnType"]}
-   * @virtual
-   */
-  attributeChangedCallback() {}
-
-  /**
    * @type {Virtual["runScript"]["Type"]}
    * @returns {Virtual["runScript"]["ReturnType"]}
    * @virtual
    */
-  runScript() {
-    return Promise.resolve();
-  }
+  async runScript(reason) {}
 
   /**
    * @type {Virtual["onBeforeUpdate"]["Type"]}
@@ -44,20 +36,8 @@ class ReactiveComponent extends HTMLElement {
    */
   onAfterUpdate() {}
 
-  /** @type {Virtual["__id"]["Type"]} */
-  __id;
-
-  /** @type {Virtual["__mutationObserver"]["Type"]} */
-  __mutationObserver = null;
-
-  /** @type {Virtual["__caller"]["Type"]} */
-  __caller = "";
-
   /** @type {Virtual["__componentName"]["Type"]} */
   __componentName = "";
-
-  /** @type {Virtual["__tree"]["Type"]} */
-  __tree = {};
 
   /** @type {Virtual["__componentId"]["Type"]} */
   __componentId;
@@ -65,77 +45,47 @@ class ReactiveComponent extends HTMLElement {
   /** @type {Virtual["__componentKey"]["Type"]} */
   __componentKey = "";
 
-  /** @type {Virtual["__stateless"]["Type"]} */
-  __stateless;
-
   /** @type {Virtual["__mountCallback"]["Type"]} */
-  __mountCallback = () => {};
+  __mountCallback = (reason) => {};
 
   /** @type {Member["__mountData"]["Type"]} */
   __mountData;
 
-  /** @type {Member["_forwarded"]["Type"]} */
-  _forwarded = {};
-
-  /** @type {Member["__children"]["Type"]} */
-  __children = [];
-
-  /** @type {Member["__isMounted"]["Type"]} */
-  __isMounted = false;
-
-  /** @type {Member["__isHTMLInjected"]["Type"]} */
-  __isHTMLInjected = false;
-
-  /** @type {Member["__root"]["Type"]} */
-  __root = null;
-
   /** @type {Member["__observers"]["Type"]} */
   __observers;
 
-  /** @type {Member["__attrs"]["Type"]} */
-  __attrs = {};
+  /** @type {Member["attrs"]["Type"]} */
+  attrs = {};
 
-  /** @type {Member["__pendingAttributeUpdate"]["Type"]} */
-  __pendingAttributeUpdate = false;
+  /** @type {Member["forwardedQueue"]["Type"]} */
+  forwardedQueue = [];
 
-  /** @type {Member["__batchedAttributeChanges"]["Type"]} */
-  __batchedAttributeChanges = [];
+  /** @type {Member["internal"]["Type"]} */
+  internal = {
+    owner: undefined,
+    HMR: true,
+    mounted: false,
+    children: [],
+    waiters: [],
+    fragment: {
+      content: undefined,
+      enabled: false,
+      fragmentRoot: undefined,
+    },
+    get parent() {
+      return getHost(this.owner, true);
+    },
+  };
 
-  /** @type {Member["__waitingForScript"]["Type"]} */
-  __waitingForScript = [];
-
-  /** @type {Member["__killed"]["Type"]} */
-  __killed = false;
-
-  /** @type {Member["__useFragment"]["Type"]} */
-  __useFragment = false;
-
-  /**
-   * @type {Member["__isKilled"]["Type"]}
-   * @returns {Member["__killed"]["Type"]}
-   */
-  get __isKilled() {
-    const parent = getHost(this, true);
-    const grandParent = getHost(parent ?? this, true);
-
-    return this.__killed || parent?.__killed || grandParent?.__killed;
-  }
-
-  /**
-   * @type {Member["kill"]["Type"]}
-   * @returns {Member["kill"]["ReturnType"]}
-   */
-  kill() {
-    this.__killed = true;
-    this.remove();
-  }
+  #pendingStateUpdate = false;
+  #batchedChanges = [];
 
   /**
    * @type {Member["disableHMR"]["Type"]}
    * @returns {Member["disableHMR"]["ReturnType"]}
    */
   disableHMR() {
-    this.__preventReload = true;
+    this.internal.HMR = false;
   }
 
   /**
@@ -143,142 +93,65 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["injectFragment"]["ReturnType"]}
    */
   injectFragment() {
-    if (this.__useFragment && this.__fragment) {
-      this.__useFragment = false;
-      this.shadowRoot.appendChild(this.__fragment);
-      this._mount({ name: "loadContent" });
-    }
+    if (!this.internal.fragment.content || !this.internal.fragment.enabled)
+      return;
+
+    this.internal.fragment.enabled = false;
+    this.shadowRoot.appendChild(this.internal.fragment.content);
+    this.__mountCallback(CONST.reason.fragmentInjected);
   }
 
-  /**
-   * @type {Member["isInDocumentFragmentDeep"]["Type"]}
-   * @returns {Member["isInDocumentFragmentDeep"]["ReturnType"]}
-   */
-  isInDocumentFragmentDeep() {
-    let currentRoot = getHost(this, true);
-
-    while (currentRoot) {
-      if (currentRoot.__useFragment) {
-        return currentRoot;
-      }
-      currentRoot = getHost(currentRoot, true);
-    }
-    return false;
+  initialSetup() {
+    this.internal.owner = this;
+    this.internal.fragment.enabled =
+      this.attributes.getNamedItem("fragment") !== null;
+    this.internal.fragment.fragmentRoot = contextParent(this.getRootNode());
+    this.__componentName = this.constructor.name;
+    this.__observers = new Map();
+    this.__componentId = window.Piglet.componentCounter++;
+    this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
+    this.__mountData = {
+      key: this.__componentKey,
+      tag: this.tagName,
+      ref: this,
+    };
+    directParent(this.getRootNode())?.internal.children.push(this);
+    window.Piglet.constructedComponents[this.__componentKey] = this;
   }
 
   constructor() {
     super();
 
-    this.__useFragment = this.getAttribute("fragment") !== null;
-    if (this.__isKilled) return;
+    this.initialSetup();
 
-    this.__caller = this.getAttribute(CONST.callerAttribute);
-    this.removeAttribute(CONST.callerAttribute);
-    this.__componentName = this.constructor.name;
-    this.__observers = new Map();
+    const { fragmentRoot } = this.internal.fragment;
+    const fragmentEnabled = fragmentRoot?.internal.fragment.enabled;
 
-    /**
-     * Observes attribute changes.
-     */
-    this.__mutationObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "attributes") {
-          const name = mutation.attributeName;
-          const oldValue = mutation.oldValue;
-          const newValue = this.getAttribute(name);
-
-          if (name.startsWith(CONST.attributePrefix)) {
-            const attrName = fromPigletAttr(name);
-
-            this.__batchedAttributeChanges.push({
-              newValue,
-              attrName,
-              oldValue,
-            });
-
-            this.__attrs[attrName] = newValue;
-
-            if (!this.__pendingAttributeUpdate) {
-              this.__pendingAttributeUpdate = true;
-
-              Promise.resolve().then(() => {
-                this.__pendingAttributeUpdate = false;
-
-                const changes = this.__batchedAttributeChanges;
-                this.__batchedAttributeChanges = [];
-
-                this._mount(CONST.reason.attributesChange(changes));
-              });
-            }
-          }
-        }
-      }
-    });
-
-    this.__mutationObserver.observe(this, {
-      attributes: true,
-      attributeOldValue: true,
-    });
-
-    for (const attr of this.attributes) {
-      if (attr.name.startsWith(CONST.attributePrefix)) {
-        const attrName = fromPigletAttr(attr.name);
-        this.__attrs[attrName] = attr.value;
-      }
+    if (fragmentRoot && !fragmentEnabled) {
+      return undefined;
     }
 
-    if (this.constructor.name === CONST.appRootName) {
-      this.__componentId = 0;
-    } else if (this.__componentId === undefined) {
-      this.__componentId = ++window.Piglet.componentCounter;
-    }
-
-    this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
+    this.attachShadow({ mode: "open" });
   }
 
   /**
    * @type {Member["_mount"]["Type"]}
    * @returns {Member["_mount"]["ReturnType"]}
    */
-  _mount(reason) {
-    const parent = getHost(this, true);
-
-    if (parent && parent.__isMounted && this.__isHTMLInjected) {
-      this.__isMounted = true;
-      this.__mountCallback(reason);
-      this._updateChildren(reason);
-    } else if (this.constructor.name === "AppRoot") {
-      this.__isMounted = true;
-      this._updateChildren(reason);
-    }
-  }
-
-  /**
-   * @type {Member["_updateChildren"]["Type"]}
-   * @returns {Member["_updateChildren"]["ReturnType"]}
-   */
-  _updateChildren(reason) {
-    for (const child of this.__children) {
-      if (!child.__isMounted || child.__stateless) {
-        child._mount(CONST.reason.parentUpdate(reason));
-      } else {
-        child._updateChildren(reason);
-      }
-    }
-  }
-
-  /**
-   * @type {Member["reloadComponent"]["Type"]}
-   * @returns {Member["reloadComponent"]["ReturnType"]}
-   */
-  async reloadComponent() {
-    if (this.__isKilled || this.__preventReload) {
+  async _mount(reason) {
+    await this.runScript(reason);
+    const shouldContinue = await this.loadContent(CONST.reasonCache(reason));
+    if (!shouldContinue) {
       return;
     }
-    this.__isHTMLInjected = false;
-    this.__isMounted = false;
-    await this.runScript({ name: "reload" });
-    await this.loadContent(false);
+    sendToExtension(CONST.extension.tree);
+    this.__mountCallback(reason);
+    this.internal.mounted = true;
+    window.Piglet.mountedComponents.add(this.__mountData);
+    window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
+    while (this.internal.waiters.length > 0) {
+      this.internal.waiters.shift()._mount(CONST.reason.parentUpdate);
+    }
   }
 
   /**
@@ -286,50 +159,63 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["loadContent"]["ReturnType"]}
    */
   async loadContent(canUseMemoized) {
-    const componentName = this.constructor.name;
-    const url = `/component/html/${componentName}`;
+    const { fragmentRoot } = this.internal.fragment;
 
-    try {
-      let html;
+    const isFragmentRoot = this.internal.fragment.enabled;
+    const isFragmentElement = !!fragmentRoot;
+    const isFragmentRootEnabled = fragmentRoot?.internal.fragment.enabled;
 
-      if (canUseMemoized) {
-        html = await window.fetchWithCache(url);
-      } else {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw CONST.error.failedToFetchHTML(componentName);
-        }
-        html = await response.text();
-      }
-
-      const fragment = parseHTML(html, this);
-
-      if (this.__useFragment) {
-        this.__fragment = fragment;
-      } else {
-        this.shadowRoot.replaceChildren();
-        this.shadowRoot.appendChild(fragment);
-      }
-      this.__isHTMLInjected = true;
-      this._mount({ name: "loadContent" });
-    } catch (error) {
-      window.Piglet.log(CONST.pigletLogs.appRoot.errorLoading(componentName));
-      return null;
+    if (!isFragmentRoot && isFragmentElement && !isFragmentRootEnabled) {
+      return false;
     }
+
+    const componentName = this.__componentName;
+    const url = `${CONST.componentRoute.html}/${componentName}`;
+
+    let html;
+
+    if (canUseMemoized) {
+      html = await window.fetchWithCache(url);
+    } else {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw CONST.error.failedToFetchHTML(componentName);
+      }
+      html = await response.text();
+    }
+
+    const fragment = parseHTML(html, this);
+
+    if (this.internal.fragment.enabled) {
+      this.internal.fragment.content = fragment;
+    } else {
+      this.shadowRoot.replaceChildren();
+      this.shadowRoot.appendChild(fragment);
+    }
+
+    if (isFragmentElement || isFragmentRoot) {
+      for (const child of this.internal.children) {
+        child.connectedCallback();
+      }
+    }
+
+    return true;
   }
 
   /**
-   * @type {Member["_unmount"]["Type"]}
-   * @returns {Member["_unmount"]["ReturnType"]}
+   * @type {Member["unmount"]["Type"]}
+   * @returns {Member["unmount"]["ReturnType"]}
    */
-  _unmount() {
+  unmount() {
+    window.Piglet.mountedComponents.delete(this.__mountData);
     this.__mountCallback = undefined;
-    this.__isMounted = false;
-    this.__children = [];
+    this.internal.mounted = false;
     for (const remove of this.__observers.values()) {
       remove?.(this);
     }
     this.__observers.clear();
+    this.shadowRoot?.replaceChildren();
+    sendToExtension(CONST.extension.tree);
   }
 
   /**
@@ -337,47 +223,13 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["connectedCallback"]["ReturnType"]}
    */
   connectedCallback() {
-    this.__mountData = {
-      key: this.__componentKey,
-      tag: this.tagName,
-      ref: this,
-    };
+    const parent = this.internal.parent.internal;
 
-    window.Piglet.mountedComponents.add(this.__mountData);
-
-    if (this.__isKilled) {
-      this.remove();
-      return;
+    if (parent.mounted) {
+      this._mount(CONST.reason.onMount);
+    } else {
+      parent.waiters.push(this);
     }
-    window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
-    this.__root = this.shadowRoot ?? this.getRootNode();
-    if (this.__caller) {
-      const host = getHost(this.__root);
-      this.__caller = host?.__componentKey;
-    }
-    const parent = getHost(this, true);
-    if (parent && !parent.__children.includes(this)) {
-      parent.__children.push(this);
-    }
-    this.runScript(CONST.reason.addedToDOM).then(() => {
-      this.__ranScript = true;
-      if (this.__waitingForScript.length > 0) {
-        for (const child of this.__waitingForScript) {
-          child.loadContent(true);
-        }
-        this.__waitingForScript = [];
-      }
-    });
-    sendToExtension(CONST.extension.tree);
-  }
-
-  /**
-   * @type {Member["onMount"]["Type"]}
-   * @returns {Member["onMount"]["ReturnType"]}
-   */
-  onMount(callback) {
-    this.__mountCallback = callback;
-    this._mount(CONST.reason.onMount);
   }
 
   /**
@@ -391,7 +243,7 @@ class ReactiveComponent extends HTMLElement {
     };
 
     const [addObserver, removeObserver] = useObserver(
-      this.__caller ?? this.__componentKey,
+      this.__componentKey,
       property,
     );
 
@@ -410,26 +262,25 @@ class ReactiveComponent extends HTMLElement {
    */
   state(property, initialValue, asRef = false) {
     const state = useState(
-      this.__caller ?? this.__componentKey,
+      this.__componentKey,
       property,
       initialValue,
-      !!this.__caller,
+      false,
       asRef,
     );
     this.observeState(property);
     return state;
   }
 
-  #pendingStateUpdate = false;
-  #batchedChanges = [];
+  clearListeners() {
+    clearAllListenersForHost(this);
+  }
 
   /**
    * @type {Member["stateChange"]["Type"]}
    * @returns {Member["stateChange"]["ReturnType"]}
    */
   stateChange(value, property, prevValue) {
-    clearAllListenersForHost(this);
-
     this.#batchedChanges.push({ value, property, prevValue });
 
     if (!this.#pendingStateUpdate) {
@@ -439,7 +290,7 @@ class ReactiveComponent extends HTMLElement {
         this.#batchedChanges = [];
         this.#pendingStateUpdate = false;
 
-        this._mount(CONST.reason.stateChange(changes));
+        this.__mountCallback(CONST.reason.stateChange(changes));
       });
     }
   }
@@ -449,26 +300,12 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["disconnectedCallback"]["ReturnType"]}
    */
   disconnectedCallback() {
-    if (window.Piglet.componentsCount?.[this.__componentName] > 0) {
-      window.Piglet.componentsCount[this.__componentName]--;
-    }
-    window.Piglet.mountedComponents.delete(this.__mountData);
-    sendToExtension(CONST.extension.tree);
+    this.unmount();
   }
 
-  /**
-   * @type {Member["dispatchEvent"]["Type"]}
-   * @returns {Member["dispatchEvent"]["ReturnType"]}
-   */
   dispatchEvent(event) {
     return false;
   }
-
-  /**
-   * @type {Member["adoptedCallback"]["Type"]}
-   * @returns {Member["adoptedCallback"]["ReturnType"]}
-   */
-  adoptedCallback() {}
 }
 
 export default ReactiveComponent;
