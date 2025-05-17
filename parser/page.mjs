@@ -4,6 +4,34 @@ import console from "@Piglet/utils/console";
 import CONST from "@Piglet/misc/CONST";
 
 /**
+ * @type {(html: string, route: string) => string}
+ * Transforms PascalCase 'App' component to 'app-root' with injected route
+ */
+const transformAppTags = function (html, route) {
+  return html.replace(/<\/?App([^>]*)\/?>/g, (_, attrs = "") => {
+    const isClosing = _.startsWith("</");
+    const isSelfClosing = _.endsWith("/>");
+
+    if (isClosing) return `</app-root>`;
+    const finalAttrs = `${attrs} route="${route}"`;
+    return isSelfClosing
+      ? `<app-root${finalAttrs}></app-root>`
+      : `<app-root${finalAttrs}>`;
+  });
+};
+
+/**
+ * @type {(html: string, scriptSrc: string) => string}
+ * Injects a script tag before the closing body tag
+ */
+const injectScriptBeforeBody = function (html, scriptSrc) {
+  return html.replace(
+    /<\/body>/g,
+    () => `<script type="module" src="${scriptSrc}"></script></body>`,
+  );
+};
+
+/**
  * Generates full HTML by injecting page content into the app shell,
  * replacing PascalCase component tags with kebab-case,
  * and adding script tags for components.
@@ -14,33 +42,11 @@ import CONST from "@Piglet/misc/CONST";
 async function generateAppHtml(route) {
   "use strict";
 
-  /** @type {Array<[RegExp, (match: string, attributes: string) => string]>} */
-  const replacements = [
-    [
-      /<App([^>]*)\/>/g,
-      (match, attributes) => `<app-root${attributes}></app-root>`,
-    ],
-    [/<App([^>]*)>/g, (match, attributes) => `<app-root${attributes}>`],
-    [/<\/App>/g, () => `</app-root>`],
-    [
-      /<app-root([^>]*)>/g,
-      (match, attributes) => `<app-root${attributes} route="${route}">`,
-    ],
-    [
-      /<\/body>/g,
-      () =>
-        `<script type="module" src="${CONST.customRouteAliases.piglet}"></script></body>`,
-    ],
-  ];
-
   const appHtmlPath = resolvePath("@/Pig.html");
   try {
     const appHtml = await fs.readFile(appHtmlPath, "utf-8");
-
-    return replacements.reduce(
-      (html, [regex, replacement]) => html.replace(regex, replacement),
-      appHtml,
-    );
+    const withAppRoot = transformAppTags(appHtml, route);
+    return injectScriptBeforeBody(withAppRoot, CONST.customRouteAliases.piglet);
   } catch (err) {
     console.msg("pages.htmlGeneratingError", err);
     return false;

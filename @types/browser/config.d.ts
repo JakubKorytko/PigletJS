@@ -22,6 +22,7 @@ export interface Config {
     ref: HTMLElement | ReactiveComponent;
   }>;
   constructedComponents: Record<string, ReactiveComponent>;
+  registeredComponents: Record<string, ReactiveComponent>;
   AppRoot: AppRoot | undefined;
   log: (
     message: string,

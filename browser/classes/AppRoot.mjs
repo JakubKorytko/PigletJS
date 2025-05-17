@@ -3,7 +3,6 @@ import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import {
   toPascalCase,
   sendToExtension,
-  loadComponent,
   fetchComponentData,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
@@ -89,13 +88,7 @@ class AppRoot extends ReactiveComponent {
         await this.loadCustomComponents(tags);
       }
 
-      if (base) {
-        await this.renderComponent(base);
-      }
-
-      if (!base && !html) {
-        return;
-      }
+      this.renderComponent(base);
 
       sendToExtension(CONST.extension.initialMessage);
       window.Piglet.log(
@@ -173,9 +166,8 @@ class AppRoot extends ReactiveComponent {
    * @type {Member["renderComponent"]["Type"]}
    * @returns {Member["renderComponent"]["ReturnType"]}
    */
-  async renderComponent(component) {
+  renderComponent(component) {
     if (component.prototype instanceof ReactiveComponent) {
-      await loadComponent(component);
       const element = new component();
       if (element instanceof ReactiveComponent) {
         this.shadowRoot.appendChild(element);

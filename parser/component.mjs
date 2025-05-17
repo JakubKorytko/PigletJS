@@ -281,29 +281,6 @@ const injectInnerHTMLToComponent = (
 };
 
 /**
- * Injects all component data (class name, tag, HTML, script) into a shared template file.
- * Replaces placeholder tokens in the template with actual component values.
- *
- * @param {Object} options - Options for injecting into the component template.
- * @param {string} options.className - The class name of the component (PascalCase).
- * @param {string} options.componentName - The original component name (e.g., "App").
- * @returns {Promise<string>} The fully populated component file content.
- */
-async function injectIntoComponentTemplate({ className, componentName }) {
-  const filePath = resolvePath("@Piglet/parser/base.mjs");
-  let fileContent = await fsp.readFile(filePath, "utf-8");
-
-  return `${fileContent
-    .replace(/^\/\/ noinspection.*\n?/gm, "")
-    .replace(/["@']@Piglet\/browser\//g, '"/Piglet/')
-    .replace(/COMPONENT_CLASS_NAME/g, className)
-    .replace(
-      /COMPONENT_NAME/g,
-      componentName,
-    )}\n loadComponent(${className})`.trim();
-}
-
-/**
  * Orchestrates the full generation of a component file based on HTML, CSS, and JS inputs.
  * This includes transforming tags, escaping HTML, injecting scripts, and final assembly.
  *
@@ -321,9 +298,6 @@ const generateOutput = async (_, ...args) => {
   const content = args[2];
   const externalCSS = args[3];
   const externalJS = args[4];
-
-  const isAppComponent = componentName === "App";
-  const className = isAppComponent ? "AppRoot" : componentName;
 
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
@@ -343,11 +317,7 @@ const generateOutput = async (_, ...args) => {
   });
   const outputPath = resolvePath(`@/builtHTML/${componentName}.html`);
   await fsp.writeFile(outputPath, innerHTML);
-
-  return await injectIntoComponentTemplate({
-    className,
-    componentName,
-  });
+  console.msg("components.generated", componentName);
 };
 
 /**
@@ -406,17 +376,10 @@ async function buildComponent(filePath) {
       externalJS = await fsp.readFile(externalJSPath, "utf-8");
     }
 
-    const output = await generateOutput`
+    await generateOutput`
     Component name: ${componentName}
     Component content: ${html}${content}
     External data: ${externalCSS}${externalJS}`;
-
-    await fsp.mkdir(resolvePath("@/builtComponents"), {
-      recursive: true,
-    });
-    const outputPath = resolvePath(`@/builtComponents/${componentName}.mjs`);
-    await fsp.writeFile(outputPath, output);
-    console.msg("components.generated", outputPath);
   } catch (err) {
     if (err.message === "components.outputGenerationError") {
       console.msg(err.message, err);

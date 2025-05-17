@@ -83,7 +83,6 @@
  *     failedToParseAs: (type: string) => string // Failed to parse as warning
  *   },
  *   componentRoute: {
- *     base: string, // Base route
  *     html: string, // HTML route
  *     script: string // Script route
  *   },

@@ -23,7 +23,6 @@ export default {
   directories: {
     "@": rootDir,
     components: path.resolve(rootDir, "src", "components"),
-    builtComponents: path.resolve(rootDir, "build", "components"),
     builtScript: path.resolve(rootDir, "build", "script"),
     builtHTML: path.resolve(rootDir, "build", "html"),
     pages: path.resolve(rootDir, "src", "pages"),

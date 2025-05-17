@@ -1,7 +1,6 @@
 import CONST from "@Piglet/misc/CONST";
 import fs from "fs";
 import { resolvePath } from "@Piglet/utils/paths";
-import notFound from "@Piglet/libs/notfound";
 
 export default (req, res) => {
   const componentName = req.url
@@ -15,8 +14,6 @@ export default (req, res) => {
     filePath = resolvePath(`@/builtHTML/${componentName}.html`);
   } else if (req.url.startsWith(CONST.customRouteSubAliases.component.script)) {
     filePath = resolvePath(`@/builtScript/${componentName}.mjs`);
-  } else {
-    filePath = resolvePath(`@/builtComponents/${componentName}.mjs`);
   }
 
   if (!componentName) {

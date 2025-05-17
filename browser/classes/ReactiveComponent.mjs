@@ -7,21 +7,18 @@ import {
   sendToExtension,
   contextParent,
   directParent,
+  fetchComponentData,
+  extractComponentTagsFromString,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
-import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
+import scriptRunner, {
+  clearAllListenersForHost,
+} from "@Piglet/browser/scriptRunner";
 
 /**
  * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
-  /**
-   * @type {Virtual["runScript"]["Type"]}
-   * @returns {Virtual["runScript"]["ReturnType"]}
-   * @virtual
-   */
-  async runScript(reason) {}
-
   /**
    * @type {Virtual["onBeforeUpdate"]["Type"]}
    * @returns {Virtual["onBeforeUpdate"]["ReturnType"]}
@@ -106,10 +103,10 @@ class ReactiveComponent extends HTMLElement {
     this.internal.fragment.enabled =
       this.attributes.getNamedItem("fragment") !== null;
     this.internal.fragment.fragmentRoot = contextParent(this.getRootNode());
-    this.__componentName = this.constructor.name;
     this.__observers = new Map();
     this.__componentId = window.Piglet.componentCounter++;
-    this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
+    this.__componentName = this.constructor.name;
+    this.__componentKey = `${this.__componentName}${this.__componentId}`;
     this.__mountData = {
       key: this.__componentKey,
       tag: this.tagName,
@@ -305,6 +302,32 @@ class ReactiveComponent extends HTMLElement {
 
   dispatchEvent(event) {
     return false;
+  }
+
+  /**
+   * @param {Reason} reason
+   * @returns {Promise<void>}
+   */
+  async runScript(reason) {
+    try {
+      const { script } = await fetchComponentData(
+        this.__componentName,
+        [CONST.componentRoute.script],
+        CONST.reasonCache(reason),
+      );
+      if (!script) {
+        return;
+      }
+      const tags = extractComponentTagsFromString(script.toString());
+      await window.Piglet.AppRoot?.loadCustomComponents(tags);
+      scriptRunner(this, script, reason);
+    } catch (error) {
+      window.Piglet.log(
+        CONST.pigletLogs.errorLoadingScript,
+        CONST.coreLogsLevels.warn,
+        error,
+      );
+    }
   }
 }
 

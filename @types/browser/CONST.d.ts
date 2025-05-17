@@ -61,7 +61,6 @@ interface Constants {
     failedToParseAs: (expected: string) => string;
   };
   componentRoute: {
-    base: string;
     html: string;
     script: string;
   };

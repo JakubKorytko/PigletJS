@@ -32,6 +32,8 @@ const config = {
 
   constructedComponents: {},
 
+  registeredComponents: {},
+
   log(message, severity = CONST.coreLogsLevels.info, ...args) {
     if (!this.enableCoreLogs[severity]) return;
 

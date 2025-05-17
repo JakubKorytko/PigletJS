@@ -310,13 +310,24 @@ const fetchComponentData = async (componentName, types, shouldCache = true) => {
     }
   }
 
+  let cls;
+
   if (types.includes(CONST.componentRoute.base)) {
-    const module = await import(
-      `${CONST.componentRoute.base}/${componentName}${!shouldCache ? CONST.cacheKey() : ""}`
-    );
-    if (module.default !== false) {
-      data.base = module.default;
+    if (!window.Piglet.registeredComponents[componentName]) {
+      // noinspection JSClosureCompilerSyntax
+      cls = class extends ReactiveComponent {
+        static name = componentName;
+        constructor() {
+          super();
+        }
+      };
+      await loadComponent(cls);
+      window.Piglet.registeredComponents[componentName] = cls;
+    } else {
+      cls = window.Piglet.registeredComponents[componentName];
     }
+
+    data.base = cls;
   }
 
   return data;

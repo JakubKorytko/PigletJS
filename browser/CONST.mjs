@@ -66,7 +66,6 @@ const CONST = {
       `Warning: Failed to parse as "${expected}". Response returned as plain text.`,
   },
   componentRoute: {
-    base: "/component",
     html: "/component/html",
     script: "/component/script",
   },
