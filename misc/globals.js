@@ -1,36 +1,6 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 
 /**
- * Reactive state accessor object.
- *
- * You can destructure `state` to get individual reactive properties,
- * or call it as a function to dynamically access a property by name.
- *
- * Each property is a reactive reference object with a `.value` getter and setter.
- *
- * @example
- * // Destructuring access
- * const { display, nested } = state;
- * display.value = true;
- * console.log(nested.value.object.hide);
- *
- * @example
- * // Dynamic access
- * const user = state("user");
- * user.value = { name: "Anna" };
- *
- * @typedef {Object<string, StateRef & ((key: string) => StateRef)>} StateProxy
- */
-
-/**
- * @typedef {Object} StateRef<any>
- * @property {any} value - The current value of the state property (reactive).
- */
-
-/** @type {StateProxy} */
-let $state;
-
-/**
  * Selects an element inside the component's shadow DOM and provides
  * a fluent API for managing event listeners and passing attributes or reactive references.
  *
@@ -61,9 +31,6 @@ let $state;
  * @property {(attrName: string, value: any) => ElementWrapper} pass - Passes a static value  an attribute/property.
  */
 let $element;
-
-/** @type {Function} */
-let $ref;
 
 /**
  * An object that contains attributes assigned to the component. The `attributes` object
@@ -116,3 +83,42 @@ let routes;
  * @type {Object<string, string>}
  */
 let routeAliases;
+
+/**
+ * Prepares a state initializer object to be assigned through `usePig` or `useBoar`.
+ * Only triggers initialization if the state does not already exist.
+ *
+ * @param {any} initialValue - The initial value to use for the state if it is not yet created.
+ * @returns {{ __piglet_use_marker: true, initialValue: any }} An internal marker object used to signal lazy initialization.
+ */
+let $$;
+
+/**
+ * A Proxy interface to create or access stateful properties with shallow reference semantics.
+ * - First-time assignment to a property using `use(...)` will initialize state with the given value.
+ * - Later assignments update `.value`, or merge and notify if the value is an object.
+ * - Direct reads return the current `.value`.
+ *
+ * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
+ */
+let $P;
+
+/**
+ * A Proxy interface like `usePig`, but initializes state with `asRef = true` (deep reference/reactivity support).
+ * - Behaves the same as `usePig` in terms of property interaction.
+ * - Enables deeper reactive bindings for frameworks or watchers that rely on ref-like access.
+ *
+ * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
+ */
+let $B;
+
+/**
+ * [This is the same interface as `$P` but supports deep reactivity]
+ * A Proxy interface to create or access stateful properties with shallow reference semantics.
+ * - First-time assignment to a property using `use(...)` will initialize state with the given value.
+ * - Later assignments update `.value`, or merge and notify if the value is an object.
+ * - Direct reads return the current `.value`.
+ *
+ * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
+ */
+let $$P;

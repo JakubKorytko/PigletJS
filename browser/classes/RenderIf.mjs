@@ -1,6 +1,5 @@
 /** @import {RenderIfInterface, Virtual, Member} from "@jsdocs/browser/classes/RenderIf.d" */
-/** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
-/** @typedef {InterfaceMethodTypes<RenderIfInterface>} RenderIfMethods */
+
 import { getDeepValue } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
@@ -134,6 +133,10 @@ class RenderIf extends ReactiveDummyComponent {
   }
 
   _update(value) {
+    this._updateCondition(value);
+  }
+
+  _refUpdate(value) {
     this._updateCondition(value);
   }
 }

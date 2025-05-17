@@ -46,8 +46,6 @@ declare class ReactiveComponent extends HTMLElement {
   /** Attributes observed for changes */
   static get observedAttributes(): string[];
 
-  constructor();
-
   /** Called internally when the component is mounted */
   protected _mount(reason: Reason): void;
 
@@ -76,7 +74,7 @@ declare class ReactiveComponent extends HTMLElement {
   observeState(property: string): void;
 
   /** Load the content of the component (HTML) */
-  loadContent(canUseMemoized?: boolean): Promise<void | null>;
+  loadContent(canUseMemoized?: boolean): Promise<boolean>;
 
   /** Define or access a reactive state property */
   state<T>(property: string, initialValue?: T, asRef?: boolean): { value: T };
@@ -103,6 +101,9 @@ declare class ReactiveComponent extends HTMLElement {
 
   /** Called when the component is after updating */
   abstract onAfterUpdate(): void;
+
+  /** Record of states that was created in the component */
+  states: Record<string, StateValue<unknown>>;
 }
 
 export default ReactiveComponent;

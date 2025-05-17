@@ -18,12 +18,6 @@ class StateInterface {
   __observers;
 
   /**
-   * Whether the state was created by a listener
-   * @type {boolean}
-   */
-  __isCreatedByListener;
-
-  /**
    * Whether the state is a reference
    * @type {boolean}
    */
@@ -48,7 +42,7 @@ class StateInterface {
    * @returns {T}
    */
   get state() {
-    return null;
+    return this._state;
   }
 
   /**
@@ -64,6 +58,13 @@ class StateInterface {
    * @returns {void}
    */
   _notify(oldState) {}
+
+  /**
+   * Notifies all observers about a reference change
+   * @param {T} oldState
+   * @returns {void}
+   */
+  _notifyRef(oldState) {}
 }
 
 /** @typedef {InterfaceMethodTypes<StateInterface>} Member */

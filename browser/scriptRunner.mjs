@@ -1,6 +1,11 @@
 /** @import {ClearAllListenersForHost, QueryElement, GetCallbackProxies, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner} from "@jsdocs/browser/scriptRunner.d" */
 
-import { toKebabCase } from "@Piglet/browser/helpers";
+import {
+  createNestedStateProxy,
+  createStateProxy,
+  toKebabCase,
+  useMarkerGenerator,
+} from "@Piglet/browser/helpers";
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import CONST from "@Piglet/browser/CONST";
 
@@ -145,8 +150,11 @@ const generateComponentData = function (hostElement) {
   return {
     component: {
       $attrs: hostElement.attrs,
-      $state: hostElement.state.bind(hostElement),
       $element: hostElement,
+      $P: createStateProxy(false, hostElement),
+      $B: createStateProxy(true, hostElement),
+      $$: useMarkerGenerator,
+      $$P: createNestedStateProxy(false, hostElement),
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {

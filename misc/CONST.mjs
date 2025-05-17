@@ -60,7 +60,7 @@ export default {
   customRouteAliases: {
     component: "/component",
     piglet: "/Piglet",
-    module: "/module",
+    module: "/modules",
     api: "/api",
     public: "/public",
   },
@@ -228,36 +228,21 @@ export default {
     ]),
   },
   pageTransitionCss: `:host { animation: waitForCss 0.1s forwards; } @keyframes waitForCss { from { opacity: 0; } to { opacity: 1; } }`,
-  regex: {
-    assignments: /let\s*\$(\w+)\s*=\s*({[\s\S]*?}|[^\n;]+)/gm,
-    declarations: /let\s+((?:\$\w+\s*(?:,\s*)?)+)(;|$)/,
-    refCall: /^\$ref\s*\((.*)\)$/,
-  },
   parserStrings: {
     exportBeforeScript: `
       export default function({
-      $state,
-      $attrs,  
+      $attrs,
       $onBeforeUpdate,
       $onAfterUpdate,
       $element,
       $reason,
+      $P,
+      $B,
+      $$,
+      $$P,
     }) {
     `,
-    hardcodedImports: `
-    import { api as $api } from "/Piglet/helpers";
-    `,
   },
-  reservedNames: new Set([
-    "$onBeforeUpdate",
-    "$attrs",
-    "$ref",
-    "$state",
-    "$element",
-    "$reason",
-    "$api",
-    "$navigate",
-  ]),
   defaultWebType: (fileName) => ({
     name: path.basename(fileName, ".pig.html"),
     description: "No description found",

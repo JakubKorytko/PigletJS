@@ -14,16 +14,28 @@ class RenderIfInterface extends VirtualReactiveComponentInterface {
   _condition;
 
   /**
-   * The template element containing content to conditionally render
-   * @type {HTMLTemplateElement}
-   */
-  _template;
-
-  /**
    * The document fragment containing rendered content
    * @type {DocumentFragment|null}
    */
-  _fragment;
+  _contentFragment;
+
+  /**
+   * Is condition negated
+   * @type {boolean}
+   */
+  _negated = false;
+
+  /**
+   * Condition property split into parts
+   * @type {string[]}
+   */
+  _parts = [];
+
+  /**
+   * Is fragment in the DOM
+   * @type {boolean}
+   */
+  _contentMounted = true;
 
   /**
    * Moves children to the fragment
@@ -49,6 +61,27 @@ class RenderIfInterface extends VirtualReactiveComponentInterface {
    * @returns {void}
    */
   updateVisibility() {}
+
+  /**
+   * Callback for when the component is mounted
+   * @param {Reason} reason - The reason for the mount
+   * @returns {void}
+   */
+  _mount(reason) {}
+
+  /**
+   * Callback for when the component state is updated
+   * @param {unknown} value - The new value
+   * @returns {void}
+   */
+  _update(value) {}
+
+  /**
+   * Callback for when the component reference is updated
+   * @param {unknown} value - The new value
+   * @returns {void}
+   */
+  _refUpdate(value) {}
 }
 
 /** @typedef {InterfaceMethodTypes<RenderIfInterface>} Member */

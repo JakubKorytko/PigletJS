@@ -22,7 +22,6 @@ export declare function useState<T>(
   componentName: string,
   path: StatePath,
   initialValue?: T,
-  isCreatedByListener?: boolean,
   asRef?: boolean,
 ): StateValue<T>;
 

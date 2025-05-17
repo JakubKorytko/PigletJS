@@ -23,9 +23,7 @@ export default (req, res) => {
     } else {
       let code = data.toString();
 
-      code = code
-          .replace(/(['"])@Piglet\/browser\//g, '$1/Piglet/')
-          .replace(/(['"])@\/modules\//g, '$1/module/');
+      code = code.replace(/(['"])@Piglet\/browser\//g, "$1/Piglet/");
 
       const routesInjection = `const routes = ${JSON.stringify(routeAliases)};\n`;
 

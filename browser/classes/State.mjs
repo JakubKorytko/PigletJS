@@ -7,12 +7,10 @@
 class State {
   _state;
   __observers = [];
-  __isCreatedByListener;
   _isRef;
 
-  constructor(initialValue, isCreatedByListener, asRef = false) {
+  constructor(initialValue, asRef = false) {
     this._state = initialValue;
-    this.__isCreatedByListener = isCreatedByListener;
     this._isRef = asRef;
   }
 
@@ -49,6 +47,8 @@ class State {
     this._state = newState;
     if (!this._isRef) {
       this._notify(oldState);
+    } else {
+      this._notifyRef(oldState);
     }
   }
 
@@ -60,6 +60,18 @@ class State {
     this.__observers.forEach((observer) =>
       observer.stateChange(this._state, oldState),
     );
+  }
+
+  /**
+   * @type {Member["_notifyRef"]["Type"]}
+   * @returns {Member["_notifyRef"]["ReturnType"]}
+   */
+  _notifyRef(oldState) {
+    this.__observers.forEach((observer) => {
+      if (typeof observer.refChange === "function") {
+        observer.refChange(this._state, oldState);
+      }
+    });
   }
 }
 

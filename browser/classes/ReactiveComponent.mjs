@@ -76,6 +76,7 @@ class ReactiveComponent extends HTMLElement {
 
   #pendingStateUpdate = false;
   #batchedChanges = [];
+  states = {};
 
   /**
    * @type {Member["disableHMR"]["Type"]}
@@ -258,13 +259,7 @@ class ReactiveComponent extends HTMLElement {
    * @returns {Member["state"]["ReturnType"]}
    */
   state(property, initialValue, asRef = false) {
-    const state = useState(
-      this.__componentKey,
-      property,
-      initialValue,
-      false,
-      asRef,
-    );
+    const state = useState(this.__componentKey, property, initialValue, asRef);
     this.observeState(property);
     return state;
   }

@@ -53,6 +53,8 @@ const config = {
     this.componentCounter = 0;
   },
 
+  __proxyCache: new WeakMap(),
+
   __fetchCache: new Map(),
 
   __fetchQueue: new Map(),

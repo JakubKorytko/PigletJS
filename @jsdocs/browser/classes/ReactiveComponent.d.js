@@ -138,7 +138,7 @@ class BaseReactiveComponentInterface {
    * Load the content of the component (HTML)
    * @async
    * @param {boolean} [canUseMemoized] - Whether to use memoized content
-   * @returns {Promise<void|null>} A promise that resolves when the HTML content is loaded, or `null` in case of an error.
+   * @returns {Promise<boolean>} A promise that resolves when the HTML content is loaded, or `null` in case of an error.
    */
   async loadContent(canUseMemoized) {}
 
@@ -176,6 +176,12 @@ class BaseReactiveComponentInterface {
    * @type {Array<PassInfo>}
    */
   forwardedQueue = [];
+
+  /**
+   * Record of states that was created in the component
+   * @type {Record<string, StateValue<unknown>>}
+   */
+  states = {};
 }
 
 /**

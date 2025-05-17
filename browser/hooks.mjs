@@ -7,13 +7,7 @@ import State from "@Piglet/browser/classes/State";
  * @template T
  * @type {UseState<T>}
  */
-const useState = (
-  componentName,
-  path,
-  initialValue,
-  isCreatedByListener = false,
-  asRef,
-) => {
+const useState = (componentName, path, initialValue, asRef) => {
   if (!window.Piglet.state[componentName]) {
     window.Piglet.state[componentName] = {};
   }
@@ -21,18 +15,7 @@ const useState = (
   const key = Array.isArray(path) ? path.join(".") : path;
 
   if (!window.Piglet.state[componentName][key]) {
-    window.Piglet.state[componentName][key] = new State(
-      initialValue,
-      isCreatedByListener,
-      asRef,
-    );
-  } else if (
-    !isCreatedByListener &&
-    window.Piglet.state[componentName][key].__isCreatedByListener
-  ) {
-    window.Piglet.state[componentName][key]._isRef = asRef;
-    window.Piglet.state[componentName][key].setState(initialValue);
-    window.Piglet.state[componentName][key].__isCreatedByListener = false;
+    window.Piglet.state[componentName][key] = new State(initialValue, asRef);
   }
 
   /**
@@ -44,7 +27,7 @@ const useState = (
      * Gets the current state value.
      */
     get value() {
-      return /** @type {T} */ (window.Piglet.state[componentName][key].state);
+      return window.Piglet.state[componentName][key].state;
     },
 
     /**

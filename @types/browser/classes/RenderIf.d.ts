@@ -4,13 +4,19 @@ import { Reason } from "../CONST";
 /** Interface for the RenderIf component */
 declare class RenderIf extends ReactiveComponent {
   /** The condition of the component */
-  protected _condition: string;
+  _condition: string;
 
-  /** The template of the component */
-  protected _template: HTMLTemplateElement;
+  /** The document fragment containing the rendered content */
+  _contentFragment: DocumentFragment | null;
 
-  /** The fragment of the component */
-  protected _fragment: DocumentFragment | null;
+  /** Is the condition negated */
+  _negated: boolean;
+
+  /** The condition property split into parts */
+  _parts: string[];
+
+  /** Is the fragment in the DOM */
+  _contentMounted: boolean;
 
   /** Moves the children to the fragment */
   _moveChildrenToFragment(): void;
@@ -23,6 +29,15 @@ declare class RenderIf extends ReactiveComponent {
 
   /** Updates the visibility */
   updateVisibility(): void;
+
+  /** Callback for when the component is mounted */
+  _mount(reason: Reason): void;
+
+  /** Callback for when the component state is updated */
+  _update(value: unknown): void;
+
+  /** Callback for when the component reference is updated */
+  _refUpdate(value: unknown): void;
 }
 
 export default RenderIf;

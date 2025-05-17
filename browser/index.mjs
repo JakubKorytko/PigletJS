@@ -4,6 +4,7 @@ import {
   loadComponent,
   fetchWithCache,
   $create,
+  api,
 } from "@Piglet/browser/helpers";
 
 import AppRoot from "@Piglet/browser/classes/AppRoot";
@@ -22,6 +23,7 @@ new Socket();
 window.fetchWithCache = fetchWithCache;
 window.Piglet = Piglet;
 window.$ = $create;
+window.$api = api;
 
 // noinspection JSIgnoredPromiseFromCall
 loadCoreComponents();

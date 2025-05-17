@@ -25,13 +25,7 @@ function extractAndRemoveImports(code) {
 
   let match;
   while ((match = importRegex.exec(code)) !== null) {
-    let importStatement = match[0];
-
-    importStatement = importStatement
-      .replace(/(['"])@Piglet\/browser\//g, "$1/Piglet/")
-      .replace(/(['"])@\/modules\//g, "$1/module/");
-
-    imports.push(importStatement);
+    imports.push(match[0]);
   }
 
   cleaned = code.replace(importRegex, "").trim();
@@ -89,108 +83,6 @@ const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
  */
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
 
-/** @type {(script: string) => string} */
-const autoInjectValue = function (script) {
-  const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
-  const usageRegex = /\B(\$\w+)\b/g;
-
-  const declarationRanges = [];
-
-  for (const match of script.matchAll(declarationRegex)) {
-    const fullMatch = match[0];
-    const varName = match[1];
-    const start = match.index + fullMatch.indexOf(varName);
-    const end = start + varName.length;
-    declarationRanges.push([start, end]);
-  }
-
-  const stringRanges = [];
-  const stringRegex = /(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g;
-
-  for (const match of script.matchAll(stringRegex)) {
-    stringRanges.push([match.index, match.index + match[0].length]);
-  }
-
-  const isInRanges = (start, end, ranges) =>
-    ranges.some(([s, e]) => start >= s && end <= e);
-
-  let result = "";
-  let lastIndex = 0;
-
-  for (const match of script.matchAll(usageRegex)) {
-    const start = match.index;
-    const end = start + match[1].length;
-    const name = match[1];
-
-    const inDeclaration = isInRanges(start, end, declarationRanges);
-    const inExcluded = CONST.reservedNames.has(name);
-    const inString = isInRanges(start, end, stringRanges);
-
-    const isInTemplateExpr = (() => {
-      const before = script.slice(Math.max(0, start - 2), start);
-      const after = script.slice(end, end + 1);
-      return before === "${" && after === "}";
-    })();
-
-    if (!inDeclaration && !inExcluded && (!inString || isInTemplateExpr)) {
-      result += script.slice(lastIndex, start) + name + ".value";
-      lastIndex = end;
-    }
-  }
-
-  result += script.slice(lastIndex);
-  return result;
-};
-
-/**
- * Transforms destructuring of the `state` object into individual state declarations.
- *
- * Example:
- * `const { count = init(0), name } = state;` becomes:
- * ```
- * const count = state("count", 0);
- * const name = state("name");
- * ```
- *
- * @param {string} fullScript - The original JavaScript code.
- * @returns {string} The transformed JavaScript code.
- */
-const transformScript = (fullScript) => {
-  const assignmentsRegex = CONST.regex.assignments;
-  const declarationsRegex = CONST.regex.declarations;
-
-  return autoInjectValue(fullScript)
-    .replace(assignmentsRegex, (_, name, value) => {
-      const trimmed = value.trim();
-
-      const refCallMatch = CONST.regex.refCall.exec(trimmed);
-      if (refCallMatch) {
-        const inner = refCallMatch[1].trim();
-        const hasValue = inner.length > 0;
-        return `let $${name} = $state("${name}", ${hasValue ? inner : "undefined"}, true)`;
-      }
-
-      if (trimmed === "$ref") {
-        return `let $${name} = $state("${name}", undefined, true)`;
-      }
-
-      return `let $${name} = $state("${name}", ${value})`;
-    })
-    .replace(declarationsRegex, (_, group) => {
-      const variables = group
-        .split(",")
-        .map((v) => v.trim())
-        .filter((v) => v.startsWith("$"));
-
-      return variables
-        .map((v) => {
-          const name = v.slice(1);
-          return `let $${name} = $state("${name}")`;
-        })
-        .join("\n");
-    });
-};
-
 /**
  * Combines external and internal scripts, transforms them,
  * extracts imports, generates the final component module file,
@@ -205,9 +97,7 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   if (!scriptJS && !externalJS) return;
 
   const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
-  const transformedScript = transformScript(fullScript);
-
-  const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
+  const { imports, cleanedCode } = extractAndRemoveImports(fullScript);
 
   await fsp.mkdir(resolvePath("@/builtScript"), {
     recursive: true,
@@ -215,7 +105,6 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   const outputPath = resolvePath(`@/builtScript/${componentName}.mjs`);
 
   const scriptForFile = formatJS(`
-  ${CONST.parserStrings.hardcodedImports}
   ${imports.join("\n")}
   ${CONST.parserStrings.exportBeforeScript}
   ${cleanedCode}\n}`);

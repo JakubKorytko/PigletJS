@@ -1,6 +1,7 @@
 import { Navigate, FetchWithCache } from "./helpers";
 import ReactiveComponent from "./classes/ReactiveComponent";
 import AppRoot from "./classes/AppRoot";
+import { StateValue } from "./hooks.js";
 
 export interface Config {
   allowDebugging: boolean;
@@ -30,6 +31,7 @@ export interface Config {
     ...args: unknown[]
   ) => void;
   reset: () => void;
+  __proxyCache: Map<string, StateValue<unknown>>;
   __fetchCache: Map<string, string>;
   __fetchQueue: Map<string, Promise<string>>;
 }

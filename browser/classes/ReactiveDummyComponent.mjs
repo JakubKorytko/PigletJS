@@ -1,8 +1,13 @@
+/** @import {ReactiveDummyComponentInterface, Member} from "@Piglet/browser/classes/ReactiveDummyComponent.d" */
+
 import { getHost } from "@Piglet/browser/helpers";
 import { useObserver } from "@Piglet/browser/hooks";
 
+/** @implements {ReactiveDummyComponentInterface} */
 class ReactiveDummyComponent extends HTMLElement {
   __observers = new Map();
+  #pendingStateUpdate = false;
+  #pendingRefUpdate = false;
 
   connectedCallback() {
     this.style.display = "contents";
@@ -20,6 +25,8 @@ class ReactiveDummyComponent extends HTMLElement {
     const callback = {
       stateChange: (value, prevValue) =>
         this.stateChange(value, property, prevValue),
+      refChange: (value, prevValue) =>
+        this.refChange(value, property, prevValue),
     };
 
     const [addObserver, removeObserver] = useObserver(
@@ -37,9 +44,39 @@ class ReactiveDummyComponent extends HTMLElement {
   }
 
   stateChange(value, property, prevValue) {
-    if (prevValue !== value) {
-      this._update(value, property, prevValue);
+    if (!this.#pendingStateUpdate) {
+      this.#pendingStateUpdate = true;
+      Promise.resolve().then(() => {
+        this.#pendingStateUpdate = false;
+
+        if (
+          prevValue !== value ||
+          (typeof value === "object" && value !== null)
+        ) {
+          this._update(value, property, prevValue);
+        }
+      });
     }
+  }
+
+  refChange(value, property, prevValue) {
+    if (!this.#pendingRefUpdate) {
+      this.#pendingRefUpdate = true;
+      Promise.resolve().then(() => {
+        this.#pendingRefUpdate = false;
+
+        if (
+          prevValue !== value ||
+          (typeof value === "object" && value !== null)
+        ) {
+          this._refUpdate(value, property, prevValue);
+        }
+      });
+    }
+  }
+
+  dispatchEvent(event) {
+    return false;
   }
 }
 

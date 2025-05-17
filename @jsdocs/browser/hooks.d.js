@@ -31,7 +31,6 @@
  *   componentName: string, // Component name
  *   path: StatePath, // State path
  *   initialValue?: T, // Initial value
- *   isCreatedByListener?: boolean, // Whether the state was created by a listener
  *   asRef?: boolean // Whether the state is a ref
  * ) => StateValue<T>} UseState
  * Hook to manage state in a component, providing access to the current value and the ability to observe it.

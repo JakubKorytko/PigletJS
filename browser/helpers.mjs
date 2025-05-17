@@ -333,6 +333,136 @@ const fetchComponentData = async (componentName, types, shouldCache = true) => {
   return data;
 };
 
+/**
+ * Creates a proxy for the state object that allows for dynamic state creation
+ * @type {(asRef: boolean, host: ReactiveComponent) => Object} */
+const createStateProxy = function (asRef, host) {
+  return new Proxy(
+    {},
+    {
+      get(target, prop) {
+        if (typeof prop === "symbol") return undefined;
+
+        if (!(prop in host.states)) {
+          host.states[prop] = host.state(prop, undefined, asRef);
+        }
+
+        return host.states[prop].value;
+      },
+
+      set(target, prop, value) {
+        if (typeof prop === "symbol") return false;
+
+        const key = String(prop);
+
+        const isUsingUse = value && value.__piglet_use_marker === true;
+        const initialValue = isUsingUse ? value.initialValue : value;
+
+        if (!(key in host.states)) {
+          host.states[key] = host.state(key, initialValue, asRef);
+        } else if (!isUsingUse) {
+          const state = host.states[key];
+
+          state.value = value;
+        }
+
+        return true;
+      },
+    },
+  );
+};
+
+/**
+ * Wrapper for creating a deep proxy that triggers onChange when a property is set
+ * @type {(target: Object, onChange: () => void) => Object} */
+const createDeepOnChangeProxy = function (target, onChange) {
+  return new Proxy(target, {
+    get(target, property) {
+      const item = target[property];
+      if (item && typeof item === "object") {
+        if (window.Piglet.__proxyCache.has(item))
+          return window.Piglet.__proxyCache.get(item);
+        const proxy = createDeepOnChangeProxy(item, onChange);
+        window.Piglet.__proxyCache.set(item, proxy);
+        return proxy;
+      }
+      if (typeof item === "function") {
+        return item.bind(target);
+      }
+      return item;
+    },
+    set(target, property, newValue) {
+      target[property] = newValue;
+      onChange();
+      return true;
+    },
+  });
+};
+
+/**
+ * Returns a marker object for useState
+ * @type {(initialValue: unknown) => { __piglet_use_marker: boolean, initialValue: unknown }} */
+const useMarkerGenerator = function (initialValue) {
+  return { __piglet_use_marker: true, initialValue };
+};
+
+/**
+ * Creates an object that can be used to nested states while keeping reactivity
+ * @type {(asRef: boolean, host: ReactiveComponent) => Object} */
+const createNestedStateProxy = function (asRef, host) {
+  return new Proxy(
+    {},
+    {
+      get(target, prop) {
+        if (typeof prop === "symbol") return undefined;
+
+        if (!(prop in host.states)) {
+          host.states[prop] = host.state(prop, undefined, asRef);
+          const state = host.states[prop];
+          if (typeof state.value === "object" && state.value !== null) {
+            state.value = host.createDeepOnChangeProxy(state.value, () =>
+              window.Piglet.state[host.__componentKey]._notify?.(),
+            );
+          }
+        }
+
+        return host.states[prop].value;
+      },
+
+      set(target, prop, value) {
+        if (typeof prop === "symbol") return false;
+
+        const key = String(prop);
+
+        const isUsingUse = value && value.__piglet_use_marker === true;
+        const initialValue = isUsingUse ? value.initialValue : value;
+        if (!(key in host.states)) {
+          host.states[key] = host.state(key, initialValue, asRef);
+          const state = host.states[key];
+          if (typeof state.value === "object" && state.value !== null) {
+            window.Piglet.state[host.__componentKey][key]._state =
+              createDeepOnChangeProxy(state.value, () =>
+                window.Piglet.state[host.__componentKey][key]._notify?.(),
+              );
+          }
+        } else if (!isUsingUse) {
+          const state = host.states[key];
+
+          if (typeof value === "object" && value !== null) {
+            state.value = createDeepOnChangeProxy(value, () =>
+              window.Piglet.state[host.__componentKey][key]._notify?.(),
+            );
+          } else {
+            state.value = value;
+          }
+        }
+
+        return true;
+      },
+    },
+  );
+};
+
 export {
   getHost,
   isShadowRoot,
@@ -351,4 +481,8 @@ export {
   toKebabCase,
   extractComponentTagsFromString,
   fetchComponentData,
+  createNestedStateProxy,
+  createStateProxy,
+  createDeepOnChangeProxy,
+  useMarkerGenerator,
 };

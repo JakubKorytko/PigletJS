@@ -33,6 +33,7 @@
  *   registeredComponents: Record<string, ReactiveComponent>, // The registered components
  *   log: (message: string, severity: "info"|"warn"|"error", ...args: any[]) => void, // Log a message with a severity
  *   reset: () => void // Reset the PigletJS configuration,
+ *   __proxyCache: WeakMap<string, StateValue<unknown>>, // Deep state proxy cache,
  *   __fetchCache: Map<string, string>, // The fetch cache,
  *   __fetchQueue: Map<string, Promise<string>>, // The fetch queue,
  * }} Config
