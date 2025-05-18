@@ -52,14 +52,46 @@ function extractSimpleData(data) {
 }
 
 /**
+ * Attempts to set a deeply nested property in an object, but only if the full key path already exists.
+ *
+ * @param {Object} obj - The object to modify.
+ * @param {Array<string|number>} keys - An array representing the path of keys to traverse.
+ * @param {*} value - The value to set at the target location.
+ * @returns {boolean} Returns `true` if the property was successfully set, or `false` if any key in the path does not exist.
+ */
+const setDeep = (obj, keys, value) => {
+  let current = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (current?.hasOwnProperty(keys[i])) {
+      current = current[keys[i]];
+    } else {
+      return false;
+    }
+  }
+  const lastKey = keys[keys.length - 1];
+  if (current?.hasOwnProperty(lastKey)) {
+    current[lastKey] = value;
+    return true;
+  }
+  return false;
+};
+
+/**
  * Updates the state of a specific component by setting the new state value.
  *
  * @param {string} key - The key identifying the component.
  * @param {string} stateName - The name of the state to update.
  * @param {any} value - The new value to set for the state.
+ * @param {Array<string|number>} path - The path to the specific state property to update.
  */
-function updateState(key, stateName, value) {
-  window.Piglet.state[stateName][key].setState(value);
+function updateState(key, stateName, value, path) {
+  const state = window.Piglet.state[stateName][key];
+  if (path.length > 0) {
+    setDeep(state._state, path, value);
+    state._notify();
+  } else {
+    state.setState(value);
+  }
 }
 
 /**
@@ -132,8 +164,8 @@ window.addEventListener("message", (event) => {
     sendInitialData();
   }
   if (event.data.type === "MODIFY_STATE") {
-    const { key, stateName, value } = event.data.payload;
-    updateState(key, stateName, value);
+    const { key, stateName, value, path } = event.data.payload;
+    updateState(key, stateName, value, path);
   }
 });
 
