@@ -8,13 +8,11 @@
 /** @type {(html: string) => string[]} */
 const extractComponentTagsFromString = (html) => {
   const componentTags = new Set();
-  const tagRegex =
-    /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
+  const tagRegex = /<([A-Z][a-zA-Z0-9]*)\b/g;
   let match;
 
   while ((match = tagRegex.exec(html)) !== null) {
-    const pascalTag = match[1] || match[2];
-    componentTags.add(pascalTag);
+    componentTags.add(match[1]);
   }
 
   return Array.from(componentTags);

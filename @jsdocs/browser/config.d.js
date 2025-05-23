@@ -31,6 +31,7 @@
  *   AppRoot: AppRoot | undefined, // The AppRoot component
  *   constructedComponents: Record<string, ReactiveComponent>, // The constructed components
  *   registeredComponents: Record<string, ReactiveComponent>, // The registered components
+ *   previousFetchComponentCacheKeys: Record<string, Record<'html' | 'script' | 'layout', string>>, // The previous fetch component cache keys
  *   log: (message: string, severity: "info"|"warn"|"error", ...args: any[]) => void, // Log a message with a severity
  *   reset: () => void // Reset the PigletJS configuration,
  *   __proxyCache: WeakMap<string, StateValue<unknown>>, // Deep state proxy cache,

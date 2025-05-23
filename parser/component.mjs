@@ -3,14 +3,16 @@ import fsp from "fs/promises";
 import path from "path";
 import { resolvePath } from "@Piglet/utils/paths";
 import {
+  convertSelectorsPascalToSnake,
+  extractComponentTagsFromString,
   toKebabCase,
   toPascalCase,
-  extractComponentTagsFromString,
 } from "@Piglet/libs/helpers";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
 import { formatHTML, formatJS } from "@Piglet/parser/format";
 import CONST from "@Piglet/misc/CONST";
 import console from "@Piglet/utils/console";
+import { generateLayoutFile } from "@Piglet/parser/layout";
 
 /**
  * Extracts import statements from JavaScript code and returns the cleaned code.
@@ -122,7 +124,7 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
  * @param {string} html - Full original HTML string of the component.
  * @param {string} content - Content extracted from the `<content>` tag.
  * @param {string} componentName - The name of the component.
- * @param {string} externalCSS - Optional external CSS to include in the output.
+ * @param {string=} externalCSS - Optional external CSS to include in the output.
  * @returns {string} The transformed innerHTML string, escaped and indented.
  */
 const injectInnerHTMLToComponent = (
@@ -138,18 +140,18 @@ const injectInnerHTMLToComponent = (
   componentTags.forEach((tag) => {
     const kebabTag = toKebabCase(tag);
 
-    const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
+    const selfClosingTagRegex = new RegExp(`<\\s*${tag}([^>]*)/>`, "g");
     modifiedContent = modifiedContent.replace(
       selfClosingTagRegex,
       `<${kebabTag}$1></${kebabTag}>`,
     );
 
     modifiedContent = modifiedContent.replace(
-      new RegExp(`<${tag}([^>]*)>`, "g"),
+      new RegExp(`<\\s*${tag}([^>]*)>`, "g"),
       `<${kebabTag}$1>`,
     );
     modifiedContent = modifiedContent.replace(
-      new RegExp(`</${tag}>`, "g"),
+      new RegExp(`</\\s*${tag}\\s*>`, "g"),
       `</${kebabTag}>`,
     );
   });
@@ -159,12 +161,10 @@ const injectInnerHTMLToComponent = (
     .filter(Boolean)
     .join("\n\n");
 
+  const convertedCSS = convertSelectorsPascalToSnake(styleCSS);
+
   return `
-  <style>
-   ${styleCSS}
-   ${CONST.pageTransitionCss} 
-  </style>
-  
+  <style>${convertedCSS}</style>
   ${modifiedContent}
   `;
 };
@@ -264,6 +264,8 @@ async function buildComponent(filePath) {
     if (fs.existsSync(externalJSPath)) {
       externalJS = await fsp.readFile(externalJSPath, "utf-8");
     }
+
+    await generateLayoutFile(filePath, componentName);
 
     await generateOutput`
     Component name: ${componentName}
@@ -381,4 +383,10 @@ async function processAllComponents(dir = resolvePath("@/components")) {
   return descriptions;
 }
 
-export { buildComponent, processAllComponents };
+export {
+  buildComponent,
+  processAllComponents,
+  getContentTag,
+  styleRegex,
+  injectInnerHTMLToComponent,
+};

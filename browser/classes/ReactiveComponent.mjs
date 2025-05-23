@@ -1,12 +1,9 @@
-/** @import {BaseReactiveComponentInterface, VirtualReactiveComponentInterface, Member, Virtual} from "@jsdocs/browser/classes/ReactiveComponent.d" */
+/** @import {BaseReactiveComponentInterface, VirtualReactiveComponentInterface, ReactiveMembers, ReactiveVirtualMembers} from "@jsdocs/browser/classes/ReactiveComponent.d" */
 
 import { useState, useObserver } from "@Piglet/browser/hooks";
 import {
-  getHost,
   parseHTML,
   sendToExtension,
-  contextParent,
-  directParent,
   fetchComponentData,
   extractComponentTagsFromString,
 } from "@Piglet/browser/helpers";
@@ -19,45 +16,64 @@ import scriptRunner, {
  * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
+  #pendingStateUpdate = false;
+
   /**
-   * @type {Virtual["onBeforeUpdate"]["Type"]}
-   * @returns {Virtual["onBeforeUpdate"]["ReturnType"]}
-   * @virtual
+   * @template T
+   * @type {{value: T, property: string, prevValue: T}[]}
+   */
+  #batchedChanges = [];
+
+  /**
+   * @type {ReactiveVirtualMembers["onBeforeUpdate"]["Type"]}
+   * @returns {ReactiveVirtualMembers["onBeforeUpdate"]["ReturnType"]}
    */
   onBeforeUpdate() {}
 
   /**
-   * @type {Virtual["onAfterUpdate"]["Type"]}
-   * @returns {Virtual["onAfterUpdate"]["ReturnType"]}
-   * @virtual
+   * @type {ReactiveVirtualMembers["onAfterUpdate"]["Type"]}
+   * @returns {ReactiveVirtualMembers["onAfterUpdate"]["ReturnType"]}
    */
   onAfterUpdate() {}
 
-  /** @type {Virtual["__componentName"]["Type"]} */
-  __componentName = "";
-
-  /** @type {Virtual["__componentId"]["Type"]} */
-  __componentId;
-
-  /** @type {Virtual["__componentKey"]["Type"]} */
-  __componentKey = "";
-
-  /** @type {Virtual["__mountCallback"]["Type"]} */
+  /**
+   * @type {ReactiveVirtualMembers["__mountCallback"]["Type"]}
+   * @returns {ReactiveVirtualMembers["__mountCallback"]["ReturnType"]}
+   * @virtual
+   */
   __mountCallback = (reason) => {};
 
-  /** @type {Member["__mountData"]["Type"]} */
+  /** @type {ReactiveVirtualMembers["__componentName"]["Type"]} */
+  __componentName = "";
+
+  /** @type {ReactiveVirtualMembers["__componentId"]["Type"]} */
+  __componentId;
+
+  /** @type {ReactiveVirtualMembers["__componentKey"]["Type"]} */
+  __componentKey = "";
+
+  /** @type {ReactiveMembers["__mountData"]["Type"]} */
   __mountData;
 
-  /** @type {Member["__observers"]["Type"]} */
+  /** @type {ReactiveMembers["__observers"]["Type"]} */
   __observers;
 
-  /** @type {Member["attrs"]["Type"]} */
+  /** @type {ReactiveMembers["attrs"]["Type"]} */
   attrs = {};
 
-  /** @type {Member["forwardedQueue"]["Type"]} */
+  /** @type {ReactiveMembers["forwardedQueue"]["Type"]} */
   forwardedQueue = [];
 
-  /** @type {Member["internal"]["Type"]} */
+  /** @type {ReactiveMembers["_storedChildren"]["Type"]} */
+  _storedChildren = document.createDocumentFragment();
+
+  /** @type {ReactiveMembers["childrenInjected"]["Type"]} */
+  childrenInjected = false;
+
+  /** @type {ReactiveMembers["states"]["Type"]} */
+  states = {};
+
+  /** @type {ReactiveMembers["internal"]["Type"]} */
   internal = {
     owner: undefined,
     HMR: true,
@@ -70,40 +86,20 @@ class ReactiveComponent extends HTMLElement {
       fragmentRoot: undefined,
     },
     get parent() {
-      return getHost(this.owner, true);
+      return this.owner._parent;
     },
   };
 
-  #pendingStateUpdate = false;
-  #batchedChanges = [];
-  states = {};
-
   /**
-   * @type {Member["disableHMR"]["Type"]}
-   * @returns {Member["disableHMR"]["ReturnType"]}
+   * @type {ReactiveMembers["initialSetup"]["Type"]}
+   * @returns {ReactiveMembers["initialSetup"]["ReturnType"]}
    */
-  disableHMR() {
-    this.internal.HMR = false;
-  }
-
-  /**
-   * @type {Member["injectFragment"]["Type"]}
-   * @returns {Member["injectFragment"]["ReturnType"]}
-   */
-  injectFragment() {
-    if (!this.internal.fragment.content || !this.internal.fragment.enabled)
-      return;
-
-    this.internal.fragment.enabled = false;
-    this.shadowRoot.appendChild(this.internal.fragment.content);
-    this.__mountCallback(CONST.reason.fragmentInjected);
-  }
-
-  initialSetup() {
+  initialSetup(attrs) {
+    this.attrs = attrs ?? {};
     this.internal.owner = this;
-    this.internal.fragment.enabled =
-      this.attributes.getNamedItem("fragment") !== null;
-    this.internal.fragment.fragmentRoot = contextParent(this.getRootNode());
+    this._parent = this.attrs.parent ?? undefined;
+    this.internal.fragment.enabled = this.attrs.fragment ?? false;
+    this.internal.fragment.fragmentRoot = this.attrs.fragmentRoot ?? undefined;
     this.__observers = new Map();
     this.__componentId = window.Piglet.componentCounter++;
     this.__componentName = this.constructor.name;
@@ -113,14 +109,14 @@ class ReactiveComponent extends HTMLElement {
       tag: this.tagName,
       ref: this,
     };
-    directParent(this.getRootNode())?.internal.children.push(this);
+    this._parent?.internal.children.push(this);
     window.Piglet.constructedComponents[this.__componentKey] = this;
   }
 
-  constructor() {
+  constructor(attrs) {
     super();
 
-    this.initialSetup();
+    this.initialSetup(attrs);
 
     const { fragmentRoot } = this.internal.fragment;
     const fragmentEnabled = fragmentRoot?.internal.fragment.enabled;
@@ -133,28 +129,110 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * @type {Member["_mount"]["Type"]}
-   * @returns {Member["_mount"]["ReturnType"]}
+   * @type {ReactiveMembers["connectedCallback"]["Type"]}
+   * @returns {ReactiveMembers["connectedCallback"]["ReturnType"]}
+   */
+  connectedCallback() {
+    const parent = this.internal.parent.internal;
+
+    if (parent.mounted) {
+      this._mount(CONST.reason.onMount);
+    } else {
+      parent.waiters.push(this);
+    }
+  }
+
+  /**
+   * @type {ReactiveMembers["disconnectedCallback"]["Type"]}
+   * @returns {ReactiveMembers["disconnectedCallback"]["ReturnType"]}
+   */
+  disconnectedCallback() {
+    this.unmount();
+  }
+
+  /**
+   * @type {ReactiveMembers["_mount"]["Type"]}
+   * @returns {ReactiveMembers["_mount"]["ReturnType"]}
    */
   async _mount(reason) {
     await this.runScript(reason);
     const shouldContinue = await this.loadContent(CONST.reasonCache(reason));
-    if (!shouldContinue) {
-      return;
-    }
+    if (!shouldContinue) return Promise.resolve(false);
     sendToExtension(CONST.extension.tree);
     this.__mountCallback(reason);
     this.internal.mounted = true;
     window.Piglet.mountedComponents.add(this.__mountData);
     window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
+    /** @type {Promise<Awaited<boolean>[]>|[]} */
+    const promises = [];
     while (this.internal.waiters.length > 0) {
-      this.internal.waiters.shift()._mount(CONST.reason.parentUpdate);
+      promises.push(
+        this.internal.waiters.shift()._mount(CONST.reason.parentUpdate),
+      );
     }
+    return Promise.all(promises);
   }
 
   /**
-   * @type {Member["loadContent"]["Type"]}
-   * @returns {Member["loadContent"]["ReturnType"]}
+   * @type {ReactiveMembers["unmount"]["Type"]}
+   * @returns {ReactiveMembers["unmount"]["ReturnType"]}
+   */
+  unmount() {
+    window.Piglet.mountedComponents.delete(this.__mountData);
+    this.__mountCallback = undefined;
+    this.internal.mounted = false;
+    for (const remove of this.__observers.values()) {
+      remove?.(this);
+    }
+    this.__observers.clear();
+    this.shadowRoot?.replaceChildren();
+    sendToExtension(CONST.extension.tree);
+  }
+
+  /**
+   * @type {ReactiveMembers["disableHMR"]["Type"]}
+   * @returns {ReactiveMembers["disableHMR"]["ReturnType"]}
+   */
+  disableHMR() {
+    this.internal.HMR = false;
+  }
+
+  /**
+   * @type {ReactiveMembers["injectFragment"]["Type"]}
+   * @returns {ReactiveMembers["injectFragment"]["ReturnType"]}
+   */
+  injectFragment() {
+    if (!this.internal.fragment.content || !this.internal.fragment.enabled)
+      return;
+
+    this.internal.fragment.enabled = false;
+    this.shadowRoot.appendChild(this.internal.fragment.content);
+    this.__mountCallback(CONST.reason.fragmentInjected);
+  }
+
+  /**
+   * @type {ReactiveMembers["appendChildren"]["Type"]}
+   * @returns {ReactiveMembers["appendChildren"]["ReturnType"]}
+   */
+  appendChildren(fragment) {
+    const kinderGarten = fragment.querySelector("kinder-garten");
+
+    if (!kinderGarten) {
+      return;
+    }
+
+    if (!this.childrenInjected) {
+      kinderGarten.append(...this.childNodes);
+      this.childrenInjected = true;
+      return;
+    }
+
+    kinderGarten.append(this._storedChildren);
+  }
+
+  /**
+   * @type {ReactiveMembers["loadContent"]["Type"]}
+   * @returns {ReactiveMembers["loadContent"]["ReturnType"]}
    */
   async loadContent(canUseMemoized) {
     const { fragmentRoot } = this.internal.fragment;
@@ -180,9 +258,11 @@ class ReactiveComponent extends HTMLElement {
         throw CONST.error.failedToFetchHTML(componentName);
       }
       html = await response.text();
+      window.Piglet.__fetchCache.set(url, html);
     }
 
     const fragment = parseHTML(html, this);
+    this.appendChildren(fragment);
 
     if (this.internal.fragment.enabled) {
       this.internal.fragment.content = fragment;
@@ -201,38 +281,8 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * @type {Member["unmount"]["Type"]}
-   * @returns {Member["unmount"]["ReturnType"]}
-   */
-  unmount() {
-    window.Piglet.mountedComponents.delete(this.__mountData);
-    this.__mountCallback = undefined;
-    this.internal.mounted = false;
-    for (const remove of this.__observers.values()) {
-      remove?.(this);
-    }
-    this.__observers.clear();
-    this.shadowRoot?.replaceChildren();
-    sendToExtension(CONST.extension.tree);
-  }
-
-  /**
-   * @type {Member["connectedCallback"]["Type"]}
-   * @returns {Member["connectedCallback"]["ReturnType"]}
-   */
-  connectedCallback() {
-    const parent = this.internal.parent.internal;
-
-    if (parent.mounted) {
-      this._mount(CONST.reason.onMount);
-    } else {
-      parent.waiters.push(this);
-    }
-  }
-
-  /**
-   * @type {Member["observeState"]["Type"]}
-   * @returns {Member["observeState"]["ReturnType"]}
+   * @type {ReactiveMembers["observeState"]["Type"]}
+   * @returns {ReactiveMembers["observeState"]["ReturnType"]}
    */
   observeState(property) {
     const callback = {
@@ -255,8 +305,8 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * @type {Member["state"]["Type"]}
-   * @returns {Member["state"]["ReturnType"]}
+   * @type {ReactiveMembers["state"]["Type"]}
+   * @returns {ReactiveMembers["state"]["ReturnType"]}
    */
   state(property, initialValue, asRef = false) {
     const state = useState(this.__componentKey, property, initialValue, asRef);
@@ -269,8 +319,8 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * @type {Member["stateChange"]["Type"]}
-   * @returns {Member["stateChange"]["ReturnType"]}
+   * @type {ReactiveMembers["stateChange"]["Type"]}
+   * @returns {ReactiveMembers["stateChange"]["ReturnType"]}
    */
   stateChange(value, property, prevValue) {
     this.#batchedChanges.push({ value, property, prevValue });
@@ -287,21 +337,13 @@ class ReactiveComponent extends HTMLElement {
     }
   }
 
-  /**
-   * @type {Member["disconnectedCallback"]["Type"]}
-   * @returns {Member["disconnectedCallback"]["ReturnType"]}
-   */
-  disconnectedCallback() {
-    this.unmount();
-  }
-
   dispatchEvent(event) {
     return false;
   }
 
   /**
-   * @param {Reason} reason
-   * @returns {Promise<void>}
+   * @type {ReactiveMembers["runScript"]["Type"]}
+   * @returns {ReactiveMembers["runScript"]["ReturnType"]}
    */
   async runScript(reason) {
     try {

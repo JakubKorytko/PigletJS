@@ -1,19 +1,18 @@
-import ReactiveComponent from "./ReactiveComponent";
-import { Reason } from "../CONST";
+import { ReactiveDummyComponent } from "@Piglet/browser/classes/index";
 
 /** Interface for the RenderIf component */
-declare class RenderIf extends ReactiveComponent {
+declare class RenderIf extends ReactiveDummyComponent {
   /** The condition of the component */
   _condition: string;
-
-  /** The document fragment containing the rendered content */
-  _contentFragment: DocumentFragment | null;
 
   /** Is the condition negated */
   _negated: boolean;
 
   /** The condition property split into parts */
   _parts: string[];
+
+  /** The document fragment containing the rendered content */
+  _contentFragment: DocumentFragment | null;
 
   /** Is the fragment in the DOM */
   _contentMounted: boolean;
@@ -29,15 +28,6 @@ declare class RenderIf extends ReactiveComponent {
 
   /** Updates the visibility */
   updateVisibility(): void;
-
-  /** Callback for when the component is mounted */
-  _mount(reason: Reason): void;
-
-  /** Callback for when the component state is updated */
-  _update(value: unknown): void;
-
-  /** Callback for when the component reference is updated */
-  _refUpdate(value: unknown): void;
 }
 
 export default RenderIf;

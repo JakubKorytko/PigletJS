@@ -84,7 +84,9 @@
  *   },
  *   componentRoute: {
  *     html: string, // HTML route
- *     script: string // Script route
+ *     script: string, // Script route
+ *     layout: string, // Layout route
+ *     base: string // There is no base route, it is here to keep the structure
  *   },
  *   apiRoute: string, // API route
  *   tagRegex: RegExp, // Tag regex

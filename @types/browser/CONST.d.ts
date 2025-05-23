@@ -63,6 +63,8 @@ interface Constants {
   componentRoute: {
     html: string;
     script: string;
+    layout: string;
+    base: string;
   };
   apiRoute: string;
   tagRegex: RegExp;

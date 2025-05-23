@@ -24,6 +24,10 @@ export interface Config {
   }>;
   constructedComponents: Record<string, ReactiveComponent>;
   registeredComponents: Record<string, ReactiveComponent>;
+  previousFetchComponentCacheKeys: Record<
+    string,
+    Record<"html" | "script" | "layout", string>
+  >;
   AppRoot: AppRoot | undefined;
   log: (
     message: string,

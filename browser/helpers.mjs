@@ -1,7 +1,5 @@
 /**
  * @import {
- *  GetHost,
- *  IsShadowRoot,
  *  GetDeepValue,
  *  Api,
  *  Navigate,
@@ -19,56 +17,6 @@ import {
   toKebabCase,
   extractComponentTagsFromString,
 } from "@Piglet/browser/sharedHelpers";
-
-/** @type {(target: DocumentFragment) => ReactiveComponent | null} */
-const contextParent = (target) => {
-  const contextValue = target.querySelector(
-    CONST.fragmentRootTagName,
-  )?.textContent;
-  return window.Piglet.constructedComponents[contextValue];
-};
-
-/** @type {(target: DocumentFragment) => ReactiveComponent | null} */
-const directParent = (target) => {
-  const contextValue = target.querySelector(
-    CONST.fragmentParentTagName,
-  )?.textContent;
-  return window.Piglet.constructedComponents[contextValue];
-};
-
-/** @type {GetHost} */
-const getHost = function (node, parent) {
-  if (!node) return null;
-
-  /** @type {Node|ShadowRoot} */
-  let target;
-
-  if (parent) {
-    target = node.getRootNode();
-  } else if (isShadowRoot(node)) {
-    target = node;
-  } else if ("shadowRoot" in node) {
-    const shadowRoot = node.shadowRoot;
-    if (shadowRoot instanceof ShadowRoot) {
-      target = shadowRoot;
-    }
-  }
-
-  if ("host" in target && target.host instanceof ReactiveComponent) {
-    return target.host;
-  }
-
-  if (target instanceof DocumentFragment) {
-    return contextParent(target);
-  }
-
-  return null;
-};
-
-/** @type {IsShadowRoot} */
-const isShadowRoot = function (shadowRootNode) {
-  return shadowRootNode instanceof ShadowRoot;
-};
 
 /** @type {GetDeepValue} */
 const getDeepValue = function (obj, pathParts) {
@@ -144,7 +92,6 @@ const navigate = (route) => {
 
   window.history.pushState({}, "", route);
   window.dispatchEvent(new PopStateEvent("popstate"));
-
   window.Piglet.AppRoot.route = route;
 
   return true;
@@ -242,18 +189,78 @@ const fetchWithCache = async (url) => {
   return fetchPromise;
 };
 
-const parseHTML = (html, owner) => {
-  const range = owner.ownerDocument.createRange();
-  const fragmentRootName = owner.internal.fragment.enabled
-    ? owner.__componentKey
-    : owner.internal.fragment.fragmentRoot?.__componentKey;
+/**
+ * Callback function to handle page reveal events.
+ *
+ * @param {Event} event - The event object triggered during the page reveal.
+ * @returns {Promise<void>}
+ */
+const pageRevealCallback = (event) => {
+  if (
+    !event.viewTransition &&
+    document.startViewTransition &&
+    !window.viewTransitionRunning
+  ) {
+    return window.Piglet.AppRoot.appContent.runPageTransition("in", 200);
+  }
+};
 
-  const fragmentRoot = `<${CONST.fragmentRootTagName} style="display: none">${fragmentRootName}</${CONST.fragmentRootTagName}>`;
-  const fragmentParent = `<${CONST.fragmentParentTagName} style="display: none;">${owner.__componentKey}</${CONST.fragmentParentTagName}>`;
+/**
+ * Converts an HTML string into a DocumentFragment.
+ *
+ * @param {string} html - The HTML string to parse.
+ * @returns {DocumentFragment} - A DocumentFragment containing the parsed HTML content.
+ */
+function parseHTMLToFragment(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const frag = document.createDocumentFragment();
 
-  return range.createContextualFragment(
-    `${!!fragmentRootName ? `${fragmentRoot}\n${fragmentParent}\n` : ""}${html}`,
+  [...doc.body.childNodes, ...doc.head.childNodes].forEach((node) =>
+    frag.appendChild(node),
   );
+
+  return frag;
+}
+
+/**
+ * Parses an HTML string, processes custom elements, and applies additional transformations.
+ *
+ * @param {string} html - The HTML string to parse.
+ * @param {ReactiveComponent} owner - The owner object containing metadata for processing.
+ * @returns {DocumentFragment} - A DocumentFragment containing the processed HTML content.
+ */
+const parseHTML = (html, owner) => {
+  const fragment = parseHTMLToFragment(html);
+
+  const elementsWithHyphen = [...fragment.querySelectorAll("*")].filter((el) =>
+    el.tagName.includes("-"),
+  );
+
+  elementsWithHyphen.forEach((el) => {
+    const tagName = el.tagName.toLowerCase();
+    const customTag = customElements.get(tagName);
+    if (!customTag) {
+      return;
+    }
+    const attrs = Object.fromEntries(
+      Array.from(el.attributes).map((attr) => [
+        attr.name,
+        attr.value === "" ? true : attr.value,
+      ]),
+    );
+    attrs.fragmentRoot = owner.internal.fragment.enabled
+      ? owner
+      : owner.internal.fragment.fragmentRoot;
+    attrs.parent = owner;
+    const newEl = new customTag(attrs);
+    el.replaceWith(newEl);
+    if (!el.childNodes.length) {
+      return;
+    }
+    newEl.append(...el.childNodes);
+  });
+
+  return fragment;
 };
 
 /** @type {(strings: TemplateStringsArray, ...values: any[]) => HTMLElement} */
@@ -270,12 +277,14 @@ const $create = function (strings, ...values) {
     .replace(/([a-z])([A-Z])/g, "$1-$2")
     .toLowerCase();
 
-  const el = document.createElement(kebabTag);
-
   const attrs = values.find((v) => typeof v === "object" && v !== null);
-  el.attrs = { ...(attrs || {}) };
+  attrs.parent = this;
+  const customTag = customElements.get(kebabTag);
+  if (customTag) {
+    return new customTag(attrs);
+  }
 
-  return el;
+  return document.createElement(kebabTag);
 };
 
 /** @type {(componentName: string, types: string[], shouldCache?: boolean) => Promise<{ html?: string, script?: Function, base?: ReactiveComponent }>} */
@@ -284,26 +293,59 @@ const fetchComponentData = async (componentName, types, shouldCache = true) => {
     html: undefined,
     script: undefined,
     base: undefined,
+    layout: undefined,
   };
+
+  window.Piglet.previousFetchComponentCacheKeys[componentName] ??= {
+    html: "",
+    script: "",
+    layout: "",
+  };
+
+  const previousCache =
+    window.Piglet.previousFetchComponentCacheKeys[componentName];
 
   if (!types.length) {
     return data;
   }
 
   if (types.includes(CONST.componentRoute.html)) {
+    const cacheKey = CONST.cacheKey();
+    if (!shouldCache) {
+      previousCache.html = cacheKey;
+    }
     const res = await fetch(
-      `${CONST.componentRoute.html}/${componentName}${!shouldCache ? CONST.cacheKey() : ""}`,
+      `${CONST.componentRoute.html}/${componentName}${!shouldCache ? cacheKey : previousCache.html}`,
     );
     const html = await res.text();
 
-    if (html !== "export default false;" && html !== "") {
+    if (html !== CONST.componentNotFound && html !== "") {
       data.html = html;
     }
   }
 
+  if (types.includes(CONST.componentRoute.layout)) {
+    const cacheKey = CONST.cacheKey();
+    if (!shouldCache) {
+      previousCache.layout = cacheKey;
+    }
+    const res = await fetch(
+      `${CONST.componentRoute.layout}/${componentName}${!shouldCache ? cacheKey : previousCache.layout}`,
+    );
+    const layout = await res.text();
+
+    if (layout !== CONST.componentNotFound && layout !== "") {
+      data.layout = layout;
+    }
+  }
+
   if (types.includes(CONST.componentRoute.script)) {
+    const cacheKey = CONST.cacheKey();
+    if (!shouldCache) {
+      previousCache.script = cacheKey;
+    }
     const module = await import(
-      `${CONST.componentRoute.script}/${componentName}${!shouldCache ? CONST.cacheKey() : ""}`
+      `${CONST.componentRoute.script}/${componentName}${!shouldCache ? cacheKey : previousCache.script}`
     );
     if (module.default !== false) {
       data.script = module.default;
@@ -317,8 +359,8 @@ const fetchComponentData = async (componentName, types, shouldCache = true) => {
       // noinspection JSClosureCompilerSyntax
       cls = class extends ReactiveComponent {
         static name = componentName;
-        constructor() {
-          super();
+        constructor(attrs) {
+          super(attrs);
         }
       };
       await loadComponent(cls);
@@ -464,8 +506,6 @@ const createNestedStateProxy = function (asRef, host) {
 };
 
 export {
-  getHost,
-  isShadowRoot,
   getDeepValue,
   api,
   navigate,
@@ -475,8 +515,6 @@ export {
   fetchWithCache,
   parseHTML,
   $create,
-  contextParent,
-  directParent,
   toPascalCase,
   toKebabCase,
   extractComponentTagsFromString,
@@ -485,4 +523,5 @@ export {
   createStateProxy,
   createDeepOnChangeProxy,
   useMarkerGenerator,
+  pageRevealCallback,
 };

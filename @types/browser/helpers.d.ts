@@ -24,14 +24,8 @@ export function getMountedComponentsByTag(
   tagName: string,
 ): Array<ReactiveComponent>;
 
-/** Retrieves the host component for a given node, returning null if no ReactiveComponent is found */
-export function getHost(node: Node): HTMLElement | ShadowRoot | null;
-
 /** Retrieves a deep value from an object using a path (array of keys) */
 export function getDeepValue(obj: object, pathParts: string[]): any;
-
-/** Checks if a given node is a ShadowRoot */
-export function isShadowRoot(node: Node): boolean;
 
 /** Sends a message to the extension */
 export function sendToExtension(message: string): void;

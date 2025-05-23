@@ -1,12 +1,14 @@
-/** @import {ClearAllListenersForHost, QueryElement, GetCallbackProxies, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner} from "@jsdocs/browser/scriptRunner.d" */
+/** @import {ClearAllListenersForHost, QueryElement, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner, ElementProxy, QueryElements} from "@jsdocs/browser/scriptRunner.d" */
 
 import {
+  $create,
   createNestedStateProxy,
   createStateProxy,
   toKebabCase,
   useMarkerGenerator,
 } from "@Piglet/browser/helpers";
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
 import CONST from "@Piglet/browser/CONST";
 
 /** @type {WeakMap<ReactiveComponent, Map<string, Set<Function>>>} */
@@ -37,14 +39,44 @@ export const clearAllListenersForHost = function (hostElement) {
   hostToElements.delete(hostElement);
 };
 
-/** @type {QueryElement} */
-const queryElement = function (hostElement, selector) {
+/** @type {QueryElements} */
+const queryElements = function (hostElement, selector) {
   const root = hostElement.internal.fragment.enabled
     ? hostElement.internal.fragment.content
     : hostElement.shadowRoot;
 
-  const isCustom = CONST.pascalCaseRegex.test(selector);
-  const el = root.querySelector(isCustom ? toKebabCase(selector) : selector);
+  const isCustom =
+    CONST.pascalCaseRegex.test(selector) &&
+    !selector.startsWith("#") &&
+    !selector.startsWith(".");
+  const els = root.querySelectorAll(
+    isCustom ? toKebabCase(selector) : selector,
+  );
+
+  if (!els.length) return [];
+
+  const elements = Array.from(els);
+  return elements.map((el) => queryElement(hostElement, el));
+};
+
+/** @type {QueryElement} */
+const queryElement = function (hostElement, selectorOrNode) {
+  const root = hostElement.internal.fragment.enabled
+    ? hostElement.internal.fragment.content
+    : hostElement.shadowRoot;
+
+  let el;
+  if (selectorOrNode instanceof Node) {
+    el = selectorOrNode;
+  } else {
+    const isCustom =
+      CONST.pascalCaseRegex.test(selectorOrNode) &&
+      !selectorOrNode.startsWith("#") &&
+      !selectorOrNode.startsWith(".");
+    el = root.querySelector(
+      isCustom ? toKebabCase(selectorOrNode) : selectorOrNode,
+    );
+  }
 
   if (!el) return undefined;
 
@@ -62,9 +94,10 @@ const queryElement = function (hostElement, selector) {
     return elementListeners.get(el);
   };
 
+  /** @type {ElementProxy} */
   const api = {
-    on(event, callback) {
-      el.addEventListener(event, callback);
+    on(event, callback, ...options) {
+      el.addEventListener(event, callback, ...options);
       const storage = ensureStorage();
       if (!storage.has(event)) storage.set(event, new Set());
       storage.get(event).add(callback);
@@ -111,6 +144,29 @@ const queryElement = function (hostElement, selector) {
       }
       return proxy;
     },
+    clone() {
+      if (
+        !(
+          el instanceof ReactiveComponent ||
+          el instanceof ReactiveDummyComponent
+        )
+      ) {
+        return el.cloneNode(true);
+      } else {
+        const newEl = new el.constructor(el.attrs);
+        for (const child of el.childNodes) {
+          if (child instanceof ReactiveComponent) {
+            newEl.appendChild(child.cloneNode(true));
+            // TODO: this probably won't work, but there needs to be a way to clone nested custom elements
+            // const queryChild = queryElement(hostElement, child);
+            // newEl.appendChild(queryChild.clone());
+          } else {
+            newEl.appendChild(child.cloneNode(true));
+          }
+        }
+        return newEl;
+      }
+    },
   };
 
   const proxy = new Proxy(api, {
@@ -150,11 +206,11 @@ const generateComponentData = function (hostElement) {
   return {
     component: {
       $attrs: hostElement.attrs,
-      $element: hostElement,
       $P: createStateProxy(false, hostElement),
       $B: createStateProxy(true, hostElement),
       $$: useMarkerGenerator,
       $$P: createNestedStateProxy(false, hostElement),
+      $: $create.bind(hostElement),
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {
@@ -166,6 +222,7 @@ const generateComponentData = function (hostElement) {
       onAfterUpdateRef,
       onBeforeUpdateRef,
       $element: queryElement.bind(this, hostElement),
+      $elements: queryElements.bind(this, hostElement),
     },
   };
 };
@@ -187,7 +244,7 @@ const scriptRunner = function (hostElement, module, scriptReason) {
     let shouldRender = true;
 
     if (typeof hostElement.onBeforeUpdate === "function") {
-      shouldRender = this.onBeforeUpdate() !== false;
+      shouldRender = hostElement.onBeforeUpdate() !== false;
     }
 
     if (!shouldRender) {
@@ -218,7 +275,7 @@ const scriptRunner = function (hostElement, module, scriptReason) {
       if (ref?.internal?.mounted) {
         if (delayed) {
           setTimeout(() => {
-            ref.__mountCallback(CONST.reason.attributesChange(updates));
+            ref?.__mountCallback(CONST.reason.attributesChange(updates));
           }, 0);
         } else {
           ref.__mountCallback(CONST.reason.attributesChange(updates));

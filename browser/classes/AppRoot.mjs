@@ -1,9 +1,9 @@
-/** @import {AppRootInterface, Virtual, Member} from "@jsdocs/browser/classes/AppRoot.d" */
+/** @import {AppRootInterface, AppRootMembers, AppRootVirtualMembers} from "@jsdocs/browser/classes/AppRoot.d" */
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import {
-  toPascalCase,
-  sendToExtension,
   fetchComponentData,
+  sendToExtension,
+  toPascalCase,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 
@@ -15,20 +15,54 @@ const _routes = routes ?? {};
 
 /** @implements {AppRootInterface} */
 class AppRoot extends ReactiveComponent {
+  /** @type {AppRootMembers["_route"]["Type"]} */
   _route = "";
 
-  constructor() {
-    super();
-    this.addPopStateListener();
-  }
+  /** @type {AppRootMembers["_layoutPaths"]["Type"]} */
+  _layoutPaths = {};
+
+  /** @type {AppRootMembers["__previousLayout"]["Type"]} */
+  __previousLayout = "";
 
   static get observedAttributes() {
     return [CONST.routeAttribute];
   }
 
+  constructor(attrs) {
+    super(attrs);
+    this.addPopStateListener();
+  }
+
   /**
-   * @type {Member["addPopStateListener"]["Type"]}
-   * @returns {Member["addPopStateListener"]["ReturnType"]}
+   * @type {AppRootVirtualMembers["connectedCallback"]["Type"]}
+   * @returns {AppRootVirtualMembers["connectedCallback"]["ReturnType"]}
+   */
+  connectedCallback() {
+    this.appContent = document.createElement("app-content");
+    this.appContent.setAttribute("part", "app-content");
+    this.shadowRoot.append(this.appContent);
+    window.Piglet.AppRoot = this;
+  }
+
+  /**
+   * @type {AppRootMembers["getLayoutPaths"]["Type"]}
+   * @returns {AppRootMembers["getLayoutPaths"]["ReturnType"]}
+   */
+  async getLayoutPaths() {
+    const paths = await fetch(`/component/layout/paths?noCache=${Date.now()}`);
+    if (paths.ok) {
+      this._layoutPaths = await paths.json();
+    } else {
+      window.Piglet.log(
+        CONST.pigletLogs.appRoot.errorLoading("layout paths"),
+        CONST.coreLogsLevels.error,
+      );
+    }
+  }
+
+  /**
+   * @type {AppRootMembers["addPopStateListener"]["Type"]}
+   * @returns {AppRootMembers["addPopStateListener"]["ReturnType"]}
    */
   addPopStateListener() {
     window.addEventListener("popstate", () => {
@@ -40,36 +74,75 @@ class AppRoot extends ReactiveComponent {
   }
 
   /**
-   * @type {Member["attributeChangedCallback"]["Type"]}
-   * @returns {Member["attributeChangedCallback"]["ReturnType"]}
+   * @type {AppRootVirtualMembers["attributeChangedCallback"]["Type"]}
+   * @returns {AppRootVirtualMembers["attributeChangedCallback"]["ReturnType"]}
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (name === CONST.routeAttribute && oldValue !== newValue) {
       if (oldValue === null) {
-        this.loadRoute(newValue).then(this.appRootConnected.bind(this));
+        this.loadRoute(newValue);
       } else {
-        void this.changeRoute(newValue);
+        this.changeRoute(newValue);
       }
     }
   }
 
   /**
-   * @type {Member["changeRoute"]["Type"]}
-   * @returns {Member["changeRoute"]["ReturnType"]}
+   * @type {AppRootMembers["changeRoute"]["Type"]}
+   * @returns {AppRootMembers["changeRoute"]["ReturnType"]}
    */
   async changeRoute(newRoute) {
-    this.internal.mounted = true;
-    this.shadowRoot.replaceChildren();
-    window.Piglet.reset();
-    this.appRootConnected();
-    await this.loadRoute(newRoute);
+    const isReload = newRoute === this._route;
+    if (isReload) {
+      await this.getLayoutPaths();
+    }
+    const { base, layout } = await this.preLoadRoute(newRoute, isReload);
+    if (!base) return;
+    await this.viewTransition({ base, layout }, true);
   }
 
   /**
-   * @type {Member["loadRoute"]["Type"]}
-   * @returns {Member["loadRoute"]["ReturnType"]}
+   * @type {AppRootMembers["viewTransition"]["Type"]}
+   * @returns {AppRootMembers["viewTransition"]["ReturnType"]}
    */
-  async loadRoute(route) {
+  async viewTransition({ base, layout }, isReloaded) {
+    const transitionCallback = () => {
+      if (isReloaded) {
+        this.internal.mounted = true;
+        const persistentChildren = this.appContent.querySelectorAll(
+          "*[data-piglet-persistent]",
+        );
+
+        this.appContent.replaceChildren(...persistentChildren);
+        window.Piglet.reset();
+      }
+      this.loadRouteSync(base, layout);
+      return this.appRootConnected();
+    };
+
+    if (!document.startViewTransition || window.viewTransitionRunning) {
+      await this.appContent.runPageTransition("out");
+      transitionCallback();
+      await this.appContent.runPageTransition();
+      await this.appRootConnected();
+    } else {
+      const currentOverflow = this.style.overflow;
+      this.style.overflow = "hidden";
+      window.viewTransitionRunning = true;
+      const transition = document.startViewTransition(
+        transitionCallback.bind(this),
+      );
+      await transition.finished;
+      window.viewTransitionRunning = false;
+      this.style.overflow = currentOverflow;
+    }
+  }
+
+  /**
+   * @type {AppRootMembers["preLoadRoute"]["Type"]}
+   * @returns {AppRootMembers["preLoadRoute"]["ReturnType"]}
+   */
+  async preLoadRoute(route, isReloaded = false) {
     this._route = route;
 
     try {
@@ -78,43 +151,95 @@ class AppRoot extends ReactiveComponent {
         routePath = "NotFound";
       }
 
-      const { base, html } = await fetchComponentData(routePath, [
-        CONST.componentRoute.base,
-        CONST.componentRoute.html,
-      ]);
+      const routeLayout = this._layoutPaths[routePath]?.layout;
+      if (routeLayout === this.__previousLayout && !isReloaded) {
+        const { base, html } = await fetchComponentData(
+          routePath,
+          [CONST.componentRoute.base, CONST.componentRoute.html],
+          isReloaded,
+        );
+
+        if (html) {
+          await this.loadCustomComponents(this.extractCustomTags(html));
+        }
+
+        return {
+          base,
+          layout: "",
+        };
+      }
+
+      this.__previousLayout = routeLayout;
+
+      const { base, html, layout } = await fetchComponentData(
+        routePath,
+        [
+          CONST.componentRoute.base,
+          CONST.componentRoute.html,
+          CONST.componentRoute.layout,
+        ],
+        isReloaded,
+      );
 
       if (html) {
-        const tags = this.extractCustomTags(html);
+        const tags = [
+          ...this.extractCustomTags(html),
+          ...this.extractCustomTags(layout),
+        ];
         await this.loadCustomComponents(tags);
       }
 
-      this.renderComponent(base);
-
-      sendToExtension(CONST.extension.initialMessage);
-      window.Piglet.log(
-        CONST.pigletLogs.appRoot.routeLoaded(route),
-        CONST.coreLogsLevels.info,
-      );
+      return {
+        base,
+        layout,
+      };
     } catch (err) {
       window.Piglet.log(
         CONST.pigletLogs.appRoot.errorLoading(route),
         CONST.coreLogsLevels.error,
         err,
       );
-      this.shadowRoot.innerHTML = `<h1>${CONST.pageNotFound}</h1>`;
+      this.appContent.innerHTML = `<h1>${CONST.pageNotFound}</h1>`;
     }
   }
 
   /**
-   * @type {Member["extractCustomTags"]["Type"]}
-   * @returns {Member["extractCustomTags"]["ReturnType"]}
+   * @type {AppRootMembers["loadRoute"]["Type"]}
+   * @returns {AppRootMembers["loadRoute"]["ReturnType"]}
+   */
+  async loadRoute(route) {
+    if (Object.keys(this._layoutPaths).length === 0) {
+      await this.getLayoutPaths();
+    }
+
+    const { base, layout } = await this.preLoadRoute(route);
+    if (!base) return;
+    await this.viewTransition({ base, layout }, false);
+  }
+
+  /**
+   * @type {AppRootMembers["loadRouteSync"]["Type"]}
+   * @returns {AppRootMembers["loadRouteSync"]["ReturnType"]}
+   */
+  loadRouteSync(base, layout) {
+    this.renderComponent(base, layout);
+    sendToExtension(CONST.extension.initialMessage);
+    window.Piglet.log(
+      CONST.pigletLogs.appRoot.routeLoaded(this._route),
+      CONST.coreLogsLevels.info,
+    );
+  }
+
+  /**
+   * @type {AppRootMembers["extractCustomTags"]["Type"]}
+   * @returns {AppRootMembers["extractCustomTags"]["ReturnType"]}
    */
   extractCustomTags(pageSource) {
     const tags = new Set();
     let match;
     while ((match = CONST.tagRegex.exec(pageSource)) !== null) {
       const tag = match[1];
-      if (tag.includes("-")) {
+      if (tag.includes("-") && !["app-content"].includes(tag)) {
         tags.add(tag);
       }
     }
@@ -122,8 +247,8 @@ class AppRoot extends ReactiveComponent {
   }
 
   /**
-   * @type {Member["loadCustomComponents"]["Type"]}
-   * @returns {Member["loadCustomComponents"]["ReturnType"]}
+   * @type {AppRootMembers["loadCustomComponents"]["Type"]}
+   * @returns {AppRootMembers["loadCustomComponents"]["ReturnType"]}
    */
   async loadCustomComponents(tags, seen = new Set()) {
     await Promise.all(
@@ -151,40 +276,65 @@ class AppRoot extends ReactiveComponent {
     );
   }
 
-  appRootConnected() {
+  /**
+   * @type {AppRootMembers["appRootConnected"]["Type"]}
+   * @returns {AppRootMembers["appRootConnected"]["ReturnType"]}
+   */
+  async appRootConnected() {
     this.internal.mounted = true;
     while (this.internal.waiters.length > 0) {
-      this.internal.waiters.shift()._mount(CONST.reason.parentUpdate);
+      await this.internal.waiters.shift()._mount(CONST.reason.parentUpdate);
     }
-  }
-
-  connectedCallback() {
-    window.Piglet.AppRoot = this;
   }
 
   /**
-   * @type {Member["renderComponent"]["Type"]}
-   * @returns {Member["renderComponent"]["ReturnType"]}
+   * @type {AppRootMembers["renderComponent"]["Type"]}
+   * @returns {AppRootMembers["renderComponent"]["ReturnType"]}
    */
-  renderComponent(component) {
-    if (component.prototype instanceof ReactiveComponent) {
-      const element = new component();
-      if (element instanceof ReactiveComponent) {
-        this.shadowRoot.appendChild(element);
+  renderComponent(component, layout) {
+    let contentTag = null;
+    if (layout) {
+      const parsedLayout = new DOMParser().parseFromString(layout, "text/html");
+      const content = [
+        ...parsedLayout.head.childNodes,
+        ...parsedLayout.body.childNodes,
+      ];
+      contentTag = content.find(
+        (el) => el.nodeName.toLowerCase() === "app-content",
+      );
+      this.shadowRoot.replaceChildren(this.appContent);
+      for (const child of content) {
+        let el = child;
+        const tag = child.tagName?.toLowerCase();
+        if (tag && tag.includes("-") && tag !== "app-content") {
+          const customComponent = customElements.get(tag);
+          if (customComponent) {
+            el = new customComponent({ parent: this });
+          }
+        }
+        this.shadowRoot.appendChild(el);
       }
-    } else if (typeof component === "string") {
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = component || "";
-      this.shadowRoot.appendChild(wrapper);
+    }
+
+    if (component.prototype instanceof ReactiveComponent) {
+      const element = new component({ parent: this });
+      if (element instanceof ReactiveComponent) {
+        if (contentTag) {
+          contentTag.replaceWith(this.appContent);
+          this.appContent.appendChild(element);
+        } else {
+          this.appContent.appendChild(element);
+        }
+      }
     }
   }
 
-  /** @type {Member["route"]["Type"]} */
+  /** @type {AppRootMembers["route"]["Type"]} */
   get route() {
     return this._route;
   }
 
-  /** @param {AppRootInterface["route"]} newRoute */
+  /** @param {AppRoot["_route"]} newRoute */
   set route(newRoute) {
     if (this._route !== newRoute) {
       this.setAttribute(CONST.routeAttribute, newRoute);
@@ -193,18 +343,6 @@ class AppRoot extends ReactiveComponent {
       }
       this._route = newRoute;
     }
-  }
-
-  onAfterUpdate() {
-    return true;
-  }
-
-  onBeforeUpdate() {
-    return true;
-  }
-
-  async runScript(reason) {
-    return Promise.resolve(undefined);
   }
 }
 

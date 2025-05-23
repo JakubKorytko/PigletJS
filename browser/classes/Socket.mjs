@@ -1,4 +1,4 @@
-/** @import {SocketInterface, Member} from "@jsdocs/browser/classes/Socket.d" */
+/** @import {SocketInterface, SocketInterfaceMembers} from "@jsdocs/browser/classes/Socket.d" */
 /** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 import { getMountedComponentsByTag } from "@Piglet/browser/helpers";
@@ -6,10 +6,22 @@ import CONST from "@Piglet/browser/CONST";
 
 /** @implements {SocketInterface} */
 class Socket {
+  /**
+   * Singleton instance of the SocketInterface
+   * @type {SocketInterface|null}
+   */
   static instance = null;
+
+  /** @type {SocketInterfaceMembers["ws"]["Type"]} */
   ws = null;
+
+  /** @type {SocketInterfaceMembers["reconnectAttempts"]["Type"]} */
   reconnectAttempts = 0;
+
+  /** @type {SocketInterfaceMembers["maxReconnectAttempts"]["Type"]} */
   maxReconnectAttempts = 5;
+
+  /** @type {SocketInterfaceMembers["reconnectInterval"]["Type"]} */
   reconnectInterval = 2000;
 
   constructor() {
@@ -27,8 +39,8 @@ class Socket {
   }
 
   /**
-   * @type {Member["connect"]["Type"]}
-   * @returns {Member["connect"]["ReturnType"]}
+   * @type {SocketInterfaceMembers["connect"]["Type"]}
+   * @returns {SocketInterfaceMembers["connect"]["ReturnType"]}
    */
   connect() {
     if (this.ws) {
@@ -49,6 +61,10 @@ class Socket {
     this.ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === CONST.socket.messageTypes.reload && message.data) {
+        if (message.data === "layout") {
+          window.Piglet.AppRoot.changeRoute(window.Piglet.AppRoot._route);
+          return;
+        }
         /** @type {ReactiveComponent[]} */
         const components = getMountedComponentsByTag(message.data).filter(
           (component) => component.internal.HMR,
@@ -89,8 +105,8 @@ class Socket {
   }
 
   /**
-   * @type {Member["tryReconnect"]["Type"]}
-   * @returns {Member["tryReconnect"]["ReturnType"]}
+   * @type {SocketInterfaceMembers["tryReconnect"]["Type"]}
+   * @returns {SocketInterfaceMembers["tryReconnect"]["ReturnType"]}
    */
   tryReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {

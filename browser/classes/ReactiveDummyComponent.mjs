@@ -1,26 +1,66 @@
-/** @import {ReactiveDummyComponentInterface, Member} from "@Piglet/browser/classes/ReactiveDummyComponent.d" */
+/** @import {BaseReactiveDummyComponentInterface, ReactiveDummyVirtualMembers, ReactiveDummyMembers} from "@Piglet/browser/classes/ReactiveDummyComponent.d" */
 
-import { getHost } from "@Piglet/browser/helpers";
 import { useObserver } from "@Piglet/browser/hooks";
 
-/** @implements {ReactiveDummyComponentInterface} */
+/** @implements {BaseReactiveDummyComponentInterface} */
 class ReactiveDummyComponent extends HTMLElement {
+  /** @type {ReactiveDummyMembers["__observers"]["Type"]} */
   __observers = new Map();
+
+  /** @type {ReactiveDummyMembers["shouldBatchRefUpdates"]["Type"]} */
+  shouldBatchRefUpdates = true;
+
   #pendingStateUpdate = false;
+
   #pendingRefUpdate = false;
 
+  /**
+   * @type {ReactiveDummyVirtualMembers["_mount"]["Type"]}
+   * @returns {ReactiveDummyVirtualMembers["_mount"]["ReturnType"]}
+   */
+  _mount() {}
+
+  constructor(attrs) {
+    super();
+    this.__componentId = `${crypto.getRandomValues(new Uint8Array(1))}${Date.now()}`;
+    this.__componentKey = `dummy-${this.__componentId}`;
+    this.attrs = attrs ?? {};
+    this._parent = this.attrs.parent ?? undefined;
+    this.classList.add(this.__componentKey);
+    this.createStyleTag(
+      `@layer {.${this.__componentKey} {display: contents;}}`,
+    );
+  }
+
+  /**
+   * @type {ReactiveDummyMembers["createStyleTag"]["Type"]}
+   * @returns {ReactiveDummyMembers["createStyleTag"]["ReturnType"]}
+   */
+  createStyleTag(textContent) {
+    const style = document.createElement("style");
+    style.setAttribute("data-piglet-persistent", "");
+    style.textContent = textContent;
+    this.append(style);
+  }
+
+  /**
+   * @type {ReactiveDummyMembers["connectedCallback"]["Type"]}
+   * @returns {ReactiveDummyMembers["connectedCallback"]["ReturnType"]}
+   */
   connectedCallback() {
-    this.style.display = "contents";
-    this._parent = getHost(this, true);
     const parent = this._parent?.internal;
 
     if (parent?.mounted) {
       this._mount();
     } else {
-      parent.waiters.push(this);
+      parent?.waiters.push(this);
     }
   }
 
+  /**
+   * @type {ReactiveDummyMembers['observeState']['Type']}
+   * @returns {ReactiveDummyMembers['observeState']['ReturnType']}
+   */
   observeState(property) {
     const callback = {
       stateChange: (value, prevValue) =>
@@ -43,6 +83,10 @@ class ReactiveDummyComponent extends HTMLElement {
     this.__observers.set(property, () => removeObserver(callback));
   }
 
+  /**
+   * @type {ReactiveDummyMembers["stateChange"]["Type"]}
+   * @returns {ReactiveDummyMembers["stateChange"]["ReturnType"]}
+   */
   stateChange(value, property, prevValue) {
     if (!this.#pendingStateUpdate) {
       this.#pendingStateUpdate = true;
@@ -59,19 +103,30 @@ class ReactiveDummyComponent extends HTMLElement {
     }
   }
 
+  /**
+   * @type {ReactiveDummyMembers["passRefUpdate"]["Type"]}
+   * @returns {ReactiveDummyMembers["passRefUpdate"]["ReturnType"]}
+   */
+  passRefUpdate(value, property, prevValue) {
+    if (prevValue !== value || (typeof value === "object" && value !== null)) {
+      this._refUpdate(value, property, prevValue);
+    }
+  }
+
+  /**
+   * @type {ReactiveDummyMembers["refChange"]["Type"]}
+   * @returns {ReactiveDummyMembers["refChange"]["ReturnType"]}
+   */
   refChange(value, property, prevValue) {
-    if (!this.#pendingRefUpdate) {
+    if (!this.#pendingRefUpdate && this.shouldBatchRefUpdates) {
       this.#pendingRefUpdate = true;
       Promise.resolve().then(() => {
         this.#pendingRefUpdate = false;
-
-        if (
-          prevValue !== value ||
-          (typeof value === "object" && value !== null)
-        ) {
-          this._refUpdate(value, property, prevValue);
-        }
+        this.passRefUpdate(value, property, prevValue);
       });
+    }
+    if (!this.shouldBatchRefUpdates) {
+      this.passRefUpdate(value, property, prevValue);
     }
   }
 

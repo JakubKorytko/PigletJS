@@ -11,25 +11,35 @@ class RenderIf extends ReactiveDummyComponent {
     return [CONST.conditionAttribute];
   }
 
+  /** @type {RenderIfMembers["_condition"]["Type"]} */
   _condition;
+
+  /** @type {RenderIfMembers["_negated"]["Type"]} */
   _negated = false;
+
+  /** @type {RenderIfMembers["_parts"]["Type"]} */
   _parts = [];
+
+  /** @type {RenderIfMembers["_contentFragment"]["Type"]} */
   _contentFragment = document.createDocumentFragment();
+
+  /** @type {RenderIfMembers["_contentMounted"]["Type"]} */
   _contentMounted = true;
 
+  /** @type {RenderIfVirtualMembers["shouldBatchRefUpdates"]["Type"]} */
+  shouldBatchRefUpdates = false;
+
   /**
-   * @type {Member["_moveChildrenToFragment"]["Type"]}
-   * @returns {Member["_moveChildrenToFragment"]["ReturnType"]}
+   * @type {RenderIfMembers["_moveChildrenToFragment"]["Type"]}
+   * @returns {RenderIfMembers["_moveChildrenToFragment"]["ReturnType"]}
    */
   _moveChildrenToFragment() {
-    while (this.firstChild) {
-      this._contentFragment.appendChild(this.firstChild);
-    }
+    this._contentFragment.append(...this.childNodes);
   }
 
   /**
-   * @type {Member["attributeChangedCallback"]["Type"]}
-   * @returns {Member["attributeChangedCallback"]["ReturnType"]}
+   * @type {RenderIfVirtualMembers["attributeChangedCallback"]["Type"]}
+   * @returns {RenderIfVirtualMembers["attributeChangedCallback"]["ReturnType"]}
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (
@@ -42,12 +52,11 @@ class RenderIf extends ReactiveDummyComponent {
   }
 
   /**
-   * @type {Member["_updateFromAttribute"]["Type"]}
-   * @returns {Member["_updateFromAttribute"]["ReturnType"]}
+   * @type {RenderIfMembers["_updateFromAttribute"]["Type"]}
+   * @returns {RenderIfMembers["_updateFromAttribute"]["ReturnType"]}
    */
   _updateFromAttribute() {
-    let conditionProperty = this.getAttribute(CONST.conditionAttribute);
-
+    let conditionProperty = this.attrs.condition;
     this._negated = false;
     if (conditionProperty.startsWith("!")) {
       this._negated = true;
@@ -100,8 +109,8 @@ class RenderIf extends ReactiveDummyComponent {
   }
 
   /**
-   * @type {Member["_updateCondition"]["Type"]}
-   * @returns {Member["_updateCondition"]["ReturnType"]}
+   * @type {RenderIfMembers["_updateCondition"]["Type"]}
+   * @returns {RenderIfMembers["_updateCondition"]["ReturnType"]}
    */
   _updateCondition(value) {
     const innerValue = getDeepValue(value, this._parts);
@@ -115,12 +124,12 @@ class RenderIf extends ReactiveDummyComponent {
   }
 
   /**
-   * @type {Member["updateVisibility"]["Type"]}
-   * @returns {Member["updateVisibility"]["ReturnType"]}
+   * @type {RenderIfMembers["updateVisibility"]["Type"]}
+   * @returns {RenderIfMembers["updateVisibility"]["ReturnType"]}
    */
   updateVisibility() {
     if (this._condition && !this._contentMounted) {
-      this.appendChild(this._contentFragment);
+      this.append(this._contentFragment);
       this._contentMounted = true;
     } else if (!this._condition && this._contentMounted) {
       this._moveChildrenToFragment();
@@ -128,14 +137,27 @@ class RenderIf extends ReactiveDummyComponent {
     }
   }
 
+  /**
+   * @type {RenderIfVirtualMembers["_mount"]["Type"]}
+   * @returns {RenderIfVirtualMembers["_mount"]["ReturnType"]}
+   */
   _mount(reason) {
     this._updateFromAttribute();
+    return Promise.all([true]);
   }
 
+  /**
+   * @type {RenderIfVirtualMembers["_update"]["Type"]}
+   * @returns {RenderIfVirtualMembers["_update"]["ReturnType"]}
+   */
   _update(value) {
     this._updateCondition(value);
   }
 
+  /**
+   * @type {RenderIfVirtualMembers["_refUpdate"]["Type"]}
+   * @returns {RenderIfVirtualMembers["_refUpdate"]["ReturnType"]}
+   */
   _refUpdate(value) {
     this._updateCondition(value);
   }

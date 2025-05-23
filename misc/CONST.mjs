@@ -25,6 +25,7 @@ export default {
     components: path.resolve(rootDir, "src", "components"),
     builtScript: path.resolve(rootDir, "build", "script"),
     builtHTML: path.resolve(rootDir, "build", "html"),
+    builtLayouts: path.resolve(rootDir, "build", "layouts"),
     pages: path.resolve(rootDir, "src", "pages"),
     public: path.resolve(rootDir, "src", "public"),
     browser: path.resolve(rootDir, dirPath(isProd), "browser"),
@@ -68,6 +69,7 @@ export default {
     component: {
       html: "/component/html",
       script: "/component/script",
+      layout: "/component/layout",
     },
   },
   routes: ["component", "page", "file", "piglet", "module", "api"],
@@ -227,7 +229,6 @@ export default {
       "setup.mjs",
     ]),
   },
-  pageTransitionCss: `:host { animation: waitForCss 0.1s forwards; } @keyframes waitForCss { from { opacity: 0; } to { opacity: 1; } }`,
   parserStrings: {
     exportBeforeScript: `
       export default function({
@@ -235,7 +236,9 @@ export default {
       $onBeforeUpdate,
       $onAfterUpdate,
       $element,
+      $elements,
       $reason,
+      $,
       $P,
       $B,
       $$,

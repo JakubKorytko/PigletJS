@@ -73,7 +73,7 @@ const watchDirectory = () => {
         });
 
         const socketData = toKebabCase(
-          path.basename(htmlFilename).replace(".pig.html", ""),
+          path.basename(htmlFilename, ".pig.html"),
         );
 
         clearTimeout(debounceTimeout);
@@ -101,7 +101,9 @@ const watchDirectory = () => {
           ext: ".html",
         });
 
-        const socketData = toKebabCase(htmlFilename.replace(".pig.html", ""));
+        const fileName = path.basename(htmlFilename, ".pig.html");
+        const isLayout = fileName.toLowerCase() === "layout";
+        const socketData = toKebabCase(fileName);
 
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
@@ -109,7 +111,7 @@ const watchDirectory = () => {
           console.msg("components.changed", htmlFilename);
           buildComponent(filePath)
             .catch((err) => console.msg("pages.generatingError", err))
-            .then(() => reloadClients(socketData));
+            .then(() => reloadClients(isLayout ? "layout" : socketData));
         }, 500);
       }
     },

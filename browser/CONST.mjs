@@ -68,6 +68,9 @@ const CONST = {
   componentRoute: {
     html: "/component/html",
     script: "/component/script",
+    layout: "/component/layout",
+    // There is no base route, it is here to keep the structure
+    base: "base",
   },
   apiRoute: "/api",
   tagRegex: /<([a-z][a-z0-9-]*)\b[^>]*\/?>/g,

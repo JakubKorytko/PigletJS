@@ -34,6 +34,8 @@ const config = {
 
   registeredComponents: {},
 
+  previousFetchComponentCacheKeys: {},
+
   log(message, severity = CONST.coreLogsLevels.info, ...args) {
     if (!this.enableCoreLogs[severity]) return;
 
