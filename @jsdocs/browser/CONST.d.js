@@ -48,7 +48,11 @@
  *     maxReconnectAttempts: string, // Max reconnect attempts log
  *     serverRestarted: string // Server restarted log
  *   },
+ *   sendToExtension: string, // Sending to extension log
  *   trackingTree: (component: { constructor: { name: string } }) => string, // Tracking tree log
+ *   errorLoadingScript: string, // Error loading script log
+ *   errorInComponentScript: string, // Error in component script log
+ *   cloneWarning: string, // Clone warning log
  * }} PigletLogs
  * PigletJS logs object.
  */
@@ -108,7 +112,8 @@
  *   conditionAttribute: string, // Condition attribute
  *   conditionalName: string, // Conditional name
  *   appRootName: string, // App root name
- *   appRootTag: string // App root tag
+ *   appRootTag: string, // App root tag
+ *   stopComponentScriptExecution: string, // Stop component script execution message
  * }} Constants
  * PigletJS constants object, used to store widely used values.
  */

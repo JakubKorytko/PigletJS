@@ -8,7 +8,7 @@
     "html": {
       "elements": [
         {
-          "name": "render-if",
+          "name": "RenderIf",
           "description": "Conditional rendering component that shows or hides its content based on the `condition` attribute. Supports boolean values, state keys, or nested paths (e.g., `user.loggedIn`). Negation is supported using the `!` prefix.",
           "attributes": [
             {
@@ -70,7 +70,7 @@
           "description": "Wrapper component used to structure page content. Typically used inside route components to group page layout and elements."
         },
         {
-          "name": "nav-link",
+          "name": "NavLink",
           "description": "Navigation link component that displays a link with optional active state based on the current route.",
           "attributes": [
             {
@@ -83,6 +83,14 @@
               "required": true
             }
           ]
+        },
+        {
+          "name": "KinderGarten",
+          "description": "Place where children of the component are rendered. There can be only one instance of this in the single component."
+        },
+        {
+          "name": "AppContent",
+          "description": "Container for the main content of the application. It is used inside the AppRoot component to define the layout and structure of the app's content."
         }
       ]
     }

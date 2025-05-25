@@ -108,7 +108,12 @@ declare class ReactiveComponent extends HTMLElement {
   observeState(property: string): void;
 
   /** Define or access a reactive state property */
-  state<T>(property: string, initialValue?: T, asRef?: boolean): { value: T };
+  state<T>(
+    property: string,
+    initialValue?: T,
+    asRef?: boolean,
+    avoidClone = false,
+  ): { value: T };
 
   /** Internal hook called when a state value changes */
   stateChange<T>(value: T, property: string, prevValue: T): void;

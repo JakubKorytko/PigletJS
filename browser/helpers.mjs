@@ -399,9 +399,10 @@ const createStateProxy = function (asRef, host) {
 
         const isUsingUse = value && value.__piglet_use_marker === true;
         const initialValue = isUsingUse ? value.initialValue : value;
+        const { avoidClone } = isUsingUse ? value : { avoidClone: false };
 
         if (!(key in host.states)) {
-          host.states[key] = host.state(key, initialValue, asRef);
+          host.states[key] = host.state(key, initialValue, asRef, avoidClone);
         } else if (!isUsingUse) {
           const state = host.states[key];
 
@@ -443,9 +444,9 @@ const createDeepOnChangeProxy = function (target, onChange) {
 
 /**
  * Returns a marker object for useState
- * @type {(initialValue: unknown) => { __piglet_use_marker: boolean, initialValue: unknown }} */
-const useMarkerGenerator = function (initialValue) {
-  return { __piglet_use_marker: true, initialValue };
+ * @type {(initialValue: unknown, avoidClone?: boolean) => { __piglet_use_marker: boolean, initialValue: unknown, avoidClone: boolean }} */
+const useMarkerGenerator = function (initialValue, avoidClone = false) {
+  return { __piglet_use_marker: true, initialValue, avoidClone };
 };
 
 /**
@@ -462,7 +463,7 @@ const createNestedStateProxy = function (asRef, host) {
           host.states[prop] = host.state(prop, undefined, asRef);
           const state = host.states[prop];
           if (typeof state.value === "object" && state.value !== null) {
-            state.value = host.createDeepOnChangeProxy(state.value, () =>
+            state.value = createDeepOnChangeProxy(state.value, () =>
               window.Piglet.state[host.__componentKey]._notify?.(),
             );
           }
@@ -477,9 +478,10 @@ const createNestedStateProxy = function (asRef, host) {
         const key = String(prop);
 
         const isUsingUse = value && value.__piglet_use_marker === true;
+        const { avoidClone } = isUsingUse ? value : { avoidClone: false };
         const initialValue = isUsingUse ? value.initialValue : value;
         if (!(key in host.states)) {
-          host.states[key] = host.state(key, initialValue, asRef);
+          host.states[key] = host.state(key, initialValue, asRef, avoidClone);
           const state = host.states[key];
           if (typeof state.value === "object" && state.value !== null) {
             window.Piglet.state[host.__componentKey][key]._state =

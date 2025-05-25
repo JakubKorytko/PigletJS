@@ -39,6 +39,11 @@ const CONST = {
     trackingTree: ({ constructor: { name } }) => `[${name}] tracking tree`,
     errorLoadingScript: "Error loading script:",
     errorInComponentScript: "Error in component script:",
+    cloneWarning:
+      "⚠️ Piglet was unable to clone the state using structuredClone (probably because data is not serializable)." +
+      "Object will be set as a reference, which means that changes to the passed object may lead to unexpected behavior." +
+      "You can try to use a different method to clone the state before passing it to Piglet, such as JSON.stringify/JSON.parse." +
+      "If you aware of this and want to silence this warning, make sure you are creating the state using $$(..., true).",
   },
   socket: {
     messageTypes: {
@@ -107,6 +112,7 @@ const CONST = {
   conditionalName: "RenderIf",
   appRootName: "AppRoot",
   appRootTag: "app-root",
+  stopComponentScriptExecution: "stopComponentScriptExecution",
 };
 
 export default CONST;

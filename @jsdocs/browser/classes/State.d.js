@@ -1,6 +1,14 @@
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 
 /**
+ * @template T
+ * @typedef {{
+ * stateChange: function(T, T): void,
+ * refChange?: function(T, T): void
+ * }} Observer
+ */
+
+/**
  * @interface StateInterface
  * @template T - The type of the state value.
  */
@@ -13,7 +21,7 @@ class StateInterface {
 
   /**
    * List of observers
-   * @type {Array<{stateChange: function(T, T): void}>}
+   * @type {Array<Observer<T>>}
    */
   __observers;
 
@@ -25,14 +33,14 @@ class StateInterface {
 
   /**
    * Adds an observer to the state
-   * @param {{stateChange: function(T, T): void}} observer - The observer to add
+   * @param {Observer<T>} observer - The observer to add
    * @returns {void}
    */
   addObserver(observer) {}
 
   /**
    * Removes an observer from the state
-   * @param {{stateChange: function(T, T): void}} observer - The observer to remove
+   * @param {Observer<T>} observer - The observer to remove
    * @returns {void}
    */
   removeObserver(observer) {}
@@ -53,6 +61,13 @@ class StateInterface {
   setState(newState) {}
 
   /**
+   * Returns a clone of passed state value.
+   * @param {T} state - The state to clone
+   * @returns {T} - The cloned state
+   */
+  cloneState(state) {}
+
+  /**
    * Notifies all observers about a state change
    * @param {T} oldState - The previous value of the state
    * @returns {void}
@@ -67,9 +82,9 @@ class StateInterface {
   _notifyRef(oldState) {}
 }
 
-/** @typedef {InterfaceMethodTypes<StateInterface>} Member */
+/** @typedef {InterfaceMethodTypes<StateInterface>} StateMembers */
 
 export {
-  /** @exports Member */
+  /** @exports StateMembers */
   StateInterface,
 };

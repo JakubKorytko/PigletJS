@@ -15,6 +15,30 @@ import console from "@Piglet/utils/console";
 import { generateLayoutFile } from "@Piglet/parser/layout";
 
 /**
+ * Extracts @import statements from CSS code and returns the cleaned code.
+ *
+ * @param {string} css - The CSS source code.
+ * @returns {{ imports: string[], cleanedCode: string }}
+ */
+function extractAndRemoveCssImports(css) {
+  const importRegex = /^@import\s+[^;]+;/gm;
+  const imports = [];
+  let cleaned;
+
+  let match;
+  while ((match = importRegex.exec(css)) !== null) {
+    imports.push(match[0]);
+  }
+
+  cleaned = css.replace(importRegex, "").trim();
+
+  return {
+    imports,
+    cleanedCode: cleaned,
+  };
+}
+
+/**
  * Extracts import statements from JavaScript code and returns the cleaned code.
  *
  * @param {string} code - The JavaScript source code.
@@ -97,8 +121,21 @@ const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
  */
 const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   if (!scriptJS && !externalJS) return;
+  const useAsyncRegex = /^\s*["']use async['"]\s*[;|\n]/gm;
+  let isAsync = false;
 
-  const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
+  const fullScript = [externalJS, scriptJS]
+    .filter(Boolean)
+    .map((script) => {
+      const isCurrentAsync = useAsyncRegex.test(script);
+      if (isCurrentAsync) {
+        isAsync = true;
+        return script.replace(useAsyncRegex, "").trim();
+      }
+      return script;
+    })
+    .join("\n\n");
+
   const { imports, cleanedCode } = extractAndRemoveImports(fullScript);
 
   await fsp.mkdir(resolvePath("@/builtScript"), {
@@ -108,7 +145,7 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
 
   const scriptForFile = formatJS(`
   ${imports.join("\n")}
-  ${CONST.parserStrings.exportBeforeScript}
+  ${CONST.parserStrings.exportBeforeScript(isAsync)}
   ${cleanedCode}\n}`);
 
   return fsp.writeFile(outputPath, scriptForFile);
@@ -157,14 +194,24 @@ const injectInnerHTMLToComponent = (
   });
 
   const styleMatch = styleRegex(html);
+  const cssImports = [];
+
   const styleCSS = [externalCSS, styleMatch ? styleMatch[1].trim() : ""]
     .filter(Boolean)
+    .map((css) => {
+      const { imports, cleanedCode } = extractAndRemoveCssImports(css);
+      cssImports.push(...imports);
+      return cleanedCode;
+    })
     .join("\n\n");
 
   const convertedCSS = convertSelectorsPascalToSnake(styleCSS);
 
   return `
-  <style>${convertedCSS}</style>
+  <style>
+  ${cssImports.join("\n")}
+  ${convertedCSS}
+  </style>
   ${modifiedContent}
   `;
 };
@@ -230,8 +277,6 @@ const getContentTag = (html) => {
  * @param {string} filePath - Path to the component source file.
  */
 async function buildComponent(filePath) {
-  "use strict";
-
   try {
     const html = await fsp.readFile(filePath, "utf-8");
     const content = getContentTag(html);
@@ -291,16 +336,12 @@ async function extractDescriptionsFromFile(filePath) {
   try {
     const fileContent = await fsp.readFile(filePath, "utf-8");
     const descriptionMatches = [];
-    const regex = /<script\s+content="description">([\s\S]*?)<\/script>/g;
+    const regex =
+      /<script\s+type=["']application\/json["']\s*>([\s\S]*?)<\/script>/g;
 
     let match;
     while ((match = regex.exec(fileContent)) !== null) {
       let raw = match[1].trim();
-
-      // Remove "export default" and trailing semicolons or extra closing
-      if (raw.startsWith("export default")) {
-        raw = raw.replace(/^export\s+default\s+/, "").trim();
-      }
 
       // Remove trailing semicolon if present
       if (raw.endsWith(";")) {
@@ -309,7 +350,10 @@ async function extractDescriptionsFromFile(filePath) {
 
       try {
         // Evaluate as JS object using `Function` constructor to avoid unsafe `eval`
-        const descriptionData = new Function(`return ${raw}`)();
+        const descriptionData = JSON.parse(raw);
+        const { attributes } = CONST.defaultWebType(filePath);
+        descriptionData.attributes ??= [];
+        descriptionData.attributes.push(...attributes);
         descriptionMatches.push(descriptionData);
       } catch (e) {
         console.msg("components.errorParsingDescription", e);

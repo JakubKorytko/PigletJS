@@ -230,8 +230,8 @@ export default {
     ]),
   },
   parserStrings: {
-    exportBeforeScript: `
-      export default function({
+    exportBeforeScript: (isAsync) => `
+      export default ${isAsync ? "async" : ""} function({
       $attrs,
       $onBeforeUpdate,
       $onAfterUpdate,
@@ -243,11 +243,25 @@ export default {
       $B,
       $$,
       $$P,
+      $this,
+      $document,
+      out,
     }) {
     `,
   },
   defaultWebType: (fileName) => ({
     name: path.basename(fileName, ".pig.html"),
     description: "No description found",
+    attributes: [
+      {
+        name: "fragment",
+        description:
+          "Indicates that the component should be rendered as a fragment.",
+        value: {
+          type: "boolean",
+        },
+        default: "false",
+      },
+    ],
   }),
 };

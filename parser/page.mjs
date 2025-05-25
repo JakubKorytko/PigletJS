@@ -40,8 +40,6 @@ const injectScriptBeforeBody = function (html, scriptSrc) {
  * @returns {Promise<string|false>} - The full HTML content or false on failure.
  */
 async function generateAppHtml(route) {
-  "use strict";
-
   const appHtmlPath = resolvePath("@/Pig.html");
   try {
     const appHtml = await fs.readFile(appHtmlPath, "utf-8");

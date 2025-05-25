@@ -41,7 +41,7 @@ class ReactiveComponent extends HTMLElement {
    * @returns {ReactiveVirtualMembers["__mountCallback"]["ReturnType"]}
    * @virtual
    */
-  __mountCallback = (reason) => {};
+  __mountCallback(reason) {}
 
   /** @type {ReactiveVirtualMembers["__componentName"]["Type"]} */
   __componentName = "";
@@ -179,7 +179,7 @@ class ReactiveComponent extends HTMLElement {
    */
   unmount() {
     window.Piglet.mountedComponents.delete(this.__mountData);
-    this.__mountCallback = undefined;
+    this.__mountCallback = () => {};
     this.internal.mounted = false;
     for (const remove of this.__observers.values()) {
       remove?.(this);
@@ -262,12 +262,16 @@ class ReactiveComponent extends HTMLElement {
     }
 
     const fragment = parseHTML(html, this);
+
+    if (!this.internal.fragment.enabled) {
+      this.shadowRoot.replaceChildren();
+    }
+
     this.appendChildren(fragment);
 
     if (this.internal.fragment.enabled) {
       this.internal.fragment.content = fragment;
     } else {
-      this.shadowRoot.replaceChildren();
       this.shadowRoot.appendChild(fragment);
     }
 
@@ -308,8 +312,14 @@ class ReactiveComponent extends HTMLElement {
    * @type {ReactiveMembers["state"]["Type"]}
    * @returns {ReactiveMembers["state"]["ReturnType"]}
    */
-  state(property, initialValue, asRef = false) {
-    const state = useState(this.__componentKey, property, initialValue, asRef);
+  state(property, initialValue, asRef = false, avoidClone = false) {
+    const state = useState(
+      this.__componentKey,
+      property,
+      initialValue,
+      asRef,
+      avoidClone,
+    );
     this.observeState(property);
     return state;
   }

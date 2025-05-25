@@ -31,7 +31,8 @@
  *   componentName: string, // Component name
  *   path: StatePath, // State path
  *   initialValue?: T, // Initial value
- *   asRef?: boolean // Whether the state is a ref
+ *   asRef?: boolean, // Whether the state is a ref
+ *   avoidClone?: boolean // Whether to avoid cloning the state value
  * ) => StateValue<T>} UseState
  * Hook to manage state in a component, providing access to the current value and the ability to observe it.
  */

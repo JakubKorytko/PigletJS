@@ -190,9 +190,10 @@ class BaseReactiveComponentInterface {
    * @param {string} property - The property to observe
    * @param {*} initialValue - The initial value of the state
    * @param {boolean} [asRef] - Whether it was called from a ref
+   * @param {boolean} [avoidClone=false] - Whether to avoid cloning the initial value
    * @returns {{ value: T }}
    */
-  state(property, initialValue, asRef) {
+  state(property, initialValue, asRef, avoidClone = false) {
     return { value: initialValue };
   }
 
@@ -235,9 +236,10 @@ class VirtualReactiveComponentInterface extends BaseReactiveComponentInterface {
 
   /**
    * The mount callback of the component
-   * @type {((reason: Reason) => void)}
+   * @param {Reason} reason - The reason for the mount
+   * @returns {void}
    */
-  __mountCallback;
+  __mountCallback(reason) {}
 
   /**
    * Called when the attribute of the component changes

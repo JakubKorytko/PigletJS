@@ -35,7 +35,11 @@ interface PigletLogs {
     maxReconnectAttempts: string;
     serverRestarted: string;
   };
+  sendToExtension: string;
   trackingTree: (component: { constructor: { name: string } }) => string;
+  errorLoadingScript: string;
+  errorInComponentScript: string;
+  cloneWarning: string;
 }
 
 interface Constants {
@@ -88,6 +92,7 @@ interface Constants {
   conditionalName: string;
   appRootName: string;
   appRootTag: string;
+  stopComponentScriptExecution: string;
 }
 
 declare const CONST: Constants;

@@ -211,6 +211,9 @@ const generateComponentData = function (hostElement) {
       $$: useMarkerGenerator,
       $$P: createNestedStateProxy(false, hostElement),
       $: $create.bind(hostElement),
+      $this: hostElement,
+      $document: hostElement.shadowRoot,
+      out: CONST.stopComponentScriptExecution,
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {
@@ -260,7 +263,9 @@ const scriptRunner = function (hostElement, module, scriptReason) {
         $reason: mountReason ?? scriptReason,
       });
     } catch (e) {
-      console.error(CONST.pigletLogs.errorInComponentScript, e);
+      if (e !== CONST.stopComponentScriptExecution) {
+        console.error(CONST.pigletLogs.errorInComponentScript, e);
+      }
     }
 
     componentMountCleanup(this, callbacks);
@@ -272,10 +277,13 @@ const scriptRunner = function (hostElement, module, scriptReason) {
     while (this.forwardedQueue.length) {
       const { ref, delayed, updates } = this.forwardedQueue.shift();
       ref.attrs = { ...ref.attrs, ...updates };
-      if (ref?.internal?.mounted) {
+      if (
+        ref?.internal?.mounted &&
+        typeof ref?.__mountCallback === "function"
+      ) {
         if (delayed) {
           setTimeout(() => {
-            ref?.__mountCallback(CONST.reason.attributesChange(updates));
+            ref.__mountCallback(CONST.reason.attributesChange(updates));
           }, 0);
         } else {
           ref.__mountCallback(CONST.reason.attributesChange(updates));

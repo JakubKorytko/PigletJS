@@ -3,6 +3,7 @@
 import { getDeepValue } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
+import State from "@Piglet/browser/classes/State";
 
 /** @implements {RenderIfInterface} */
 class RenderIf extends ReactiveDummyComponent {
@@ -57,6 +58,18 @@ class RenderIf extends ReactiveDummyComponent {
    */
   _updateFromAttribute() {
     let conditionProperty = this.attrs.condition;
+    if (typeof conditionProperty !== "string") {
+      if (conditionProperty instanceof State) {
+        this._state = conditionProperty;
+        super.observeState(conditionProperty);
+        this._updateCondition(this._state);
+        return;
+      }
+
+      this._updateCondition(conditionProperty);
+      return;
+    }
+
     this._negated = false;
     if (conditionProperty.startsWith("!")) {
       this._negated = true;
@@ -97,7 +110,11 @@ class RenderIf extends ReactiveDummyComponent {
     }
 
     if (isAttribute) {
-      this._updateCondition(this._parent.attrs[conditionProperty]);
+      // TODO: Handle attributes passed in HTML tag correctly
+      this._updateCondition(
+        this._parent.attrs[conditionProperty] ??
+          this._parent.attrs[conditionProperty.toLowerCase()],
+      );
     } else {
       this._state =
         window.Piglet.state[this._parent.__componentKey][

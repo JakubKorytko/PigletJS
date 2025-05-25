@@ -1,36 +1,17 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+/** @import {ElementProxy} from "@jsdocs/browser/scriptRunner.d" */
+/** @import CONST from "@Piglet/browser/CONST" */
 
 /**
- * Selects an element inside the component's shadow DOM and provides
- * a fluent API for managing event listeners and passing attributes or reactive references.
- *
- * @param {string} selector - A CSS selector for the target element inside shadow DOM.
- * @returns {ElementWrapper} An object with `.on`, `.off`, and `.pass` methods.
- *
- * @example
- * // Basic usage
- * element("#btn").on("click", () => {
- *   console.log("Clicked!");
- * });
- *
- * @example
- * // Using handler reference for later removal
- * const handler = () => console.log("Clicked!");
- * element("#btn").on("click", handler).off("click", handler);
- *
- * @example
- * // Passing attribute
- * element("#box").pass("title", "Tooltip text");
- *
+ * @template T
+ * @param {string|HTMLElement|ReactiveComponent|ReactiveDummyComponent} nodeOrSelector
+ * @param {T} [expect] - The expected type of the element. If not provided, defaults to `HTMLElement`.
+ * @returns {(ElementProxy & T['prototype'] & HTMLElement | null)}
  */
+function $element(nodeOrSelector, expect) {}
 
-/**
- * @typedef {Object} ElementWrapper
- * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} on - Attaches an event listener.
- * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} off - Removes an event listener.
- * @property {(attrName: string, value: any) => ElementWrapper} pass - Passes a static value  an attribute/property.
- */
-let $element;
+/** @type {(selector: string) => (ElementProxy & HTMLElement | null)[]} */
+let $elements;
 
 /**
  * An object that contains attributes assigned to the component. The `attributes` object
@@ -122,3 +103,39 @@ let $B;
  * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
  */
 let $$P;
+
+/**
+ * Callback called before the component is updated.
+ * If the callback returns `false`, the update is canceled.
+ * @type {Function} $onBeforeUpdate
+ * @param {() => boolean} callback - Callback function to be executed before the update.
+ */
+let $onBeforeUpdate;
+
+/**
+ * Callback called after the component is updated.
+ * This is useful for performing actions after the DOM has been updated.
+ * @type {Function} $onAfterUpdate
+ * @param {() => void} callback - Callback function to be executed after the update.
+ */
+let $onAfterUpdate;
+
+/**
+ * A reference to the document object, typically the shadow DOM of the component.
+ * This is used to access the component's DOM elements and perform operations on them.
+ * @type {Document} $document
+ */
+let $document;
+
+/**
+ * A reference to the current component instance.
+ * This is used to access the component's properties and methods directly.
+ * @type {ReactiveComponent|ReactiveDummyComponent}
+ */
+let $this;
+
+/**
+ * Value used to stop the execution of the component script.
+ * @type {typeof CONST.stopComponentScriptExecution}
+ */
+let out;

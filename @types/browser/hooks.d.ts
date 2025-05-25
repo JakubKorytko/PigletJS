@@ -23,6 +23,7 @@ export declare function useState<T>(
   path: StatePath,
   initialValue?: T,
   asRef?: boolean,
+  avoidClone?: boolean,
 ): StateValue<T>;
 
 /** Hook to manage observers for a state in a component. */
