@@ -96,8 +96,8 @@ const queryElement = function (hostElement, selectorOrNode) {
 
   /** @type {ElementProxy} */
   const api = {
-    on(event, callback, ...options) {
-      el.addEventListener(event, callback, ...options);
+    on(event, callback, options) {
+      el.addEventListener(event, callback, options);
       const storage = ensureStorage();
       if (!storage.has(event)) storage.set(event, new Set());
       storage.get(event).add(callback);

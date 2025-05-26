@@ -1,4 +1,5 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+/** @import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent" */
 /** @import {StateInterface} from "@jsdocs/browser/classes/State.d" */
 /** @import {Navigate, FetchWithCache} from "@jsdocs/browser/helpers.d" */
 /** @import {TreeNode} from "@jsdocs/browser/tree.d" */
@@ -37,6 +38,10 @@
  *   __proxyCache: WeakMap<string, StateValue<unknown>>, // Deep state proxy cache,
  *   __fetchCache: Map<string, string>, // The fetch cache,
  *   __fetchQueue: Map<string, Promise<string>>, // The fetch queue,
+ *   types: {
+ *     RC: ReactiveComponent, // ReactiveComponent class
+ *     RDC: ReactiveDummyComponent, // ReactiveDummyComponent class
+ *   }
  * }} Config
  * PigletJS configuration object.
  */

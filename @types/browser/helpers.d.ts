@@ -7,7 +7,14 @@ export function toPascalCase(str: string): string;
 /** Makes an API request and returns a promise resolving to the response data */
 export function api(
   path: string,
-  expect?: "json" | "text" | "blob" | "arrayBuffer" | "formData",
+  fetchOptions: RequestInit = {},
+  expect?:
+    | "json"
+    | "text"
+    | "blob"
+    | "arrayBuffer"
+    | "formData"
+    | "raw" = "raw",
 ): Promise<any>;
 
 /** Navigates to a given route */

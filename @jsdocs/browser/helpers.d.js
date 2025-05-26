@@ -11,7 +11,7 @@
  */
 
 /**
- * @typedef {(path: string, fetchOptions?: RequestInit, expect?: 'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData') => Promise<any>} Api
+ * @typedef {(path: string, fetchOptions?: RequestInit, expect?: 'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData' | 'raw') => Promise<any>} Api
  * Makes an API request and returns a promise resolving to the response data.
  */
 

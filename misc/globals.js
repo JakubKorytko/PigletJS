@@ -5,8 +5,8 @@
 /**
  * @template T
  * @param {string|HTMLElement|ReactiveComponent|ReactiveDummyComponent} nodeOrSelector
- * @param {T} [expect] - The expected type of the element. If not provided, defaults to `HTMLElement`.
- * @returns {(ElementProxy & T['prototype'] & HTMLElement | null)}
+ * @param {T & Element} [expect] - The expected type of the element. If not provided, defaults to `HTMLElement`.
+ * @returns {(ElementProxy & T & HTMLElement | null)}
  */
 function $element(nodeOrSelector, expect) {}
 
@@ -139,3 +139,9 @@ let $this;
  * @type {typeof CONST.stopComponentScriptExecution}
  */
 let out;
+
+/**
+ * Template literal for creating elements within the component.
+ * @type {(strings: TemplateStringsArray, ...values: any[]) => HTMLElement}
+ */
+let $;

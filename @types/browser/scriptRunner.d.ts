@@ -2,7 +2,11 @@ import { ReactiveComponent } from "@Piglet/browser/classes/ReactiveComponent";
 
 // Proxy for an element with event listener methods and updates
 export interface ElementProxy {
-  on(event: string, callback: Function): ElementProxy; // Add an event listener
+  on(
+    event: string,
+    callback: Function,
+    options?: boolean | AddEventListenerOptions,
+  ): ElementProxy; // Add an event listener
   off(event: string, callback: Function): ElementProxy; // Remove an event listener
   clearListeners(): ElementProxy; // Clear all event listeners
   pass(updates: Record<string, any>): ElementProxy; // Pass updates to the element

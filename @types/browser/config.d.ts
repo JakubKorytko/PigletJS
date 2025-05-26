@@ -1,5 +1,6 @@
 import { Navigate, FetchWithCache } from "./helpers";
 import ReactiveComponent from "./classes/ReactiveComponent";
+import ReactiveDummyComponent from "./classes/ReactiveDummyComponent";
 import AppRoot from "./classes/AppRoot";
 import { StateValue } from "./hooks.js";
 
@@ -38,6 +39,10 @@ export interface Config {
   __proxyCache: Map<string, StateValue<unknown>>;
   __fetchCache: Map<string, string>;
   __fetchQueue: Map<string, Promise<string>>;
+  types: {
+    RC: ReactiveComponent;
+    RDC: ReactiveDummyComponent;
+  };
 }
 
 declare global {

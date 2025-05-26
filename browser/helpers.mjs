@@ -36,7 +36,7 @@ const getDeepValue = function (obj, pathParts) {
 };
 
 /** @type {Api} */
-const api = async function (path, fetchOptions = {}, expect = "json") {
+const api = async function (path, fetchOptions = {}, expect = "raw") {
   const url = `${CONST.apiRoute}/${path.replace(/^\/+/, "")}`;
 
   let res;
@@ -48,6 +48,10 @@ const api = async function (path, fetchOptions = {}, expect = "json") {
 
   const contentType = res.headers.get("Content-Type") || "";
   const expected = expect.toLowerCase();
+
+  if (expected === "raw") {
+    return res;
+  }
 
   const parsers = {
     json: () => res.json(),
