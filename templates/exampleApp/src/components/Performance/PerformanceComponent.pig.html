@@ -1,30 +1,59 @@
 <content>
-  <div class="counter-holder">
+  <main>
     <span>0000</span>
-  </div>
+  </main>
   <PerformanceComponent />
 </content>
 
 <script>
-  this.disableHMR();
+  import animations from "/modules/animations.pig";
 
-  const { reachedEnd } = $attrs;
+  $onBeforeUpdate($element("main").clearListeners);
 
-  let $firstRender = $ref(true);
+  const { reachedEnd, componentId = 0, testProperties } = $attrs;
+  const {
+    fragmented,
+    delayedPass: delayed,
+    componentsToRender = 1,
+  } = testProperties ?? {};
 
-  if ($firstRender) {
-    $element("span").innerText = `${$id}`.padStart(4, "0");
-    $firstRender = false;
+  $P.clickCount = $$(0);
+  $B.firstRender = $$(true);
+  $B.initialComponentId = $$(componentId);
+
+  const componentIdToPass = componentId + 1 + $P.clickCount;
+  const isTheLastComponent = $B.initialComponentId === componentsToRender;
+  const counterHolder = $element("main");
+
+  counterHolder.on("click", (_) => $P.clickCount++);
+
+  $element("span").innerText = `${componentIdToPass}`.padStart(4, "0");
+
+  // we need to disable this to prevent the components from being re-rendered
+  // when the fragment is already injected
+  if (fragmented) $this.disableHMR();
+
+  if ($B.firstRender) {
+    const { frames, options } = animations.grow;
+    $B.animation = $$(counterHolder.animate(frames, options), true);
+    $B.firstRender = false;
   }
 
-  if ($id >= 1000) {
-    this.kill();
-    if (typeof reachedEnd === "function") {
-      reachedEnd($id);
-    }
-  } else {
-    $element("PerformanceComponent")?.pass({ reachedEnd });
+  $B.animation.cancel();
+  $B.animation.play();
+
+  if (isTheLastComponent) {
+    if (!fragmented) $this.unmount();
+    reachedEnd(componentId);
+    throw out;
   }
+
+  $element(`PerformanceComponent`).pass({
+    reachedEnd,
+    componentId: componentIdToPass,
+    delayed,
+    testProperties,
+  });
 </script>
 
 <style>
@@ -32,27 +61,36 @@
     width: 100px;
     height: 100px;
     display: contents;
-  }
 
-  .counter-holder {
-    width: 100px;
-    height: 100px;
-    background-image: url("/public/images/pig_counter.png");
-    background-size: contain;
-    position: relative;
-    margin: 20px;
-    border: 2px solid #f2772e;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-  }
+    main {
+      width: 100px;
+      height: 100px;
+      background-image: url("/public/images/pig_counter.png");
+      background-size: contain;
+      position: relative;
+      margin: 20px;
+      border: 2px solid #f2772e;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+      background-color: white;
+      cursor: pointer;
 
-  .counter-holder span {
-    position: absolute;
-    top: 44px;
-    left: 53px;
-    color: black;
-    font-size: 0.8rem;
-    font-weight: bold;
-    user-select: none;
+      &:hover {
+        transform: scale(1.1);
+        background-color: #ff8c42;
+        transition: transform 0.1s ease;
+      }
+
+      span {
+        position: absolute;
+        top: 44px;
+        left: 53px;
+        color: black;
+        font-size: 0.8rem;
+        transform: rotate3d(1, 1, 1, 352deg);
+        font-weight: bold;
+        user-select: none;
+      }
+    }
   }
 </style>

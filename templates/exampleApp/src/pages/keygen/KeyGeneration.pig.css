@@ -1,0 +1,139 @@
+@import "/public/styles/page.css";
+
+:host {
+  padding: 2rem;
+
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4rem;
+    width: fit-content;
+    max-width: 100%;
+    position: relative;
+
+    h2 {
+      width: 700px;
+      max-width: 100%;
+    }
+
+    img {
+      margin-bottom: -1rem;
+      width: 60px;
+    }
+
+    section {
+      &:nth-of-type(1) {
+        display: flex;
+        flex-direction: column;
+        width: fit-content;
+        height: fit-content;
+
+        header {
+          display: flex;
+          flex-direction: row;
+          gap: 20px;
+          align-items: center;
+          word-spacing: 2px;
+          margin-bottom: -0.5rem;
+        }
+
+        form {
+          display: flex;
+          width: 100%;
+
+          button {
+            padding: 0 1rem;
+            border: 2px solid #f2772e;
+            border-left: none;
+            background-color: #f2772e;
+            color: white;
+            border-radius: 0 8px 8px 0;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+
+            &:hover {
+              background-color: #ff934c;
+            }
+          }
+
+          input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 2px solid #f2772e;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            background: #1e1e1e;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+          }
+        }
+
+        > div {
+          background-color: #2a2a2a;
+          padding: 2rem;
+          border-radius: 1rem;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1.2rem;
+          width: 400px;
+
+          div {
+            width: 100%;
+            position: relative;
+          }
+
+          .fa-clipboard,
+          .fa-check {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+          }
+
+          .fa-clipboard:hover,
+          .fa-check {
+            cursor: pointer;
+            color: #f2772e;
+          }
+        }
+
+        textarea {
+          width: 100%;
+          height: 100px;
+          padding: 0.75rem;
+          background: #1e1e1e;
+          border: 2px solid #f2772e;
+          border-radius: 0.5rem;
+          color: white;
+          resize: none;
+          font-size: 0.95rem;
+        }
+      }
+
+      &:nth-of-type(2) {
+        width: 500px;
+        display: flex;
+        text-align: justify;
+        flex-direction: column;
+        gap: 1rem;
+        max-width: 100%;
+
+        span {
+          color: #f2772e;
+          font-weight: bold;
+        }
+
+        strong {
+          color: white;
+        }
+      }
+    }
+  }
+}
+
+

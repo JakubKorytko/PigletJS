@@ -1,17 +1,56 @@
 <content>
-  <div class="f-column">
+  <div>
     <h1>404</h1>
     <h2>Page Not Found</h2>
     <p>Oops! The page you're looking for doesn't exist or has been moved.</p>
-    <a id="back">Back to Home</a>
+    <NavLink to="/">Go to Home</NavLink>
   </div>
 </content>
 
-<script>
-  $element("#back").on("click", () => {
-    $navigate("/");
-  });
-</script>
+<style>
+  @import "/public/styles/page.css";
+
+  :host {
+    padding: 2rem;
+
+    div {
+      flex-direction: column;
+
+      h1 {
+        font-size: 6rem;
+        color: #ff4f4f;
+        margin-bottom: 0.5rem;
+      }
+
+      h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        font-size: 1.1rem;
+        color: #c4c4c4;
+        margin-bottom: 2rem;
+      }
+
+      NavLink {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: #ff4f4f;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+          background-color: #e03d3d;
+        }
+      }
+    }
+  }
+</style>
 
 <!--suppress JSUnusedGlobalSymbols -->
 <script content="description">

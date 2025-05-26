@@ -1,0 +1,56 @@
+<content>
+  <main>
+    <div>
+      <section>
+        <header>
+          <h2>
+            <span>Here we have a simple example of a page</span>
+            <code>src/pages/pigs/PigsPage.pig.html</code>
+          </h2>
+          <h3>
+            It demonstrates how state flows down and events bubble up between
+            components, highlighting reactivity, conditional logic, and
+            parent-child communication in the framework. It contains two
+            components:
+          </h3>
+        </header>
+
+        <div>
+          <h3>
+            1. State Holder & Conditional Renderer
+            <br />
+            <code>src/components/PigsContainer/PigsContainer.pig.html</code>
+          </h3>
+
+          <span
+            >The main component is responsible for managing deep reactive state
+            — meaning it automatically re-renders when any nested property is
+            updated. It checks if all tracked values are even and conditionally
+            renders a message based on that. Additionally, it displays a table
+            showing the number of times each of the five pigs has been
+            clicked.</span
+          >
+        </div>
+
+        <div>
+          <h3>
+            2. Pig Image Renderer & Click Listener
+            <br />
+            <code>src/components/ClickCounter/ClickCounter.pig.html</code>
+          </h3>
+          <span
+            >This subcomponent is embedded within the main component and is
+            responsible for rendering images of the pigs with a map for click
+            areas and notifying the parent component about clicks. It receives a
+            callback from the parent component in passed attributes, allowing
+            each pig image to handle click events and notify the parent about
+            interactions.</span
+          >
+        </div>
+      </section>
+      <section>
+        <PigsContainer />
+      </section>
+    </div>
+  </main>
+</content>

@@ -1,22 +1,3 @@
-const performanceWrapper = function (label, method) {
-  return function (callback) {
-    console.profile(label);
-    console.time(label);
-    const start = performance.now();
-
-    method();
-
-    console.profileEnd(label);
-    console.timeEnd(label);
-    const end = performance.now();
-
-    const duration = Math.round(end - start);
-    if (typeof callback === "function") {
-      callback(duration);
-    }
-  };
-};
-
 const createPerformanceWrapper = function (label) {
   let startTime = null;
 
@@ -38,4 +19,4 @@ const createPerformanceWrapper = function (label) {
   };
 };
 
-export { performanceWrapper, createPerformanceWrapper };
+export { createPerformanceWrapper };

@@ -1,0 +1,110 @@
+@import "/public/styles/globals.css";
+
+:host {
+  z-index: 999;
+  display: block;
+  min-height: 4rem;
+  position: relative;
+  width: 100%;
+
+  nav {
+    gap: 3rem;
+    width: 100%;
+    height: 4rem;
+    background-color: #000000f0;
+    border-bottom: 1px gray solid;
+    display: flex;
+    position: fixed;
+
+    img {
+      height: 5rem;
+      margin-left: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    main {
+      display: flex;
+      color: #ffffff;
+      gap: 0.5rem;
+      padding-bottom: 0.5rem;
+      font-size: 1.2rem;
+      align-self: end;
+      flex-shrink: 1;
+      flex-grow: 0;
+      min-width: 0;
+
+      :is(section, NavLink) {
+        transition: background-color 0.4s;
+        border-radius: 5px;
+        background-color: rgba(0, 0, 0, 0);
+        display: none;
+        flex-wrap: nowrap;
+        word-break: keep-all;
+        white-space: nowrap;
+        gap: 10px;
+        font-size: 1rem;
+        padding: 4px 30px;
+        align-items: center;
+        user-select: none;
+
+        &:hover {
+          background-color: rgba(255, 129, 47, 0.22);
+          transition: background-color 0.15s;
+        }
+
+        &.active {
+          border-bottom: 2px solid #f2772e;
+          margin-bottom: -2px;
+        }
+
+        &:is(section) {
+          position: relative;
+        }
+      }
+
+      menu:is(section *) {
+        padding-inline-start: unset;
+        margin-block: unset;
+        display: flex;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #444;
+        flex-direction: column;
+        min-width: 200px;
+        padding: 0.5rem 0;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease;
+
+        &.visible {
+          opacity: 1;
+          visibility: visible;
+          display: flex;
+          gap: 1rem;
+          border-radius: 10px;
+          background-color: #000000f0;
+        }
+
+        NavLink {
+          padding: 0.5rem 1rem;
+
+          &.active {
+            border-bottom: none;
+            margin-bottom: 0;
+          }
+
+          &:not(.active) .fa-hand-o-left {
+            display: none;
+          }
+        }
+      }
+
+      i {
+        font-size: 1rem;
+        height: fit-content;
+        color: #f2772e;
+      }
+    }
+  }
+}

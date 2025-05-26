@@ -1,0 +1,48 @@
+<content>
+  <main>
+    <img alt="PigletJS Logo" src="/public/images/favicon.svg" />
+    <section>
+      <h1>Welcome to <span>PigletJS</span></h1>
+      <a href="https://github.com/JakubKorytko/PigletJS" target="_blank">
+        <header>
+          <i aria-hidden="true" class="fa fa-github-square"></i>
+          <div></div>
+        </header>
+        <span>Official repository & documentation</span>
+      </a>
+
+      <div>
+        <p>
+          This is
+          <code>src/pages/home/HomePage.pig.html</code>
+          of your app.
+        </p>
+      </div>
+      <p>
+        <strong
+          >You can cycle through the pages using the navigation bar</strong
+        >
+        on the top. Each page demonstrates a different feature of the app, so
+        you can see how they work.
+        <strong>Don't forget to install the PigletJS extension</strong>
+        in your browser to view the app tree and state. You can even change the
+        state of your app there!
+      </p>
+    </section>
+  </main>
+</content>
+
+<script>
+  $P.hue = $$(0);
+
+  $element("img").on("click", () => ($P.hue = ($P.hue + 40) % 360));
+  $element("img").style.filter = `hue-rotate(${$P.hue}deg)`;
+</script>
+
+<!--suppress JSUnusedGlobalSymbols -->
+<script type="application/json">
+  {
+    "name": "HomePage",
+    "description": "Home page"
+  }
+</script>
