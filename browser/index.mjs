@@ -3,21 +3,33 @@ import {
   navigate,
   loadComponent,
   fetchWithCache,
+  api,
+  pageRevealCallback,
 } from "@Piglet/browser/helpers";
 
-import AppRoot from "@Piglet/browser/classes/AppRoot";
-import RenderIf from "@Piglet/browser/classes/RenderIf";
-import Socket from "@Piglet/browser/classes/Socket";
+import * as Classes from "@Piglet/browser/classes/index";
+
+window.addEventListener("pagereveal", pageRevealCallback);
+
+const coreComponents = [
+  Classes.AppRoot,
+  Classes.RenderIf,
+  Classes.NavLink,
+  Classes.KinderGarten,
+  Classes.AppContent,
+];
 
 async function loadCoreComponents() {
-  await loadComponent(AppRoot);
-  await loadComponent(RenderIf);
+  for (const component of coreComponents) {
+    await loadComponent(component);
+  }
 }
 
-new Socket();
+new Classes.Socket();
 
 window.fetchWithCache = fetchWithCache;
 window.Piglet = Piglet;
+window.$api = api;
 
 // noinspection JSIgnoredPromiseFromCall
 loadCoreComponents();

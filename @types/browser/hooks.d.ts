@@ -22,8 +22,8 @@ export declare function useState<T>(
   componentName: string,
   path: StatePath,
   initialValue?: T,
-  isCreatedByListener?: boolean,
   asRef?: boolean,
+  avoidClone?: boolean,
 ): StateValue<T>;
 
 /** Hook to manage observers for a state in a component. */

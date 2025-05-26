@@ -16,18 +16,33 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
   _route;
 
   /**
+   * Component layout paths
+   * @type {{
+   *     [key: string]: {
+   *         layout: string
+   *     },
+   *     layouts: Record<string, string>
+   * }}
+   */
+  _layoutPaths = {};
+
+  /**
+   * Previous layout path
+   * @type {string}
+   */
+  __previousLayout = "";
+
+  /**
    * Current route path
    * @type {string}
    */
   route;
 
   /**
-   * List of attributes to observe for changes
-   * @returns {string[]} Array of attribute names
+   * Fetches layout paths from the server
+   * @returns {Promise<void>}
    */
-  static get observedAttributes() {
-    return [];
-  }
+  async getLayoutPaths() {}
 
   /**
    * Adds popstate event listener for handling browser navigation
@@ -44,11 +59,35 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
   async changeRoute(newRoute) {}
 
   /**
+   * Handles view transitions when the route changes
+   * @param {{ base: ReactiveComponent | undefined, layout: string }} baseAndLayout - Base path for the layout
+   * @param {boolean} isReloaded - Indicates if the view is reloaded
+   * @returns {Promise<void>}
+   */
+  async viewTransition({ base, layout }, isReloaded);
+
+  /**
+   * Preloads layout and base for a given route
+   * @param {string} route - Route path to preload
+   * @param {boolean} isReloaded - Indicates if the route is reloaded
+   * @returns {Promise<{ base: ReactiveComponent | undefined, layout: string }>}
+   */
+  async preLoadRoute(route, isReloaded = false);
+
+  /**
    * Loads and renders the view for a given route
    * @param {string} route - Route path to load
    * @returns {Promise<void>}
    */
   async loadRoute(route) {}
+
+  /**
+   * Synchronously take care of rendering the route
+   * @param {ReactiveComponent | undefined} base - Base component to render
+   * @param {string} layout - Layout path to use
+   * @returns {void}
+   */
+  loadRouteSync(base, layout);
 
   /**
    * Extracts custom component tags from HTML source
@@ -62,30 +101,28 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
   /**
    * Loads custom component modules
    * @param {string[]} tags - Array of component tag names to load
-   * @param {Set<string>} seen - Set of seen component tag names
+   * @param {Set<string>=} seen - Set of seen component tag names
    * @returns {Promise<void>}
    */
   async loadCustomComponents(tags, seen) {}
 
   /**
-   * Renders a component into the view
-   * @param {typeof ReactiveComponent | undefined} component - Component class or function to render
+   * Lets the child components know that the app root is connected
    * @returns {Promise<void>}
    */
-  async renderComponent(component) {}
+  async appRootConnected();
 
   /**
-   * Lifecycle method called when an observed attribute changes
-   * @param {string} name - The name of the changed attribute
-   * @param {string|null} oldValue - The previous value of the attribute
-   * @param {string} newValue - The new value of the attribute
-   * @returns {void}
+   * Renders a component into the view
+   * @param {typeof ReactiveComponent | undefined} component - Component class or function to render
+   * @param {string} layout - Layout string to use
+   * @returns {Promise<void>}
    */
-  attributeChangedCallback(name, oldValue, newValue) {}
+  async renderComponent(component, layout) {}
 }
 
-/** @typedef {InterfaceMethodTypes<AppRootInterface>} Member */
-/** @typedef {InterfaceMethodTypes<ReactiveComponent>} Virtual */
+/** @typedef {InterfaceMethodTypes<AppRootInterface>} AppRootMembers */
+/** @typedef {InterfaceMethodTypes<ReactiveComponent>} AppRootVirtualMembers */
 
 export {
   /** @exports Virtual */

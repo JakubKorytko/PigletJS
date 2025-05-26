@@ -48,7 +48,11 @@
  *     maxReconnectAttempts: string, // Max reconnect attempts log
  *     serverRestarted: string // Server restarted log
  *   },
+ *   sendToExtension: string, // Sending to extension log
  *   trackingTree: (component: { constructor: { name: string } }) => string, // Tracking tree log
+ *   errorLoadingScript: string, // Error loading script log
+ *   errorInComponentScript: string, // Error in component script log
+ *   cloneWarning: string, // Clone warning log
  * }} PigletLogs
  * PigletJS logs object.
  */
@@ -57,9 +61,14 @@
  * @typedef {{
  *   coreLogsLevels: LogLevels, // Core logs levels
  *   coreLogLevelsAliases: LogLevelsAliases, // Core logs levels aliases
- *   callerAttribute: string, // Caller attribute
+ *   fragmentRootTagName: string, // Fragment root tag name
+ *   fragmentParentTagName: string, // Fragment parent tag name
+ *   cacheKey: () => string, // Cache key
+ *   reasonCache: (name: Reason) => boolean, // Reason cache function
+ *   componentNotFound: string, // Component not found message
  *   routeAttribute: string, // Route attribute
  *   pigletLogs: PigletLogs, // PigletJS logs object
+ *   pascalCaseRegex: RegExp, // Pascal case regex
  *   socket: {
  *     messageTypes: {
  *       fullReload: string, // Full reload message type
@@ -78,9 +87,10 @@
  *     failedToParseAs: (type: string) => string // Failed to parse as warning
  *   },
  *   componentRoute: {
- *     base: string, // Base route
  *     html: string, // HTML route
- *     script: string // Script route
+ *     script: string, // Script route
+ *     layout: string, // Layout route
+ *     base: string // There is no base route, it is here to keep the structure
  *   },
  *   apiRoute: string, // API route
  *   tagRegex: RegExp, // Tag regex
@@ -93,17 +103,17 @@
  *   attributePrefix: string, // Attribute prefix
  *   reason: {
  *     attributesChange: (changes: AttributeChange[]) => Reason, // Attributes change reason
- *     parentUpdate: (reason: Reason) => Reason, // Parent update reason
- *     addedToDOM: Reason, // Added to DOM reason
- *     onMount: Reason, // On mount reason
- *     stateChange: (changes: Array<unknown>) => Reason // State change reason
+ *     parentUpdate: Reason, // Parent update reason
+ *     stateChange: (changes: Array<unknown>) => Reason, // State change reason
+ *     fragmentInjected: Reason, // Fragment injected reason
+ *     WSReload: Reason
  *   },
  *   attributesObjectName: string, // Attributes object name
- *   notSettledSuffix: string, // Not settled suffix
  *   conditionAttribute: string, // Condition attribute
  *   conditionalName: string, // Conditional name
  *   appRootName: string, // App root name
- *   appRootTag: string // App root tag
+ *   appRootTag: string, // App root tag
+ *   stopComponentScriptExecution: string, // Stop component script execution message
  * }} Constants
  * PigletJS constants object, used to store widely used values.
  */

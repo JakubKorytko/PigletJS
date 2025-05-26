@@ -23,9 +23,9 @@ export default {
   directories: {
     "@": rootDir,
     components: path.resolve(rootDir, "src", "components"),
-    builtComponents: path.resolve(rootDir, "build", "components"),
     builtScript: path.resolve(rootDir, "build", "script"),
     builtHTML: path.resolve(rootDir, "build", "html"),
+    builtLayouts: path.resolve(rootDir, "build", "layouts"),
     pages: path.resolve(rootDir, "src", "pages"),
     public: path.resolve(rootDir, "src", "public"),
     browser: path.resolve(rootDir, dirPath(isProd), "browser"),
@@ -61,7 +61,7 @@ export default {
   customRouteAliases: {
     component: "/component",
     piglet: "/Piglet",
-    module: "/module",
+    module: "/modules",
     api: "/api",
     public: "/public",
   },
@@ -69,6 +69,7 @@ export default {
     component: {
       html: "/component/html",
       script: "/component/script",
+      layout: "/component/layout",
     },
   },
   routes: ["component", "page", "file", "piglet", "module", "api"],
@@ -228,39 +229,39 @@ export default {
       "setup.mjs",
     ]),
   },
-  pageTransitionCss: `:host { animation: waitForCss 0.1s forwards; } @keyframes waitForCss { from { opacity: 0; } to { opacity: 1; } }`,
-  regex: {
-    assignments: /let\s*\$(\w+)\s*=\s*({[\s\S]*?}|[^\n;]+)/gm,
-    declarations: /let\s+((?:\$\w+\s*(?:,\s*)?)+)(;|$)/,
-    refCall: /^\$ref\s*\((.*)\)$/,
-  },
   parserStrings: {
-    exportBeforeScript: `
-      export default function({
-      $state,
-      $attrs,  
+    exportBeforeScript: (isAsync) => `
+      export default ${isAsync ? "async" : ""} function({
+      $attrs,
       $onBeforeUpdate,
       $onAfterUpdate,
       $element,
+      $elements,
       $reason,
-      $id,
-      $key,
+      $,
+      $P,
+      $B,
+      $$,
+      $$P,
+      $this,
+      $document,
+      out,
     }) {
     `,
-    hardcodedImports: `
-    import { api as $api } from "/Piglet/helpers";
-    `,
   },
-  reservedNames: new Set([
-    "$onBeforeUpdate",
-    "$attrs",
-    "$ref",
-    "$state",
-    "$element",
-    "$reason",
-    "$id",
-    "$api",
-    "$key",
-    "$navigate",
-  ]),
+  defaultWebType: (fileName) => ({
+    name: path.basename(fileName, ".pig.html"),
+    description: "No description found",
+    attributes: [
+      {
+        name: "fragment",
+        description:
+          "Indicates that the component should be rendered as a fragment.",
+        value: {
+          type: "boolean",
+        },
+        default: "false",
+      },
+    ],
+  }),
 };

@@ -1,5 +1,8 @@
 import { Navigate, FetchWithCache } from "./helpers";
 import ReactiveComponent from "./classes/ReactiveComponent";
+import ReactiveDummyComponent from "./classes/ReactiveDummyComponent";
+import AppRoot from "./classes/AppRoot";
+import { StateValue } from "./hooks.js";
 
 export interface Config {
   allowDebugging: boolean;
@@ -20,17 +23,26 @@ export interface Config {
     tag: string;
     ref: HTMLElement | ReactiveComponent;
   }>;
-  componentsCount: Record<string, number>;
-  component: Record<string, ReactiveComponent>;
-  AppRoot: ReactiveComponent | undefined;
+  constructedComponents: Record<string, ReactiveComponent>;
+  registeredComponents: Record<string, ReactiveComponent>;
+  previousFetchComponentCacheKeys: Record<
+    string,
+    Record<"html" | "script" | "layout", string>
+  >;
+  AppRoot: AppRoot | undefined;
   log: (
     message: string,
     severity?: "info" | "warn" | "error",
     ...args: unknown[]
   ) => void;
   reset: () => void;
+  __proxyCache: Map<string, StateValue<unknown>>;
   __fetchCache: Map<string, string>;
   __fetchQueue: Map<string, Promise<string>>;
+  types: {
+    RC: ReactiveComponent;
+    RDC: ReactiveDummyComponent;
+  };
 }
 
 declare global {

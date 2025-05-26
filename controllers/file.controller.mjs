@@ -3,6 +3,7 @@ import path from "path";
 import CONST from "@Piglet/misc/CONST";
 import fs from "fs";
 import notFound from "@Piglet/libs/notfound";
+import { convertSelectorsPascalToSnake } from "@Piglet/libs/helpers";
 
 export default (req, res) => {
   if (!req.url.startsWith(CONST.customRouteAliases.public)) {
@@ -19,8 +20,15 @@ export default (req, res) => {
       // noinspection JSIgnoredPromiseFromCall
       notFound(res);
     } else {
+      let result = data;
+      if (
+        contentType === CONST.mimeTypes[".css"] &&
+        filePath.endsWith("pig.css")
+      ) {
+        result = convertSelectorsPascalToSnake(data.toString());
+      }
       res.writeHead(200, { "Content-Type": contentType });
-      res.end(data);
+      res.end(result);
     }
   });
 };

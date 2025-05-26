@@ -1,4 +1,5 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+/** @import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent" */
 /** @import {StateInterface} from "@jsdocs/browser/classes/State.d" */
 /** @import {Navigate, FetchWithCache} from "@jsdocs/browser/helpers.d" */
 /** @import {TreeNode} from "@jsdocs/browser/tree.d" */
@@ -28,13 +29,19 @@
  *     tag: string, // The tag of the component
  *     ref: HTMLElement|ReactiveComponent // The reference to the component
  *   }>,
- *   componentsCount: Record<string, number>, // The number of components by tag
- *   component: Record<string, ReactiveComponent>, // Constructed components
- *   AppRoot: ReactiveComponent | undefined, // The AppRoot component
+ *   AppRoot: AppRoot | undefined, // The AppRoot component
+ *   constructedComponents: Record<string, ReactiveComponent>, // The constructed components
+ *   registeredComponents: Record<string, ReactiveComponent>, // The registered components
+ *   previousFetchComponentCacheKeys: Record<string, Record<'html' | 'script' | 'layout', string>>, // The previous fetch component cache keys
  *   log: (message: string, severity: "info"|"warn"|"error", ...args: any[]) => void, // Log a message with a severity
  *   reset: () => void // Reset the PigletJS configuration,
+ *   __proxyCache: WeakMap<string, StateValue<unknown>>, // Deep state proxy cache,
  *   __fetchCache: Map<string, string>, // The fetch cache,
  *   __fetchQueue: Map<string, Promise<string>>, // The fetch queue,
+ *   types: {
+ *     RC: ReactiveComponent, // ReactiveComponent class
+ *     RDC: ReactiveDummyComponent, // ReactiveDummyComponent class
+ *   }
  * }} Config
  * PigletJS configuration object.
  */

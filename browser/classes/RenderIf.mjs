@@ -1,77 +1,74 @@
 /** @import {RenderIfInterface, Virtual, Member} from "@jsdocs/browser/classes/RenderIf.d" */
-/** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
-/** @typedef {InterfaceMethodTypes<RenderIfInterface>} RenderIfMethods */
-import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
-import { getDeepValue, getHost } from "@Piglet/browser/helpers";
+
+import { getDeepValue } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
+import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
+import State from "@Piglet/browser/classes/State";
 
 /** @implements {RenderIfInterface} */
-class RenderIf extends ReactiveComponent {
+class RenderIf extends ReactiveDummyComponent {
+  // noinspection JSUnusedGlobalSymbols
   static get observedAttributes() {
     return [CONST.conditionAttribute];
   }
+
+  /** @type {RenderIfMembers["_condition"]["Type"]} */
   _condition;
-  _fragment;
-  _template;
 
-  constructor() {
-    super();
+  /** @type {RenderIfMembers["_negated"]["Type"]} */
+  _negated = false;
 
-    this._condition = false;
-    this._negated = false;
-    this._parts = [];
-    this.__stateless = true;
+  /** @type {RenderIfMembers["_parts"]["Type"]} */
+  _parts = [];
 
-    this._contentFragment = document.createDocumentFragment();
-    this._contentMounted = false;
-    this._firstContentMounted = false;
+  /** @type {RenderIfMembers["_contentFragment"]["Type"]} */
+  _contentFragment = document.createDocumentFragment();
 
-    this.onMount((reason) => {
-      if (!this._firstContentMounted) {
-        this._firstContentMounted = true;
-        this._moveChildrenToFragment();
-      }
+  /** @type {RenderIfMembers["_contentMounted"]["Type"]} */
+  _contentMounted = true;
 
-      super.connectedCallback();
-
-      this._updateFromAttribute();
-      this.updateVisibility();
-    });
-
-    this.__isHTMLInjected = true;
-    this._mount(CONST.reason.onMount);
-  }
+  /** @type {RenderIfVirtualMembers["shouldBatchRefUpdates"]["Type"]} */
+  shouldBatchRefUpdates = false;
 
   /**
-   * @type {Member["_moveChildrenToFragment"]["Type"]}
-   * @returns {Member["_moveChildrenToFragment"]["ReturnType"]}
+   * @type {RenderIfMembers["_moveChildrenToFragment"]["Type"]}
+   * @returns {RenderIfMembers["_moveChildrenToFragment"]["ReturnType"]}
    */
   _moveChildrenToFragment() {
-    while (this.firstChild) {
-      this._contentFragment.appendChild(this.firstChild);
-    }
+    this._contentFragment.append(...this.childNodes);
   }
 
   /**
-   * @type {Member["attributeChangedCallback"]["Type"]}
-   * @returns {Member["attributeChangedCallback"]["ReturnType"]}
+   * @type {RenderIfVirtualMembers["attributeChangedCallback"]["Type"]}
+   * @returns {RenderIfVirtualMembers["attributeChangedCallback"]["ReturnType"]}
    */
   attributeChangedCallback(name, oldValue, newValue) {
     if (
       name === CONST.conditionAttribute &&
       oldValue !== newValue &&
-      (!this.__caller || this.__caller.indexOf(CONST.notSettledSuffix) === -1)
+      this._parent
     ) {
       this._updateFromAttribute();
     }
   }
 
   /**
-   * @type {Member["_updateFromAttribute"]["Type"]}
-   * @returns {Member["_updateFromAttribute"]["ReturnType"]}
+   * @type {RenderIfMembers["_updateFromAttribute"]["Type"]}
+   * @returns {RenderIfMembers["_updateFromAttribute"]["ReturnType"]}
    */
   _updateFromAttribute() {
-    let conditionProperty = this.getAttribute(CONST.conditionAttribute);
+    let conditionProperty = this.attrs.condition;
+    if (typeof conditionProperty !== "string") {
+      if (conditionProperty instanceof State) {
+        this._state = conditionProperty;
+        super.observeState(conditionProperty);
+        this._updateCondition(this._state);
+        return;
+      }
+
+      this._updateCondition(conditionProperty);
+      return;
+    }
 
     this._negated = false;
     if (conditionProperty.startsWith("!")) {
@@ -113,17 +110,24 @@ class RenderIf extends ReactiveComponent {
     }
 
     if (isAttribute) {
-      const host = getHost(this.__root);
-      this._updateCondition(host.__attrs[conditionProperty]);
+      // TODO: Handle attributes passed in HTML tag correctly
+      this._updateCondition(
+        this._parent.attrs[conditionProperty] ??
+          this._parent.attrs[conditionProperty.toLowerCase()],
+      );
     } else {
-      this._state = this.state(conditionProperty, undefined);
-      this._updateCondition(this._state.value);
+      this._state =
+        window.Piglet.state[this._parent.__componentKey][
+          conditionProperty
+        ]._state;
+      super.observeState(conditionProperty);
+      this._updateCondition(this._state);
     }
   }
 
   /**
-   * @type {Member["_updateCondition"]["Type"]}
-   * @returns {Member["_updateCondition"]["ReturnType"]}
+   * @type {RenderIfMembers["_updateCondition"]["Type"]}
+   * @returns {RenderIfMembers["_updateCondition"]["ReturnType"]}
    */
   _updateCondition(value) {
     const innerValue = getDeepValue(value, this._parts);
@@ -137,50 +141,43 @@ class RenderIf extends ReactiveComponent {
   }
 
   /**
-   * @type {Member["updateVisibility"]["Type"]}
-   * @returns {Member["updateVisibility"]["ReturnType"]}
+   * @type {RenderIfMembers["updateVisibility"]["Type"]}
+   * @returns {RenderIfMembers["updateVisibility"]["ReturnType"]}
    */
   updateVisibility() {
-    if (this._condition) {
-      if (!this._contentMounted) {
-        this.appendChild(this._contentFragment);
-        this._contentMounted = true;
-      }
-    } else {
-      if (this._contentMounted) {
-        this._moveChildrenToFragment();
-        this._contentMounted = false;
-      }
+    if (this._condition && !this._contentMounted) {
+      this.append(this._contentFragment);
+      this._contentMounted = true;
+    } else if (!this._condition && this._contentMounted) {
+      this._moveChildrenToFragment();
+      this._contentMounted = false;
     }
   }
 
   /**
-   * @type {Member["disconnectedCallback"]["Type"]}
-   * @returns {Member["disconnectedCallback"]["ReturnType"]}
+   * @type {RenderIfVirtualMembers["_mount"]["Type"]}
+   * @returns {RenderIfVirtualMembers["_mount"]["ReturnType"]}
    */
-  disconnectedCallback() {
-    super.disconnectedCallback();
+  _mount(reason) {
+    this._updateFromAttribute();
+    return Promise.all([true]);
   }
 
   /**
-   * @type {Member["runScript"]["Type"]}
-   * @returns {Member["runScript"]["ReturnType"]}
+   * @type {RenderIfVirtualMembers["_update"]["Type"]}
+   * @returns {RenderIfVirtualMembers["_update"]["ReturnType"]}
    */
-  runScript() {
-    return Promise.resolve(undefined);
+  _update(value) {
+    this._updateCondition(value);
   }
 
   /**
-   * @type {Member["onBeforeUpdate"]["Type"]}
-   * @returns {Member["onBeforeUpdate"]["ReturnType"]}
+   * @type {RenderIfVirtualMembers["_refUpdate"]["Type"]}
+   * @returns {RenderIfVirtualMembers["_refUpdate"]["ReturnType"]}
    */
-  onBeforeUpdate() {}
-
-  /**
-   * @type {Member["onAfterUpdate"]["Type"]}
-   * @returns {Member["onAfterUpdate"]["ReturnType"]}
-   */
-  onAfterUpdate() {}
+  _refUpdate(value) {
+    this._updateCondition(value);
+  }
 }
 
 export default RenderIf;

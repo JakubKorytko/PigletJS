@@ -1,20 +1,24 @@
+type Navigate = (route: string) => boolean;
+type FetchWithCache = (url: string) => Promise<string>;
+
 /** Converts a string to PascalCase format */
 export function toPascalCase(str: string): string;
-
-/** Converts a Piglet attribute name to the corresponding HTML attribute format */
-export function toPigletAttr(name: string): string;
-
-/** Converts an HTML attribute name to the corresponding Piglet attribute format */
-export function fromPigletAttr(name: string): string;
 
 /** Makes an API request and returns a promise resolving to the response data */
 export function api(
   path: string,
-  expect?: "json" | "text" | "blob" | "arrayBuffer" | "formData",
+  fetchOptions: RequestInit = {},
+  expect?:
+    | "json"
+    | "text"
+    | "blob"
+    | "arrayBuffer"
+    | "formData"
+    | "raw" = "raw",
 ): Promise<any>;
 
 /** Navigates to a given route */
-export function navigate(route: string): void;
+export function navigate(route: string): boolean;
 
 /** Converts a string to kebab-case format */
 export function toKebabCase(str: string): string;
@@ -27,14 +31,8 @@ export function getMountedComponentsByTag(
   tagName: string,
 ): Array<ReactiveComponent>;
 
-/** Retrieves the host component for a given node, returning null if no ReactiveComponent is found */
-export function getHost(node: Node): HTMLElement | ShadowRoot | null;
-
 /** Retrieves a deep value from an object using a path (array of keys) */
 export function getDeepValue(obj: object, pathParts: string[]): any;
-
-/** Checks if a given node is a ShadowRoot */
-export function isShadowRoot(node: Node): boolean;
 
 /** Sends a message to the extension */
 export function sendToExtension(message: string): void;
@@ -46,3 +44,5 @@ export function fetchWithCache(url: string): Promise<string>;
 export function loadComponent(
   component: typeof ReactiveComponent,
 ): Promise<CustomElementConstructor>;
+
+export type { FetchWithCache, Navigate };

@@ -11,8 +11,8 @@ const useState = (
   componentName,
   path,
   initialValue,
-  isCreatedByListener = false,
   asRef,
+  avoidClone = false,
 ) => {
   if (!window.Piglet.state[componentName]) {
     window.Piglet.state[componentName] = {};
@@ -23,16 +23,9 @@ const useState = (
   if (!window.Piglet.state[componentName][key]) {
     window.Piglet.state[componentName][key] = new State(
       initialValue,
-      isCreatedByListener,
       asRef,
+      avoidClone,
     );
-  } else if (
-    !isCreatedByListener &&
-    window.Piglet.state[componentName][key].__isCreatedByListener
-  ) {
-    window.Piglet.state[componentName][key]._isRef = asRef;
-    window.Piglet.state[componentName][key].setState(initialValue);
-    window.Piglet.state[componentName][key].__isCreatedByListener = false;
   }
 
   /**
@@ -44,7 +37,7 @@ const useState = (
      * Gets the current state value.
      */
     get value() {
-      return /** @type {T} */ (window.Piglet.state[componentName][key].state);
+      return window.Piglet.state[componentName][key].state;
     },
 
     /**

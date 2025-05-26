@@ -1,6 +1,5 @@
 import fs from "fs/promises";
 import { resolvePath } from "@Piglet/utils/paths";
-import CONST from "@Piglet/misc/CONST";
 import console from "@Piglet/utils/console";
 
 /**

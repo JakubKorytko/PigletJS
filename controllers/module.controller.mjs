@@ -5,7 +5,11 @@ import fs from "fs";
 import notFound from "@Piglet/libs/notfound";
 
 export default (req, res) => {
-  const pathWithoutModule = req.url.replace("/module/", "");
+  const pathWithoutModule = req.url.replace(
+    `${CONST.customRouteAliases.module}/`,
+    "",
+  );
+
   const filePath = resolvePath(`@/src/modules/${pathWithoutModule}.mjs`);
   const ext = path.extname(filePath);
   const contentType = CONST.mimeTypes[ext] || "application/javascript";
