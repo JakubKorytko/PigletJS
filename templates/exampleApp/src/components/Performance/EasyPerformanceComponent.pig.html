@@ -1,31 +1,8 @@
 <content>
-  <div class="counter-holder">
-    <span id="id">0000</span>
-  </div>
+  <main>
+    <span>0000</span>
+  </main>
 </content>
-
-<script>
-  this.disableHMR();
-
-  const { id } = $attrs;
-
-  const counterHolder = $element(".counter-holder");
-  const idElement = $element("#id");
-
-  const handleAnimationEnd = () => {
-    counterHolder.classList.remove("rotating");
-  };
-
-  const handleMouseDown = () => {
-    counterHolder.classList.add("rotating");
-    counterHolder.addEventListener("animationend", handleAnimationEnd, {
-      once: true,
-    });
-  };
-
-  counterHolder.addEventListener("mousedown", handleMouseDown);
-  idElement.innerText = `${id}`.padStart(4, "0");
-</script>
 
 <style>
   :host {
@@ -38,47 +15,71 @@
     justify-content: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
     transition: transform 3s ease;
-  }
 
-  .counter-holder.rotating {
-    animation: rotate360 0.5s ease;
-  }
+    main {
+      width: 100px;
+      cursor: pointer;
+      height: 100px;
+      background-image: url("/public/images/pig_counter.png");
+      background-size: contain;
+      position: relative;
+      pointer-events: all;
 
-  @keyframes rotate360 {
-    from {
-      transform: rotate(0deg);
+      span {
+        position: absolute;
+        top: 44px;
+        left: 53px;
+        color: black;
+        font-size: 0.8rem;
+        font-weight: bold;
+        user-select: none;
+        transform: rotate3d(1, 1, 1, 352deg);
+        pointer-events: none;
+      }
     }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  span {
-    color: white;
-  }
-
-  #id {
-    position: absolute;
-    top: 44px;
-    left: 53px;
-    color: black;
-    font-size: 0.8rem;
-    font-weight: bold;
-    user-select: none;
-    transform: rotate3d(1, 1, 1, 352deg);
-  }
-
-  .counter-holder {
-    width: 100px;
-    cursor: pointer;
-    height: 100px;
-    background-image: url("/public/images/pig_counter.png");
-    background-size: contain;
-    position: relative;
-  }
-
-  img {
-    width: 200px;
-    height: 200px;
   }
 </style>
+
+<script>
+  import animations from "/modules/animations.pig";
+
+  const { id } = $attrs;
+
+  const counterHolder = $element("main");
+
+  $B.hasTriggeredFromDrag = $$(false);
+  $P.rotateCounter = $$(id);
+  $B.firstRender = $$(true);
+
+  $element("span").innerText = `${$P.rotateCounter}`.padStart(4, "0");
+
+  if (!$B.firstRender) throw out;
+
+  $B.firstRender = false;
+
+  const animation = counterHolder.animate(
+    animations.rotate.frames,
+    animations.rotate.options,
+  );
+
+  animation.pause();
+
+  $this.playAnimation = () => {
+    $B.animation.cancel();
+    $B.animation.play();
+    $P.rotateCounter++;
+  };
+
+  $B.animation = $$(animation, true);
+
+  counterHolder
+    .on("pointerdown", $this.playAnimation)
+    .on("pointerenter", () => {
+      if (!window.isMouseDown || $B.hasTriggeredFromDrag) return;
+      $B.hasTriggeredFromDrag = true;
+      this.playAnimation();
+    })
+    .on("pointerleave", () => {
+      $B.hasTriggeredFromDrag = false;
+    });
+</script>

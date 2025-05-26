@@ -1,0 +1,32 @@
+<content>
+  <RenderIf condition="$runTest">
+    <main>
+      <header>
+        <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
+        <h1>Rendering...</h1>
+      </header>
+      <section></section>
+      <i class="fa fa-hand-paper-o scroll" aria-hidden="true"></i>
+    </main>
+  </RenderIf>
+  <RenderIf condition="!$runTest">
+    <PerformanceEntry>
+      <img src="/public/images/components.png" alt="Pig holding a sign" />
+      <TestDescription />
+    </PerformanceEntry>
+  </RenderIf>
+</content>
+
+<style>
+  @import "/public/styles/performance.pig.css";
+
+  .fa-hand-paper-o, .fa-hand-rock-o {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    font-size: 3rem;
+    background-color: #f2772e;
+    padding: 0.5rem;
+    display: none;
+  }
+</style>

@@ -3,26 +3,20 @@
 import crypto from "crypto";
 
 export default async (req, res) => {
-  const { method } = req;
-
   let body = "";
-  for await (const chunk of req) {
-    body += chunk;
-  }
 
   try {
+    for await (const chunk of req) {
+      body += chunk;
+    }
     body = JSON.parse(body);
-  } catch (e) {
+  } catch {
     body = {};
   }
 
-  if (method === "POST") {
-    const { text } = body;
-
-    const hash = crypto
-      .createHash("sha256")
-      .update(text || "")
-      .digest("hex");
+  if (req.method === "POST") {
+    const { text = "" } = body;
+    const hash = crypto.createHash("sha256").update(text).digest("hex");
 
     console.log("Received text:", text);
     console.log("Hash:", hash);

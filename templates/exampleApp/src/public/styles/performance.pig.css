@@ -1,0 +1,60 @@
+@import "/public/styles/globals.css";
+
+main {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+    color: white;
+    border-radius: 15px;
+
+    header {
+        vertical-align: middle;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: fit-content;
+        margin-bottom: 20px;
+        gap: 20px;
+
+        .fa {
+            font-size: 1.5rem;
+            cursor: pointer;
+
+            &:hover {
+                color: #f2772e;
+            }
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-align: justify;
+            display: inline;
+
+            span {
+                &:nth-child(1),
+                &:nth-child(2) {
+                    color: #f2772e;
+                    font-weight: bold;
+                }
+            }
+        }
+    }
+
+    section {
+        width: fit-content;
+        height: fit-content;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        padding: 20px;
+
+        > EasyPerformanceComponent:hover {
+            transform: scale(1.1);
+            background-color: #ff8c42;
+            transition: transform 0.1s ease;
+        }
+    }
+}
+

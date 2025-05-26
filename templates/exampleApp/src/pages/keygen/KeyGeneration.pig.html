@@ -1,0 +1,43 @@
+<content>
+  <main>
+    <h2>
+      A simple text-to-hash workflow using an API
+      <code>src/pages/keygen/KeyGeneration.pig.html</code>
+    </h2>
+    <section>
+      <header>
+        <img src="/public/images/pig_with_key.png" alt="Pig with key" />
+        <h3>Call the hash api here</h3>
+      </header>
+      <div>
+        <form>
+          <input type="text" placeholder="Enter text to hash" />
+          <button title="Hash">
+            <i class="fa fa-key"></i>
+          </button>
+        </form>
+        <div>
+          <textarea readonly>Hash will appear here</textarea>
+          <i class="fa fa-clipboard" aria-hidden="true"></i>
+        </div>
+      </div>
+    </section>
+    <section>
+      <p>
+        <span
+          >Users can enter any text into the input field and submit it. The
+          value is then sent to an API</span
+        >
+        <code>server/api/crypto/controller.mjs</code
+        ><span>, which returns a hashed version of the input.</span> The hashed
+        result is displayed in a read-only <strong>&lt;textarea&gt;</strong>. If
+        the app is running on a secure origin (<strong>HTTPS</strong> or
+        <strong>localhost</strong>), a copy-to-clipboard icon appears in the
+        corner of textarea. Clicking this icon copies the hash using the
+        <strong>navigator.clipboard API</strong>. The clipboard feature is
+        automatically hidden when unavailable due to browser security
+        restrictions.
+      </p>
+    </section>
+  </main>
+</content>

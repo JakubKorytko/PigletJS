@@ -1,0 +1,92 @@
+@import "/public/styles/page.css";
+
+main {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2rem;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  img {
+    width: 200px;
+    animation: move 3s ease-in-out infinite;
+    margin-bottom: 1rem;
+    cursor: pointer;
+  }
+
+  section {
+    display: flex;
+    flex-direction: column;
+    width: 550px;
+    max-width: 100%;
+    gap: 0.5rem;
+
+    span:is(h1 *),
+    strong {
+      color: #f2772e;
+    }
+
+    a {
+      text-decoration: none;
+
+      span {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+
+      header {
+        width: fit-content;
+        height: fit-content;
+        vertical-align: middle;
+        position: relative;
+        display: inline-block;
+
+        div {
+          position: absolute;
+          top: 15%;
+          left: 15%;
+          width: 70%;
+          height: 70%;
+          background-color: white;
+          z-index: -1;
+        }
+
+        .fa {
+          color: #000000;
+          font-size: 3rem;
+        }
+      }
+    }
+
+    p,
+    code,
+    span:not(h1 *) {
+      font-size: 1.1rem;
+      color: #ffff;
+    }
+
+    > p {
+      text-align: justify;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #ffff;
+    }
+
+    div:not(header *) {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+
+      code {
+        width: fit-content;
+      }
+    }
+  }
+}

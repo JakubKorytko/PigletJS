@@ -1,0 +1,19 @@
+<content>
+  <RenderIf condition="$runTest">
+    <main>
+      <header>
+        <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
+        <h1>Rendering...</h1>
+      </header>
+      <section></section>
+    </main>
+  </RenderIf>
+  <RenderIf condition="!$runTest">
+    <PerformanceEntry>
+      <img src="/public/images/nested_components.png" alt="Pig holding a sign" />
+      <TestDescription longDescription />
+    </PerformanceEntry>
+  </RenderIf>
+</content>
+
+<style>@import "/public/styles/performance.pig.css";</style>

@@ -1,0 +1,42 @@
+@import "/public/styles/animations.css";
+
+:host {
+  position: relative;
+
+  main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-direction: column;
+  }
+
+  table {
+    border-collapse: collapse;
+    background-color: #f0f0f033;
+    text-align: center;
+    color: white;
+    font-size: 1.2rem;
+    border-radius: 0.5rem;
+
+    th,
+    td {
+      padding: 0.3rem 0.5rem;
+    }
+
+    thead tr {
+      background-color: #ba571f;
+    }
+  }
+
+  aside {
+    position: absolute;
+    top: -60px;
+    display: block;
+    width: 100%;
+
+    h2 {
+      animation: epicFadeIn 0.6s ease-out forwards;
+    }
+  }
+}

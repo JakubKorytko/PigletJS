@@ -1,0 +1,113 @@
+<content>
+  <RenderIf condition="$attrs.longDescription">
+    <div>
+      <p>
+        This test is designed to evaluate the framework’s ability to manage
+        deeply nested, interactive component trees with both stateful logic and
+        advanced rendering control. It constructs a hierarchy of piggy bank
+        components nested across N levels. Each piggy bank displays its own
+        image and counter, receives attributes, and maintains internal state.
+      </p>
+
+      <details>
+        <summary>See full test description</summary>
+
+        <p>
+          A special reachedEnd callback is passed from the root down through
+          every level and is invoked exclusively by the deepest piggy bank. This
+          call then propagates back up to the root, allowing the test to verify
+          downward data flow and upward event communication across the full
+          depth of the tree.
+        </p>
+
+        <p>
+          Independently of this, each piggy bank is clickable. When clicked, a
+          piggy bank increments its own counter and the counters of all its
+          ancestors, testing recursive state updates and validating the
+          framework’s ability to handle efficient reactivity in a nested
+          structure.
+        </p>
+
+        <div>
+          <p>Two optional test modes are available via checkboxes:</p>
+          <ul>
+            <li>
+              Delayed pass introduces asynchronous behavior in prop passing.
+              Instead of immediately applying props to child components, updates
+              are deferred by queuing them as macrotasks. This simulates
+              delayed, non-blocking updates and allows observation of scheduling
+              and batching behavior in the framework.
+            </li>
+          </ul>
+          <ul>
+            <li>
+              Fragmented rendering alters the rendering strategy to improve
+              performance. Rather than rendering each component directly into
+              the DOM in sequence, the framework builds the component tree in an
+              off-DOM fragment. Only after all components have been rendered is
+              the entire fragment injected into the DOM in a single operation,
+              minimizing layout thrashing, repaints, and improving perceived
+              performance.
+            </li>
+          </ul>
+          <p>
+            Together, these mechanics create a demanding test of both data flow
+            and rendering efficiency in complex, dynamic UI trees.
+          </p>
+        </div>
+      </details>
+    </div>
+  </RenderIf>
+  <RenderIf condition="!$attrs.longDescription">
+    <p>
+      This test is designed to evaluate the performance of the framework by
+      rendering a large number of components—specifically, piggy bank
+      components—side by side. Each piggy bank maintains an internal counter and
+      is individually interactive. When a piggy bank is clicked, its counter
+      increments.
+    </p>
+    <p>
+      Additionally, users can click and drag the mouse across multiple piggy
+      banks, incrementing each one as the cursor passes over them. The test aims
+      to provide insights into the framework's efficiency and responsiveness
+      when handling a high volume of interactive components with frequent state
+      updates triggered by both discrete and continuous user actions.
+    </p>
+  </RenderIf>
+</content>
+
+<style>
+  :host {
+    text-align: center;
+
+    ul * {
+      text-align: justify;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    p {
+      text-align: justify;
+    }
+  }
+</style>
+
+<script type="application/json">
+  {
+    "name": "TestDescription",
+    "description": "Test description for the performance tests",
+    "attributes": [
+      {
+        "name": "longDescription",
+        "value": {
+          "type": "boolean"
+        },
+        "default": false,
+        "description": "Whether to show the long description of the test"
+      }
+    ]
+  }
+</script>
