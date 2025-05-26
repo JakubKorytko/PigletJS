@@ -57,8 +57,6 @@ subprocessRef.instance = createSubprocess();
  * - "^C" shuts down the server.
  */
 process.stdin.on("data", async (key) => {
-  "use strict";
-
   if (typeof key === "string" && key === "r") {
     console.msg("components.reloading");
     try {

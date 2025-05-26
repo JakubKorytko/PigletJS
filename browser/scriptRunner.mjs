@@ -1,10 +1,21 @@
-/** @import {ClearAllListenersForHost, QueryElement, GetCallbackProxies, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner} from "@jsdocs/browser/scriptRunner.d" */
+/** @import {ClearAllListenersForHost, QueryElement, GetComponentData, ComponentData, ComponentMountCleanup, ScriptRunner, ElementProxy, QueryElements} from "@jsdocs/browser/scriptRunner.d" */
 
-import { toPigletAttr, getHost } from "@Piglet/browser/helpers";
+import {
+  $create,
+  createNestedStateProxy,
+  createStateProxy,
+  toKebabCase,
+  useMarkerGenerator,
+} from "@Piglet/browser/helpers";
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
+import CONST from "@Piglet/browser/CONST";
 
+/** @type {WeakMap<ReactiveComponent, Map<string, Set<Function>>>} */
 const elementListeners = new WeakMap(); // el -> Map<event, Set<callback>>
+/** @type {WeakSet<ReactiveComponent>} */
 const allTrackedElements = new Set(); // All els with listeners
+/** @type {WeakMap<ReactiveComponent, Set<ReactiveComponent>>} */
 const hostToElements = new WeakMap(); // host -> Set<shadowEl>
 
 /** @type {ClearAllListenersForHost} */
@@ -28,12 +39,45 @@ export const clearAllListenersForHost = function (hostElement) {
   hostToElements.delete(hostElement);
 };
 
-/** @type {QueryElement} */
-const queryElement = function (hostElement, selector) {
-  const root = hostElement.__useFragment
-    ? hostElement.__fragment
+/** @type {QueryElements} */
+const queryElements = function (hostElement, selector) {
+  const root = hostElement.internal.fragment.enabled
+    ? hostElement.internal.fragment.content
     : hostElement.shadowRoot;
-  const el = root.querySelector(selector);
+
+  const isCustom =
+    CONST.pascalCaseRegex.test(selector) &&
+    !selector.startsWith("#") &&
+    !selector.startsWith(".");
+  const els = root.querySelectorAll(
+    isCustom ? toKebabCase(selector) : selector,
+  );
+
+  if (!els.length) return [];
+
+  const elements = Array.from(els);
+  return elements.map((el) => queryElement(hostElement, el));
+};
+
+/** @type {QueryElement} */
+const queryElement = function (hostElement, selectorOrNode) {
+  const root = hostElement.internal.fragment.enabled
+    ? hostElement.internal.fragment.content
+    : hostElement.shadowRoot;
+
+  let el;
+  if (selectorOrNode instanceof Node) {
+    el = selectorOrNode;
+  } else {
+    const isCustom =
+      CONST.pascalCaseRegex.test(selectorOrNode) &&
+      !selectorOrNode.startsWith("#") &&
+      !selectorOrNode.startsWith(".");
+    el = root.querySelector(
+      isCustom ? toKebabCase(selectorOrNode) : selectorOrNode,
+    );
+  }
+
   if (!el) return undefined;
 
   if (!hostToElements.has(hostElement)) {
@@ -50,9 +94,10 @@ const queryElement = function (hostElement, selector) {
     return elementListeners.get(el);
   };
 
+  /** @type {ElementProxy} */
   const api = {
-    on(event, callback) {
-      el.addEventListener(event, callback);
+    on(event, callback, options) {
+      el.addEventListener(event, callback, options);
       const storage = ensureStorage();
       if (!storage.has(event)) storage.set(event, new Set());
       storage.get(event).add(callback);
@@ -81,19 +126,46 @@ const queryElement = function (hostElement, selector) {
     },
     pass(updates) {
       if (el && el instanceof ReactiveComponent) {
+        const passInfo = {
+          ref: el,
+          updates: {},
+          delayed: updates.delayed,
+        };
         for (const [key, value] of Object.entries(updates)) {
-          if (typeof value === "function") {
-            if (!el._forwarded) {
-              el._forwarded = {};
-            }
-            el._forwarded[key] = value;
-          } else {
-            const attr = toPigletAttr(key);
-            el.setAttribute(attr, value);
+          const previousValue = el.attrs[key];
+          if (previousValue !== value) {
+            passInfo.updates[key] = value;
           }
         }
+        if (Object.keys(passInfo.updates).length === 0) {
+          return proxy;
+        }
+        hostElement.forwardedQueue.push(passInfo);
       }
       return proxy;
+    },
+    clone() {
+      if (
+        !(
+          el instanceof ReactiveComponent ||
+          el instanceof ReactiveDummyComponent
+        )
+      ) {
+        return el.cloneNode(true);
+      } else {
+        const newEl = new el.constructor(el.attrs);
+        for (const child of el.childNodes) {
+          if (child instanceof ReactiveComponent) {
+            newEl.appendChild(child.cloneNode(true));
+            // TODO: this probably won't work, but there needs to be a way to clone nested custom elements
+            // const queryChild = queryElement(hostElement, child);
+            // newEl.appendChild(queryChild.clone());
+          } else {
+            newEl.appendChild(child.cloneNode(true));
+          }
+        }
+        return newEl;
+      }
     },
   };
 
@@ -107,7 +179,7 @@ const queryElement = function (hostElement, selector) {
         return typeof value === "function" ? value.bind(el) : value;
       }
     },
-    set(target, prop, value, receiver) {
+    set(target, prop, value) {
       if (el) {
         el[prop] = value;
         return true;
@@ -133,11 +205,15 @@ const generateComponentData = function (hostElement) {
 
   return {
     component: {
-      $attrs: { ...hostElement._forwarded, ...hostElement.__attrs },
-      $id: hostElement.__id,
-      $key: hostElement.__componentKey,
-      $state: hostElement.state.bind(hostElement),
-      $element: hostElement,
+      $attrs: hostElement.attrs,
+      $P: createStateProxy(false, hostElement),
+      $B: createStateProxy(true, hostElement),
+      $$: useMarkerGenerator,
+      $$P: createNestedStateProxy(false, hostElement),
+      $: $create.bind(hostElement),
+      $this: hostElement,
+      $document: hostElement.shadowRoot,
+      out: CONST.stopComponentScriptExecution,
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {
@@ -149,6 +225,7 @@ const generateComponentData = function (hostElement) {
       onAfterUpdateRef,
       onBeforeUpdateRef,
       $element: queryElement.bind(this, hostElement),
+      $elements: queryElements.bind(this, hostElement),
     },
   };
 };
@@ -164,39 +241,58 @@ const componentMountCleanup = function (
 
 /** @type {ScriptRunner} */
 const scriptRunner = function (hostElement, module, scriptReason) {
-  if (typeof module.default !== "function") {
-    return;
-  }
-
   function mountCallback(mountReason) {
     const { component, callbacks } = generateComponentData(this);
 
     let shouldRender = true;
 
     if (typeof hostElement.onBeforeUpdate === "function") {
-      shouldRender = this.onBeforeUpdate() !== false;
+      shouldRender = hostElement.onBeforeUpdate() !== false;
     }
 
     if (!shouldRender) {
       return;
     }
 
-    const moduleFunction = module.default.bind(this);
+    const moduleFunction = module.bind(this);
 
-    moduleFunction({
-      ...component,
-      ...callbacks,
-      $reason: mountReason ?? scriptReason,
-    });
+    try {
+      moduleFunction({
+        ...component,
+        ...callbacks,
+        $reason: mountReason ?? scriptReason,
+      });
+    } catch (e) {
+      if (e !== CONST.stopComponentScriptExecution) {
+        console.error(CONST.pigletLogs.errorInComponentScript, e);
+      }
+    }
 
     componentMountCleanup(this, callbacks);
 
     if (typeof this.onAfterUpdate === "function") {
       this.onAfterUpdate();
     }
+
+    while (this.forwardedQueue.length) {
+      const { ref, delayed, updates } = this.forwardedQueue.shift();
+      ref.attrs = { ...ref.attrs, ...updates };
+      if (
+        ref?.internal?.mounted &&
+        typeof ref?.__mountCallback === "function"
+      ) {
+        if (delayed) {
+          setTimeout(() => {
+            ref.__mountCallback(CONST.reason.attributesChange(updates));
+          }, 0);
+        } else {
+          ref.__mountCallback(CONST.reason.attributesChange(updates));
+        }
+      }
+    }
   }
 
-  hostElement.onMount(mountCallback.bind(hostElement));
+  hostElement.__mountCallback = mountCallback.bind(hostElement);
 };
 
 export default scriptRunner;

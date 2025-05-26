@@ -1,0 +1,58 @@
+<content>
+  <div class="counter-holder">
+    <span>0000</span>
+  </div>
+  <PerformanceComponent />
+</content>
+
+<script>
+  this.disableHMR();
+
+  const { reachedEnd } = $attrs;
+
+  let $firstRender = $ref(true);
+
+  if ($firstRender) {
+    $element("span").innerText = `${$id}`.padStart(4, "0");
+    $firstRender = false;
+  }
+
+  if ($id >= 1000) {
+    this.kill();
+    if (typeof reachedEnd === "function") {
+      reachedEnd($id);
+    }
+  } else {
+    $element("PerformanceComponent")?.pass({ reachedEnd });
+  }
+</script>
+
+<style>
+  :host {
+    width: 100px;
+    height: 100px;
+    display: contents;
+  }
+
+  .counter-holder {
+    width: 100px;
+    height: 100px;
+    background-image: url("/public/images/pig_counter.png");
+    background-size: contain;
+    position: relative;
+    margin: 20px;
+    border: 2px solid #f2772e;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  }
+
+  .counter-holder span {
+    position: absolute;
+    top: 44px;
+    left: 53px;
+    color: black;
+    font-size: 0.8rem;
+    font-weight: bold;
+    user-select: none;
+  }
+</style>

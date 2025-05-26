@@ -1,65 +1,105 @@
-/** @import {StateInterface, Member} from "@jsdocs/browser/classes/State.d" */
+/** @import {StateInterface, StateMembers} from "@jsdocs/browser/classes/State.d" */
+
+import CONST from "@Piglet/browser/CONST";
 
 /**
  * @template T
  * @implements {StateInterface<T>}
  */
 class State {
+  /** @type {StateMembers["_state"]["Type"]} */
   _state;
+
+  /** @type {StateMembers["__observers"]["Type"]} */
   __observers = [];
-  __isCreatedByListener;
+
+  /** @type {StateMembers["_isRef"]["Type"]} */
   _isRef;
 
-  constructor(initialValue, isCreatedByListener, asRef = false) {
-    this._state = initialValue;
-    this.__isCreatedByListener = isCreatedByListener;
+  constructor(initialValue, asRef = false, avoidClone = false) {
+    this._avoidClone = avoidClone;
+    this._state = this.cloneState(initialValue);
     this._isRef = asRef;
   }
 
   /**
-   * @type {Member["addObserver"]["Type"]}
-   * @returns {Member["addObserver"]["ReturnType"]}
+   * @type {StateMembers["addObserver"]["Type"]}
+   * @returns {StateMembers["addObserver"]["ReturnType"]}
    */
   addObserver(observer) {
     this.__observers.push(observer);
   }
 
   /**
-   * @type {Member["removeObserver"]["Type"]}
-   * @returns {Member["removeObserver"]["ReturnType"]}
+   * @type {StateMembers["removeObserver"]["Type"]}
+   * @returns {StateMembers["removeObserver"]["ReturnType"]}
    */
   removeObserver(observer) {
     this.__observers = this.__observers.filter((obs) => obs !== observer);
   }
 
-  /**
-   * @type {Member["state"]["Type"]}
-   * @returns {Member["state"]["ReturnType"]}
-   */
+  /** @returns {StateMembers["_state"]["Type"]} */
   get state() {
     return this._state;
   }
 
   /**
-   * @type {Member["setState"]["Type"]}
-   * @returns {Member["setState"]["ReturnType"]}
+   * @type {StateMembers["setState"]["Type"]}
+   * @returns {StateMembers["setState"]["ReturnType"]}
    */
   setState(newState) {
     const oldState = this._state;
-    this._state = newState;
+    this._state = this.cloneState(newState);
     if (!this._isRef) {
       this._notify(oldState);
+    } else {
+      this._notifyRef(oldState);
     }
   }
 
   /**
-   * @type {Member["_notify"]["Type"]}
-   * @returns {Member["_notify"]["ReturnType"]}
+   * @type {StateMembers["cloneState"]["Type"]}
+   * @returns {StateMembers["cloneState"]["ReturnType"]}
+   */
+  cloneState(state) {
+    if (this._avoidClone) {
+      return state;
+    }
+
+    let clone = state;
+
+    try {
+      clone = structuredClone(state);
+    } catch (error) {
+      Piglet.log(CONST.pigletLogs.cloneWarning, CONST.coreLogsLevels.warn, {
+        error,
+        state,
+      });
+    }
+
+    return clone;
+  }
+
+  /**
+   * @type {StateMembers["_notify"]["Type"]}
+   * @returns {StateMembers["_notify"]["ReturnType"]}
    */
   _notify(oldState) {
     this.__observers.forEach((observer) =>
       observer.stateChange(this._state, oldState),
     );
+  }
+
+  /**
+   * @type {StateMembers["_notifyRef"]["Type"]}
+   * @returns {StateMembers["_notifyRef"]["ReturnType"]}
+   */
+  _notifyRef(oldState) {
+    this.__observers.forEach((observer) => {
+      if (typeof observer.refChange === "function") {
+        observer.refChange(this._state, oldState);
+      }
+    });
   }
 }
 

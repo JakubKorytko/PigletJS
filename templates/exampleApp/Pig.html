@@ -1,35 +1,53 @@
 <!doctype html>
 <html lang="pl">
-
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PigletJS app</title>
-    <link rel="icon" type="image/png" href="/public/favicon.ico"/>
-    <link href="/public/main.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="/public/font-awesome/css/font-awesome.min.css">
-</head>
+    <link rel="icon" type="image/png" href="/public/images/favicon.ico" />
+    <link href="/public/styles/main.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="/public/font-awesome/css/font-awesome.min.css"
+    />
+  </head>
 
-<body>
+  <body>
     <nav class="nav-bar" id="navBar">
-        <img src="/public/logo.png" class="logo">
-        <div class="nav-bar-links" id="navLinks">
-            <span class="nav-bar-link" data-route="/"><i class="fa fa-home" aria-hidden="true"></i>HomePage</span>
-            <span class="nav-bar-link" data-route="/pigs"><i class="fa fa-star" aria-hidden="true"></i>Stateful pigs</span>
-            <span class="nav-bar-link" data-route="/keyGeneration"><i class="fa fa-key" aria-hidden="true"></i>Generate SHA256 via API</span>
-            <span class="nav-bar-link" data-route="/easyPerformance"><i class="fa fa-bolt" aria-hidden="true"></i>Render performance test</span>
-            <span class="nav-bar-link" data-route="/performance"><i class="fa fa-bolt" aria-hidden="true"></i>Nested components performance test</span>
-            <span class="nav-bar-link" data-route="/pageThatDoesNotExist"><i class="fa fa-times" aria-hidden="true"></i>Non-existing page</span>
+      <img src="/public/images/logo.png" class="logo" />
+      <div class="nav-bar-links" id="navLinks">
+        <nav-link to="/"
+          ><i class="fa fa-home" aria-hidden="true"></i>HomePage</nav-link
+        >
+        <nav-link to="/pigs"
+          ><i class="fa fa-star" aria-hidden="true"></i>Stateful pigs</nav-link
+        >
+        <nav-link to="/keyGeneration"
+          ><i class="fa fa-key" aria-hidden="true"></i>Generate SHA256 via
+          API</nav-link
+        >
+        <nav-link to="/easyPerformance"
+          ><i class="fa fa-bolt" aria-hidden="true"></i>Render performance
+          test</nav-link
+        >
+        <nav-link to="/performance"
+          ><i class="fa fa-bolt" aria-hidden="true"></i>
+          Nested components performance test
+        </nav-link>
+        <nav-link to="/pageThatDoesNotExist"
+          ><i class="fa fa-times" aria-hidden="true"></i>Non-existing
+          page</nav-link
+        >
 
-            <div class="nav-bar-link dropdown" id="moreMenu">
-                <i class="fa fa-ellipsis-h"></i> More
-                <div class="dropdown-content" id="moreLinks"></div>
-            </div>
+        <div class="nav-bar-link dropdown" id="moreMenu">
+          <i class="fa fa-ellipsis-h"></i> More
+          <div class="dropdown-content" id="moreLinks"></div>
         </div>
+      </div>
     </nav>
 
-    <App/>
+    <App />
 
-    <script src="/public/pig.js" type="application/javascript"></script>
-</body>
+    <script src="/public/scripts/pig.js" type="application/javascript"></script>
+  </body>
 </html>

@@ -1,77 +1,34 @@
 <content>
-    <div class="container">
-        <img alt="PigletJS Logo" src="/public/logo.png"/>
-        <div class="welcomeMessage">
-            <div>
-                <h1>Welcome to PigletJS</h1>
-                <p>This is the homepage of your app.</p>
-                <br/>
-                <p>
-                    Edit
-                    &nbsp;
-                    <code>src/pages/HomePage.pig.html</code>
-                    &nbsp;
-                    to see changes on this page.
-                </p>
-                <br/>
-                <a href="https://github.com/JakubKorytko/PigletJS" target="_blank">
-                <div class="github">
-                    <i aria-hidden="true" class="fa fa-github-square"></i>
-                    <div class="github-bg"></div>
-                </div>
-                &nbsp;
-                <span>Official repository & documentation</span>
-                </a>
-            </div>
-        </div>
+  <div class="container">
+    <img alt="PigletJS Logo" src="/public/images/logo.png" />
+    <div class="welcomeMessage">
+      <div>
+        <h1>Welcome to PigletJS</h1>
+        <p>This is the homepage of your app.</p>
+        <br />
+        <p>
+          Edit &nbsp;
+          <code>src/pages/HomePage.pig.html</code>
+          &nbsp; to see changes on this page.
+        </p>
+        <br />
+        <a href="https://github.com/JakubKorytko/PigletJS" target="_blank">
+          <div class="github">
+            <i aria-hidden="true" class="fa fa-github-square"></i>
+            <div class="github-bg"></div>
+          </div>
+          &nbsp;
+          <span>Official repository & documentation</span>
+        </a>
+      </div>
     </div>
+  </div>
 </content>
-
-<style>
-    .fa-github-square {
-        color: #000000;
-        font-size: 3rem;
-    }
-
-    .fa-github-square div {
-        background-color: #ffffff;
-        width: 20px;
-        height: 20px;
-    }
-
-    a {
-        text-decoration: none;
-    }
-
-    span {
-        text-decoration: underline;
-        text-underline-offset: 4px;
-        font-weight: 600;
-    }
-
-    .github {
-        width: fit-content;
-        height: fit-content;
-        vertical-align: middle;
-        position: relative;
-        display: inline-block;
-    }
-
-    .github-bg {
-        position: absolute;
-        top: 15%;
-        left: 15%;
-        width: 70%;
-        height: 70%;
-        background-color: white;
-        z-index: -1;
-    }
-</style>
 
 <!--suppress JSUnusedGlobalSymbols -->
 <script content="description">
-    export default {
-        name: "HomePage",
-        description: "Home page",
-    };
+  export default {
+    name: "HomePage",
+    description: "Home page",
+  };
 </script>

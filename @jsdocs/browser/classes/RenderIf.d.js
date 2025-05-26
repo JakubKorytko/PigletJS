@@ -1,12 +1,12 @@
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
-import { VirtualReactiveComponentInterface } from "@jsdocs/browser/classes/ReactiveComponent.d";
+import { VirtualReactiveDummyComponentInterface } from "@jsdocs/browser/classes/ReactiveDummyComponent.d";
 
 /**
  * Interface for the RenderIf component
  * @interface RenderIfInterface
- * @extends {VirtualReactiveComponentInterface}
+ * @extends {VirtualReactiveDummyComponentInterface}
  */
-class RenderIfInterface extends VirtualReactiveComponentInterface {
+class RenderIfInterface extends VirtualReactiveDummyComponentInterface {
   /**
    * The condition that determines if content should be rendered
    * @type {boolean}
@@ -14,16 +14,28 @@ class RenderIfInterface extends VirtualReactiveComponentInterface {
   _condition;
 
   /**
-   * The template element containing content to conditionally render
-   * @type {HTMLTemplateElement}
+   * Is condition negated
+   * @type {boolean}
    */
-  _template;
+  _negated = false;
+
+  /**
+   * Condition property split into parts
+   * @type {string[]}
+   */
+  _parts = [];
 
   /**
    * The document fragment containing rendered content
    * @type {DocumentFragment|null}
    */
-  _fragment;
+  _contentFragment;
+
+  /**
+   * Is fragment in the DOM
+   * @type {boolean}
+   */
+  _contentMounted = true;
 
   /**
    * Moves children to the fragment
@@ -51,11 +63,11 @@ class RenderIfInterface extends VirtualReactiveComponentInterface {
   updateVisibility() {}
 }
 
-/** @typedef {InterfaceMethodTypes<RenderIfInterface>} Member */
-/** @typedef {InterfaceMethodTypes<VirtualReactiveComponentInterface>} Virtual */
+/** @typedef {InterfaceMethodTypes<RenderIfInterface>} RenderIfMembers */
+/** @typedef {InterfaceMethodTypes<VirtualReactiveDummyComponentInterface>} RenderIfVirtualMembers */
 
 export {
-  /** @exports Member */
+  /** @exports RenderIfMembers */
   /** @exports Virtual */
   RenderIfInterface,
 };

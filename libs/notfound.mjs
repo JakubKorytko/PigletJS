@@ -12,7 +12,7 @@ import fs from "fs";
  * @returns {Promise<void>}
  */
 const notFound = async (res) => {
-  const notFoundPath = resolvePath("@/src/pages/NotFound.pig.html");
+  const notFoundPath = resolvePath("@/builtHTML/NotFound.html");
 
   if (!fs.existsSync(notFoundPath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });

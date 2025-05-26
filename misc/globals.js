@@ -1,89 +1,17 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+/** @import {ElementProxy} from "@jsdocs/browser/scriptRunner.d" */
+/** @import CONST from "@Piglet/browser/CONST" */
 
 /**
- * Reactive state accessor object.
- *
- * You can destructure `state` to get individual reactive properties,
- * or call it as a function to dynamically access a property by name.
- *
- * Each property is a reactive reference object with a `.value` getter and setter.
- *
- * @example
- * // Destructuring access
- * const { display, nested } = state;
- * display.value = true;
- * console.log(nested.value.object.hide);
- *
- * @example
- * // Dynamic access
- * const user = state("user");
- * user.value = { name: "Anna" };
- *
- * @typedef {Object<string, StateRef & ((key: string) => StateRef)>} StateProxy
+ * @template T
+ * @param {string|HTMLElement|ReactiveComponent|ReactiveDummyComponent} nodeOrSelector
+ * @param {T & Element} [expect] - The expected type of the element. If not provided, defaults to `HTMLElement`.
+ * @returns {(ElementProxy & T & HTMLElement | null)}
  */
+function $element(nodeOrSelector, expect) {}
 
-/**
- * @typedef {Object} StateRef<any>
- * @property {any} value - The current value of the state property (reactive).
- */
-
-/** @type {StateProxy} */
-let state;
-
-/**
- * Selects an element inside the component's shadow DOM and provides
- * a fluent API for managing event listeners and passing attributes or reactive references.
- *
- * @param {string} selector - A CSS selector for the target element inside shadow DOM.
- * @returns {ElementWrapper} An object with `.on`, `.off`, and `.pass` methods.
- *
- * @example
- * // Basic usage
- * element("#btn").on("click", () => {
- *   console.log("Clicked!");
- * });
- *
- * @example
- * // Using handler reference for later removal
- * const handler = () => console.log("Clicked!");
- * element("#btn").on("click", handler).off("click", handler);
- *
- * @example
- * // Passing attribute
- * element("#box").pass("title", "Tooltip text");
- *
- */
-
-/**
- * @typedef {Object} ElementWrapper
- * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} on - Attaches an event listener.
- * @property {(event: string, callback: EventListenerOrEventListenerObject) => ElementWrapper} off - Removes an event listener.
- * @property {(attrName: string, value: any) => ElementWrapper} pass - Passes a static value  an attribute/property.
- */
-let element;
-
-/**
- * @typedef {Object} ConnectedComponent
- * @property {string} name - The component's constructor name.
- * @property {number|string} id - The component's internal ID (`__componentId`).
- * @property {Object} tree - The component's tracked tree structure (`__tree`).
- * @property {ShadowRoot|null} shadowRoot - The component's shadow root, if present.
- * @property {string} key - Unique component key (`__componentKey`).
- * @property {Function} state - Bound `state` method of the component (for accessing reactive state).
- * @property {typeof ReactiveComponent} element - The actual host element instance.
- * @property {typeof ReactiveComponent|null} parent - The parent custom element hosting this component, if any.
- */
-let component;
-
-/**
- * Initializes the state with a default value.
- * @param {any} value - The default value for the state.
- * @returns {any} The initialized state.
- */
-let init;
-
-/** @type {Function} */
-let $ref;
+/** @type {(selector: string) => (ElementProxy & HTMLElement | null)[]} */
+let $elements;
 
 /**
  * An object that contains attributes assigned to the component. The `attributes` object
@@ -99,29 +27,7 @@ let $ref;
  *
  * console.log(attributes.someAttribute); // Logs the value of the dynamic attribute
  */
-let attributes;
-
-/**
- * An object that contains methods forwarded from the parent component.
- * The `forwarded` object exclusively contains methods that are made available
- * by the parent component for the child component to invoke. This allows the
- * child component to call functions or interact with the parent component's behavior
- * or state without directly accessing the parent component.
- *
- * @typedef {Object} ForwardedMethods
- * @property {Function} [methodName] - A method forwarded from the parent component.
- * This method can be called by the child component to perform actions in the parent
- * or retrieve data. The exact methods available depend on the parent component's implementation.
- *
- * @example
- *
- * forwarded.someMethod(); // Calls the `someMethod` function defined in the parent component
- */
-
-/**
- * @type {Record<string, Function>}
- */
-let forwarded;
+let $attrs;
 
 /**
  * Fetches data from a given API path and parses the response into the expected format.
@@ -140,7 +46,7 @@ let forwarded;
  * @example
  * const rawText = await
  */
-let api;
+let $api;
 
 /**
  * An object to store the route-to-component mappings.
@@ -158,3 +64,84 @@ let routes;
  * @type {Object<string, string>}
  */
 let routeAliases;
+
+/**
+ * Prepares a state initializer object to be assigned through `usePig` or `useBoar`.
+ * Only triggers initialization if the state does not already exist.
+ *
+ * @param {any} initialValue - The initial value to use for the state if it is not yet created.
+ * @returns {{ __piglet_use_marker: true, initialValue: any }} An internal marker object used to signal lazy initialization.
+ */
+let $$;
+
+/**
+ * A Proxy interface to create or access stateful properties with shallow reference semantics.
+ * - First-time assignment to a property using `use(...)` will initialize state with the given value.
+ * - Later assignments update `.value`, or merge and notify if the value is an object.
+ * - Direct reads return the current `.value`.
+ *
+ * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
+ */
+let $P;
+
+/**
+ * A Proxy interface like `usePig`, but initializes state with `asRef = true` (deep reference/reactivity support).
+ * - Behaves the same as `usePig` in terms of property interaction.
+ * - Enables deeper reactive bindings for frameworks or watchers that rely on ref-like access.
+ *
+ * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
+ */
+let $B;
+
+/**
+ * [This is the same interface as `$P` but supports deep reactivity]
+ * A Proxy interface to create or access stateful properties with shallow reference semantics.
+ * - First-time assignment to a property using `use(...)` will initialize state with the given value.
+ * - Later assignments update `.value`, or merge and notify if the value is an object.
+ * - Direct reads return the current `.value`.
+ *
+ * @type {Record<string, any>} Automatically populated stateful properties via proxy behavior.
+ */
+let $$P;
+
+/**
+ * Callback called before the component is updated.
+ * If the callback returns `false`, the update is canceled.
+ * @type {Function} $onBeforeUpdate
+ * @param {() => boolean} callback - Callback function to be executed before the update.
+ */
+let $onBeforeUpdate;
+
+/**
+ * Callback called after the component is updated.
+ * This is useful for performing actions after the DOM has been updated.
+ * @type {Function} $onAfterUpdate
+ * @param {() => void} callback - Callback function to be executed after the update.
+ */
+let $onAfterUpdate;
+
+/**
+ * A reference to the document object, typically the shadow DOM of the component.
+ * This is used to access the component's DOM elements and perform operations on them.
+ * @type {Document} $document
+ */
+let $document;
+
+/**
+ * A reference to the current component instance.
+ * This is used to access the component's properties and methods directly.
+ * @type {ReactiveComponent|ReactiveDummyComponent}
+ */
+let $this;
+
+/**
+ * Value used to stop the execution of the component script.
+ * @type {typeof CONST.stopComponentScriptExecution}
+ */
+let out;
+
+/**
+ * Template literal for creating elements within the component.
+ * @type {(strings: TemplateStringsArray, ...values: any[]) => HTMLElement}
+ */
+let $;

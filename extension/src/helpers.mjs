@@ -71,6 +71,36 @@ function parseValue(value) {
   return value;
 }
 
+/**
+ * Parses a dataset path from a DOM input element to extract state information
+ * for setting a nested property within a state object.
+ *
+ * Expected `data-path` format: `"stateName.key.subkey1.subkey2..."`.
+ *
+ * @param {HTMLInputElement} input - The input element containing a `data-path` attribute and a value.
+ * @returns {{
+ *   key: string,
+ *   stateName: string,
+ *   path: string[],
+ *   value: any
+ * }} An object with:
+ *   - `stateName`: the top-level state identifier,
+ *   - `key`: the direct key in the state object (second segment),
+ *   - `path`: the remaining nested path (from the third segment onward),
+ *   - `value`: the parsed value from the input.
+ */
+const setStateProperty = (input) => {
+  const parts = input.dataset.path.split(".");
+  const lastPart = parts.pop();
+
+  return {
+    key: parts.length === 1 ? lastPart : parts.at(1),
+    stateName: parts.at(0),
+    path: path.split(".").slice(2),
+    value: parseValue(input.value),
+  };
+};
+
 const addStateListeners = (port) => {
   document.querySelectorAll(".state-input").forEach(
     (
@@ -78,13 +108,9 @@ const addStateListeners = (port) => {
       input,
     ) => {
       input.addEventListener("blur", () => {
-        const key = input.dataset.key;
-        const stateName = input.dataset.parent || null;
-        const value = parseValue(input.value);
-
         port.postMessage({
           type: "MODIFY_STATE",
-          payload: { key, stateName, value },
+          payload: setStateProperty(input),
           source: "PIGLET_PANEL",
           tabId: chromeExtension.devtools?.inspectedWindow?.tabId,
         });
@@ -97,7 +123,7 @@ const addStateListeners = (port) => {
   );
 };
 
-function renderStateTree(obj, parentKey = null) {
+function renderStateTree(obj, parentKey = null, path = null) {
   if (typeof obj !== "object" || obj === null) {
     return document.createTextNode(String(obj));
   }
@@ -106,8 +132,7 @@ function renderStateTree(obj, parentKey = null) {
 
   Object.entries(obj).forEach(([key, value]) => {
     const li = document.createElement("li");
-    const encodedKey = key.replace(/"/g, "&quot;");
-    const encodedParent = parentKey ? parentKey.replace(/"/g, "&quot;") : "";
+    const inputPath = `${path ? `${path}.` : ""}${key}`;
 
     if (typeof value === "object" && value !== null) {
       const details = document.createElement("details");
@@ -116,7 +141,7 @@ function renderStateTree(obj, parentKey = null) {
       summary.textContent = key;
 
       details.appendChild(summary);
-      details.appendChild(renderStateTree(value, key));
+      details.appendChild(renderStateTree(value, key, inputPath ?? parentKey));
       li.appendChild(details);
     } else {
       const keySpan = document.createElement("span");
@@ -125,8 +150,8 @@ function renderStateTree(obj, parentKey = null) {
 
       const input = document.createElement("input");
       input.className = "state-input";
-      input.dataset.key = encodedKey;
-      input.dataset.parent = encodedParent;
+      input.dataset.path = inputPath;
+
       input.value = String(value);
 
       li.appendChild(keySpan);

@@ -43,7 +43,6 @@
                 "type": "string"
               }
             ],
-            "events": [],
             "slots": []
           }
         },
@@ -71,24 +70,59 @@
           "description": "Wrapper component used to structure page content. Typically used inside route components to group page layout and elements."
         },
         {
-          "name": "HomePage",
-          "description": "Home page"
+          "name": "nav-link",
+          "description": "Navigation link component that displays a link with optional active state based on the current route.",
+          "attributes": [
+            {
+              "name": "to",
+              "description": "URL to navigate to when the link is clicked.",
+              "value": {
+                "kind": "expression",
+                "type": "string"
+              },
+              "required": true
+            }
+          ]
         },
         {
-          "name": "SecondPage",
-          "description": "Second Page"
+          "name": "HomePage",
+          "description": "Home page"
         },
         {
           "name": "NotFound",
           "description": "Not found page"
         },
         {
-          "name": "ClickCounter",
-          "description": "Click counter"
+          "name": "PigsPage",
+          "description": "No description found"
         },
         {
-          "name": "NestedComponent",
-          "description": "Nested Component"
+          "name": "KeyGeneration",
+          "description": "No description found"
+        },
+        {
+          "name": "PerformanceTest",
+          "description": "No description found"
+        },
+        {
+          "name": "EasyPerformanceTest",
+          "description": "No description found"
+        },
+        {
+          "name": "ClickCounter",
+          "description": "No description found"
+        },
+        {
+          "name": "EasyPerformanceComponent",
+          "description": "No description found"
+        },
+        {
+          "name": "PerformanceComponent",
+          "description": "No description found"
+        },
+        {
+          "name": "PigsContainer",
+          "description": "No description found"
         }
       ]
     }

@@ -41,9 +41,9 @@ class SocketInterface {
   tryReconnect() {}
 }
 
-/** @typedef {InterfaceMethodTypes<SocketInterface>} Member */
+/** @typedef {InterfaceMethodTypes<SocketInterface>} SocketInterfaceMembers */
 
 export {
-  /** @exports Member */
+  /** @exports SocketInterfaceMembers */
   SocketInterface,
 };

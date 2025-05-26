@@ -1,14 +1,8 @@
 /**
  * @import {
- *  GetHost,
- *  IsShadowRoot,
  *  GetDeepValue,
- *  ToPascalCase,
- *  ToPigletAttr,
- *  FromPigletAttr,
  *  Api,
  *  Navigate,
- *  ToKebabCase,
  *  GetMountedComponentsByTag,
  *  SendToExtension,
  *  LoadComponent,
@@ -18,38 +12,11 @@
 
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import CONST from "@Piglet/browser/CONST";
-/** @type {GetHost} */
-const getHost = function (node, parent) {
-  /** @type {Node|ShadowRoot} */
-  let target;
-
-  if (parent) {
-    target = node.getRootNode();
-  } else if (isShadowRoot(node)) {
-    target = node;
-  } else if ("shadowRoot" in node) {
-    const shadowRoot = node.shadowRoot;
-    if (shadowRoot instanceof ShadowRoot) {
-      target = shadowRoot;
-    }
-  }
-
-  if ("host" in target && target.host instanceof ReactiveComponent) {
-    return target.host;
-  }
-
-  if (target instanceof DocumentFragment) {
-    const contextValue = target.querySelector("context-parent")?.textContent;
-    return window.Piglet.component[contextValue];
-  }
-
-  return null;
-};
-
-/** @type {IsShadowRoot} */
-const isShadowRoot = function (shadowRootNode) {
-  return shadowRootNode instanceof ShadowRoot;
-};
+import {
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+} from "@Piglet/browser/sharedHelpers";
 
 /** @type {GetDeepValue} */
 const getDeepValue = function (obj, pathParts) {
@@ -68,46 +35,8 @@ const getDeepValue = function (obj, pathParts) {
   return result;
 };
 
-const assignIdToComponent = function (component) {
-  if (window.Piglet.componentsCount[component.__componentName] === undefined) {
-    window.Piglet.componentsCount[component.__componentName] = 0;
-  } else {
-    window.Piglet.componentsCount[component.__componentName]++;
-  }
-
-  component.__id = window.Piglet.componentsCount[component.__componentName];
-};
-
-/** @type {ToPascalCase} */
-const toPascalCase = function (str) {
-  return str
-    .split(/[-_]/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-};
-
-/** @type {ToPigletAttr} */
-const toPigletAttr = function (name) {
-  if (name.includes("-") || name.toLowerCase() === name) {
-    return `${CONST.attributePrefix}${name}`;
-  }
-
-  const transformed = name.replace(/([A-Z])/g, "_$1").toLowerCase();
-  return `${CONST.attributePrefix}${transformed}`;
-};
-
-/** @type {FromPigletAttr} */
-const fromPigletAttr = function fromPigletAttr(pigletName) {
-  if (!pigletName.startsWith(CONST.attributePrefix)) {
-    return "";
-  }
-  let raw = pigletName.slice(7);
-
-  return raw.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
-};
-
 /** @type {Api} */
-const api = async function (path, fetchOptions = {}, expect = "json") {
+const api = async function (path, fetchOptions = {}, expect = "raw") {
   const url = `${CONST.apiRoute}/${path.replace(/^\/+/, "")}`;
 
   let res;
@@ -119,6 +48,10 @@ const api = async function (path, fetchOptions = {}, expect = "json") {
 
   const contentType = res.headers.get("Content-Type") || "";
   const expected = expect.toLowerCase();
+
+  if (expected === "raw") {
+    return res;
+  }
 
   const parsers = {
     json: () => res.json(),
@@ -162,15 +95,10 @@ const navigate = (route) => {
   if (!window.Piglet.AppRoot) return false;
 
   window.history.pushState({}, "", route);
-
+  window.dispatchEvent(new PopStateEvent("popstate"));
   window.Piglet.AppRoot.route = route;
 
   return true;
-};
-
-/** @type {ToKebabCase} */
-const toKebabCase = function (str) {
-  return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 };
 
 /** @type {GetMountedComponentsByTag} */
@@ -188,7 +116,7 @@ const getMountedComponentsByTag = function (tagName) {
   return componentRefs;
 };
 
-/** @type {Record<string, NodeJS.Timeout>} */
+/** @type {Record<string, NodeJS.Timeout | number>} */
 const debounceTimers = {};
 
 /** @type {SendToExtension} */
@@ -206,13 +134,17 @@ const sendToExtension = (requestType) => {
   clearTimeout(debounceTimers[requestType]);
 
   debounceTimers[requestType] = setTimeout(() => {
-    console.log("Sending to extension:", requestType);
+    window.Piglet.log(
+      CONST.pigletLogs.sendToExtension,
+      CONST.coreLogsLevels.info,
+      requestType,
+    );
     action();
-  }, 100);
+  }, 300);
 };
 
 /** @type {LoadComponent} */
-function loadComponent(_class) {
+const loadComponent = function (_class) {
   const className = _class.name;
   const tagName = toKebabCase(className);
 
@@ -222,7 +154,7 @@ function loadComponent(_class) {
   }
 
   return customElements.whenDefined(tagName);
-}
+};
 
 /** @type {FetchWithCache} */
 const fetchWithCache = async (url) => {
@@ -246,7 +178,7 @@ const fetchWithCache = async (url) => {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch from ${url}`);
+        throw CONST.error.failedToFetch(url);
       }
 
       const data = await response.text();
@@ -261,27 +193,341 @@ const fetchWithCache = async (url) => {
   return fetchPromise;
 };
 
+/**
+ * Callback function to handle page reveal events.
+ *
+ * @param {Event} event - The event object triggered during the page reveal.
+ * @returns {Promise<void>}
+ */
+const pageRevealCallback = (event) => {
+  if (
+    !event.viewTransition &&
+    document.startViewTransition &&
+    !window.viewTransitionRunning
+  ) {
+    return window.Piglet.AppRoot.appContent.runPageTransition("in", 200);
+  }
+};
+
+/**
+ * Converts an HTML string into a DocumentFragment.
+ *
+ * @param {string} html - The HTML string to parse.
+ * @returns {DocumentFragment} - A DocumentFragment containing the parsed HTML content.
+ */
+function parseHTMLToFragment(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const frag = document.createDocumentFragment();
+
+  [...doc.body.childNodes, ...doc.head.childNodes].forEach((node) =>
+    frag.appendChild(node),
+  );
+
+  return frag;
+}
+
+/**
+ * Parses an HTML string, processes custom elements, and applies additional transformations.
+ *
+ * @param {string} html - The HTML string to parse.
+ * @param {ReactiveComponent} owner - The owner object containing metadata for processing.
+ * @returns {DocumentFragment} - A DocumentFragment containing the processed HTML content.
+ */
 const parseHTML = (html, owner) => {
-  const range = owner.ownerDocument.createRange();
-  return range.createContextualFragment(
-    `${owner.__isInFragment || owner.__useFragment ? `<context-parent style="display: none">${owner.__componentKey}</context-parent>\n` : ""}${html}`,
+  const fragment = parseHTMLToFragment(html);
+
+  const elementsWithHyphen = [...fragment.querySelectorAll("*")].filter((el) =>
+    el.tagName.includes("-"),
+  );
+
+  elementsWithHyphen.forEach((el) => {
+    const tagName = el.tagName.toLowerCase();
+    const customTag = customElements.get(tagName);
+    if (!customTag) {
+      return;
+    }
+    const attrs = Object.fromEntries(
+      Array.from(el.attributes).map((attr) => [
+        attr.name,
+        attr.value === "" ? true : attr.value,
+      ]),
+    );
+    attrs.fragmentRoot = owner.internal.fragment.enabled
+      ? owner
+      : owner.internal.fragment.fragmentRoot;
+    attrs.parent = owner;
+    const newEl = new customTag(attrs);
+    el.replaceWith(newEl);
+    if (!el.childNodes.length) {
+      return;
+    }
+    newEl.append(...el.childNodes);
+  });
+
+  return fragment;
+};
+
+/** @type {(strings: TemplateStringsArray, ...values: any[]) => HTMLElement} */
+const $create = function (strings, ...values) {
+  const rawHtml = strings.join("$$SLOT$$").trim();
+
+  const tagMatch = rawHtml.match(/^<([a-zA-Z0-9_-]+)\s*\$\$SLOT\$\$\s*\/?>$/);
+  if (!tagMatch) {
+    throw CONST.error.invalidMarkup(rawHtml);
+  }
+
+  const originalTag = tagMatch[1];
+  const kebabTag = originalTag
+    .replace(/([a-z])([A-Z])/g, "$1-$2")
+    .toLowerCase();
+
+  const attrs = values.find((v) => typeof v === "object" && v !== null);
+  attrs.parent = this;
+  const customTag = customElements.get(kebabTag);
+  if (customTag) {
+    return new customTag(attrs);
+  }
+
+  return document.createElement(kebabTag);
+};
+
+/** @type {(componentName: string, types: string[], shouldCache?: boolean) => Promise<{ html?: string, script?: Function, base?: ReactiveComponent }>} */
+const fetchComponentData = async (componentName, types, shouldCache = true) => {
+  const data = {
+    html: undefined,
+    script: undefined,
+    base: undefined,
+    layout: undefined,
+  };
+
+  window.Piglet.previousFetchComponentCacheKeys[componentName] ??= {
+    html: "",
+    script: "",
+    layout: "",
+  };
+
+  const previousCache =
+    window.Piglet.previousFetchComponentCacheKeys[componentName];
+
+  if (!types.length) {
+    return data;
+  }
+
+  if (types.includes(CONST.componentRoute.html)) {
+    const cacheKey = CONST.cacheKey();
+    if (!shouldCache) {
+      previousCache.html = cacheKey;
+    }
+    const res = await fetch(
+      `${CONST.componentRoute.html}/${componentName}${!shouldCache ? cacheKey : previousCache.html}`,
+    );
+    const html = await res.text();
+
+    if (html !== CONST.componentNotFound && html !== "") {
+      data.html = html;
+    }
+  }
+
+  if (types.includes(CONST.componentRoute.layout)) {
+    const cacheKey = CONST.cacheKey();
+    if (!shouldCache) {
+      previousCache.layout = cacheKey;
+    }
+    const res = await fetch(
+      `${CONST.componentRoute.layout}/${componentName}${!shouldCache ? cacheKey : previousCache.layout}`,
+    );
+    const layout = await res.text();
+
+    if (layout !== CONST.componentNotFound && layout !== "") {
+      data.layout = layout;
+    }
+  }
+
+  if (types.includes(CONST.componentRoute.script)) {
+    const cacheKey = CONST.cacheKey();
+    if (!shouldCache) {
+      previousCache.script = cacheKey;
+    }
+    const module = await import(
+      `${CONST.componentRoute.script}/${componentName}${!shouldCache ? cacheKey : previousCache.script}`
+    );
+    if (module.default !== false) {
+      data.script = module.default;
+    }
+  }
+
+  let cls;
+
+  if (types.includes(CONST.componentRoute.base)) {
+    if (!window.Piglet.registeredComponents[componentName]) {
+      // noinspection JSClosureCompilerSyntax
+      cls = class extends ReactiveComponent {
+        static name = componentName;
+        constructor(attrs) {
+          super(attrs);
+        }
+      };
+      await loadComponent(cls);
+      window.Piglet.registeredComponents[componentName] = cls;
+    } else {
+      cls = window.Piglet.registeredComponents[componentName];
+    }
+
+    data.base = cls;
+  }
+
+  return data;
+};
+
+/**
+ * Creates a proxy for the state object that allows for dynamic state creation
+ * @type {(asRef: boolean, host: ReactiveComponent) => Object} */
+const createStateProxy = function (asRef, host) {
+  return new Proxy(
+    {},
+    {
+      get(target, prop) {
+        if (typeof prop === "symbol") return undefined;
+
+        if (!(prop in host.states)) {
+          host.states[prop] = host.state(prop, undefined, asRef);
+        }
+
+        return host.states[prop].value;
+      },
+
+      set(target, prop, value) {
+        if (typeof prop === "symbol") return false;
+
+        const key = String(prop);
+
+        const isUsingUse = value && value.__piglet_use_marker === true;
+        const initialValue = isUsingUse ? value.initialValue : value;
+        const { avoidClone } = isUsingUse ? value : { avoidClone: false };
+
+        if (!(key in host.states)) {
+          host.states[key] = host.state(key, initialValue, asRef, avoidClone);
+        } else if (!isUsingUse) {
+          const state = host.states[key];
+
+          state.value = value;
+        }
+
+        return true;
+      },
+    },
+  );
+};
+
+/**
+ * Wrapper for creating a deep proxy that triggers onChange when a property is set
+ * @type {(target: Object, onChange: () => void) => Object} */
+const createDeepOnChangeProxy = function (target, onChange) {
+  return new Proxy(target, {
+    get(target, property) {
+      const item = target[property];
+      if (item && typeof item === "object") {
+        if (window.Piglet.__proxyCache.has(item))
+          return window.Piglet.__proxyCache.get(item);
+        const proxy = createDeepOnChangeProxy(item, onChange);
+        window.Piglet.__proxyCache.set(item, proxy);
+        return proxy;
+      }
+      if (typeof item === "function") {
+        return item.bind(target);
+      }
+      return item;
+    },
+    set(target, property, newValue) {
+      target[property] = newValue;
+      onChange();
+      return true;
+    },
+  });
+};
+
+/**
+ * Returns a marker object for useState
+ * @type {(initialValue: unknown, avoidClone?: boolean) => { __piglet_use_marker: boolean, initialValue: unknown, avoidClone: boolean }} */
+const useMarkerGenerator = function (initialValue, avoidClone = false) {
+  return { __piglet_use_marker: true, initialValue, avoidClone };
+};
+
+/**
+ * Creates an object that can be used to nested states while keeping reactivity
+ * @type {(asRef: boolean, host: ReactiveComponent) => Object} */
+const createNestedStateProxy = function (asRef, host) {
+  return new Proxy(
+    {},
+    {
+      get(target, prop) {
+        if (typeof prop === "symbol") return undefined;
+
+        if (!(prop in host.states)) {
+          host.states[prop] = host.state(prop, undefined, asRef);
+          const state = host.states[prop];
+          if (typeof state.value === "object" && state.value !== null) {
+            state.value = createDeepOnChangeProxy(state.value, () =>
+              window.Piglet.state[host.__componentKey]._notify?.(),
+            );
+          }
+        }
+
+        return host.states[prop].value;
+      },
+
+      set(target, prop, value) {
+        if (typeof prop === "symbol") return false;
+
+        const key = String(prop);
+
+        const isUsingUse = value && value.__piglet_use_marker === true;
+        const { avoidClone } = isUsingUse ? value : { avoidClone: false };
+        const initialValue = isUsingUse ? value.initialValue : value;
+        if (!(key in host.states)) {
+          host.states[key] = host.state(key, initialValue, asRef, avoidClone);
+          const state = host.states[key];
+          if (typeof state.value === "object" && state.value !== null) {
+            window.Piglet.state[host.__componentKey][key]._state =
+              createDeepOnChangeProxy(state.value, () =>
+                window.Piglet.state[host.__componentKey][key]._notify?.(),
+              );
+          }
+        } else if (!isUsingUse) {
+          const state = host.states[key];
+
+          if (typeof value === "object" && value !== null) {
+            state.value = createDeepOnChangeProxy(value, () =>
+              window.Piglet.state[host.__componentKey][key]._notify?.(),
+            );
+          } else {
+            state.value = value;
+          }
+        }
+
+        return true;
+      },
+    },
   );
 };
 
 export {
-  getHost,
-  assignIdToComponent,
-  isShadowRoot,
   getDeepValue,
-  toPascalCase,
-  toPigletAttr,
-  fromPigletAttr,
   api,
   navigate,
-  toKebabCase,
   getMountedComponentsByTag,
   loadComponent,
   sendToExtension,
   fetchWithCache,
   parseHTML,
+  $create,
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+  fetchComponentData,
+  createNestedStateProxy,
+  createStateProxy,
+  createDeepOnChangeProxy,
+  useMarkerGenerator,
+  pageRevealCallback,
 };

@@ -5,6 +5,12 @@ import { watchDirectory } from "@Piglet/watcher/methods";
 import { routes } from "@Piglet/libs/routes";
 import { mergeWebTypes } from "@Piglet/builder/webTypes";
 import console from "@Piglet/utils/console";
+import {
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+} from "@Piglet/browser/sharedHelpers";
+import { resolvePath } from "@Piglet/utils/paths";
 
 /**
  * Symbolic representation of route names defined in the application.
@@ -40,6 +46,24 @@ const getRouteFromRequest = (req) => {
   if (fs.existsSync(routes[path])) return routeNames.page;
   return routeNames.file;
 };
+
+/**
+ * Converts CSS selectors written in PascalCase to snake-case.
+ *
+ * @param {string} cssText - The CSS text containing selectors to be converted.
+ * @returns {string} - The CSS text with PascalCase selectors converted to snake-case.
+ */
+function convertSelectorsPascalToSnake(cssText) {
+  return cssText.replace(/([^{]+){/g, (match, selectorGroup) => {
+    const converted = selectorGroup.replace(
+      /(?<![#.:\-\w])([A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)*)(?![\w-])/g,
+      (_, name) => {
+        return name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+      },
+    );
+    return converted + "{";
+  });
+}
 
 /**
  * Runs the component watcher. It compiles all components,
@@ -132,10 +156,45 @@ const serverHandler = async (req, res) => {
   }
 };
 
+/**
+ * Retrieves the content of the `paths.json` file if it exists.
+ *
+ * @returns {string|false} - The content of the `paths.json` file as a string, or `false` if the file does not exist.
+ */
+function getPaths() {
+  if (!fs.existsSync(resolvePath("@/builtLayouts/paths.json"))) return false;
+  return fs.readFileSync(resolvePath("@/builtLayouts/paths.json"), "utf-8");
+}
+
+/**
+ * Resolves the file path of a layout file for a given component.
+ *
+ * @param {string} componentName - The name of the component to find the layout for.
+ * @param {string|false} paths - The content of the `paths.json` file as a string, or `false` if the file does not exist.
+ * @returns {string|false} - The resolved file path of the layout file, or `false` if the layout file does not exist.
+ */
+function getLayoutFilePath(componentName, paths) {
+  if (!paths) return false;
+  const pathsObj = JSON.parse(paths);
+  const path = pathsObj[componentName]?.layout;
+  const layoutValue = pathsObj?.layouts[path];
+  const layoutFilePath = resolvePath(`@/builtLayouts/${layoutValue}.html`);
+  if (!fs.existsSync(layoutFilePath)) {
+    return false;
+  }
+  return layoutFilePath;
+}
+
 export {
   routeNames,
   proxyHandler,
   getRouteFromRequest,
   serverHandler,
   runWatcher,
+  toPascalCase,
+  toKebabCase,
+  extractComponentTagsFromString,
+  getLayoutFilePath,
+  getPaths,
+  convertSelectorsPascalToSnake,
 };

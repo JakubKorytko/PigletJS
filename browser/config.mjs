@@ -1,6 +1,8 @@
 /** @import {Config} from "@jsdocs/browser/config.d" */
 import CONST from "@Piglet/browser/CONST";
 import { buildComponentTree } from "@Piglet/browser/tree";
+import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
+import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
 
 /** @type {Config} */
 const config = {
@@ -30,9 +32,11 @@ const config = {
 
   mountedComponents: new Set(),
 
-  componentsCount: {},
+  constructedComponents: {},
 
-  component: {},
+  registeredComponents: {},
+
+  previousFetchComponentCacheKeys: {},
 
   log(message, severity = CONST.coreLogsLevels.info, ...args) {
     if (!this.enableCoreLogs[severity]) return;
@@ -53,9 +57,16 @@ const config = {
     this.componentCounter = 0;
   },
 
+  __proxyCache: new WeakMap(),
+
   __fetchCache: new Map(),
 
   __fetchQueue: new Map(),
+
+  types: {
+    RC: ReactiveComponent,
+    RDC: ReactiveDummyComponent,
+  },
 };
 
 export default config;

@@ -2,11 +2,41 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import { resolvePath } from "@Piglet/utils/paths";
-import { toKebabCase, toPascalCase } from "@Piglet/utils/stringUtils";
+import {
+  convertSelectorsPascalToSnake,
+  extractComponentTagsFromString,
+  toKebabCase,
+  toPascalCase,
+} from "@Piglet/libs/helpers";
 import { parseRoutes, routes } from "@Piglet/libs/routes";
 import { formatHTML, formatJS } from "@Piglet/parser/format";
 import CONST from "@Piglet/misc/CONST";
 import console from "@Piglet/utils/console";
+import { generateLayoutFile } from "@Piglet/parser/layout";
+
+/**
+ * Extracts @import statements from CSS code and returns the cleaned code.
+ *
+ * @param {string} css - The CSS source code.
+ * @returns {{ imports: string[], cleanedCode: string }}
+ */
+function extractAndRemoveCssImports(css) {
+  const importRegex = /^@import\s+[^;]+;/gm;
+  const imports = [];
+  let cleaned;
+
+  let match;
+  while ((match = importRegex.exec(css)) !== null) {
+    imports.push(match[0]);
+  }
+
+  cleaned = css.replace(importRegex, "").trim();
+
+  return {
+    imports,
+    cleanedCode: cleaned,
+  };
+}
 
 /**
  * Extracts import statements from JavaScript code and returns the cleaned code.
@@ -21,13 +51,7 @@ function extractAndRemoveImports(code) {
 
   let match;
   while ((match = importRegex.exec(code)) !== null) {
-    let importStatement = match[0];
-
-    importStatement = importStatement
-      .replace(/["@']@Piglet\/browser\//g, '"/Piglet/')
-      .replace(/["@']@\/modules\//g, '"/module/');
-
-    imports.push(importStatement);
+    imports.push(match[0]);
   }
 
   cleaned = code.replace(importRegex, "").trim();
@@ -39,7 +63,7 @@ function extractAndRemoveImports(code) {
 }
 
 async function findMatchingExternalFile(rootDir, baseName, extension) {
-  const files = await fs.promises.readdir(rootDir, { withFileTypes: true });
+  const files = await fsp.readdir(rootDir, { withFileTypes: true });
 
   for (const file of files) {
     const fullPath = path.join(rootDir, file.name);
@@ -86,126 +110,6 @@ const contentRegex = (html) => html.match(/<content>([\s\S]*?)<\/content>/i);
 const scriptRegex = (html) => html.match(/<script>([\s\S]*?)<\/script>/i);
 
 /**
- * Injects a `host__element` attribute into all occurrences of a given tag in the HTML content,
- * unless the attribute is already present.
- *
- * @param {string} content - The HTML content.
- * @param {string} tagName - The tag name to target (e.g. "div", "span").
- * @param {string} componentName - The name of the component to use in the attribute value.
- * @returns {string} The modified HTML content.
- */
-function injectHostElementAttribute(content, tagName, componentName) {
-  const regex = new RegExp(`<${tagName}([^>]*)>`, "g");
-
-  return content.replace(regex, (match, attrs) => {
-    if (new RegExp(`${CONST.browser.callerAttribute}\\s*=`).test(attrs))
-      return match;
-    return `<${tagName} ${CONST.browser.callerAttribute}="${componentName}_NOT_SETTLED"${attrs}>`;
-  });
-}
-
-function autoInjectValue(script) {
-  const declarationRegex = /\b(?:let|const)\s+(\$\w+)/g;
-  const usageRegex = /\B(\$\w+)\b/g;
-
-  const declarationRanges = [];
-
-  for (const match of script.matchAll(declarationRegex)) {
-    const fullMatch = match[0];
-    const varName = match[1];
-    const start = match.index + fullMatch.indexOf(varName);
-    const end = start + varName.length;
-    declarationRanges.push([start, end]);
-  }
-
-  const stringRanges = [];
-  const stringRegex = /(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g;
-
-  for (const match of script.matchAll(stringRegex)) {
-    stringRanges.push([match.index, match.index + match[0].length]);
-  }
-
-  const isInRanges = (start, end, ranges) =>
-    ranges.some(([s, e]) => start >= s && end <= e);
-
-  let result = "";
-  let lastIndex = 0;
-
-  for (const match of script.matchAll(usageRegex)) {
-    const start = match.index;
-    const end = start + match[1].length;
-    const name = match[1];
-
-    const inDeclaration = isInRanges(start, end, declarationRanges);
-    const inExcluded = CONST.reservedNames.has(name);
-    const inString = isInRanges(start, end, stringRanges);
-
-    const isInTemplateExpr = (() => {
-      const before = script.slice(Math.max(0, start - 2), start);
-      const after = script.slice(end, end + 1);
-      return before === "${" && after === "}";
-    })();
-
-    if (!inDeclaration && !inExcluded && (!inString || isInTemplateExpr)) {
-      result += script.slice(lastIndex, start) + name + ".value";
-      lastIndex = end;
-    }
-  }
-
-  result += script.slice(lastIndex);
-  return result;
-}
-
-/**
- * Transforms destructuring of the `state` object into individual state declarations.
- *
- * Example:
- * `const { count = init(0), name } = state;` becomes:
- * ```
- * const count = state("count", 0);
- * const name = state("name");
- * ```
- *
- * @param {string} fullScript - The original JavaScript code.
- * @returns {string} The transformed JavaScript code.
- */
-const transformScript = (fullScript) => {
-  const assignmentsRegex = CONST.regex.assignments;
-  const declarationsRegex = CONST.regex.declarations;
-
-  return autoInjectValue(fullScript)
-    .replace(assignmentsRegex, (_, name, value) => {
-      const trimmed = value.trim();
-
-      const refCallMatch = CONST.regex.refCall.exec(trimmed);
-      if (refCallMatch) {
-        const inner = refCallMatch[1].trim();
-        const hasValue = inner.length > 0;
-        return `let $${name} = $state("${name}", ${hasValue ? inner : "undefined"}, true)`;
-      }
-
-      if (trimmed === "$ref") {
-        return `let $${name} = $state("${name}", undefined, true)`;
-      }
-
-      return `let $${name} = $state("${name}", ${value})`;
-    })
-    .replace(declarationsRegex, (_, group) => {
-      const variables = group
-        .split(",")
-        .map((v) => v.trim())
-        .filter((v) => v.startsWith("$"));
-
-      return variables
-        .map((v) => {
-          const name = v.slice(1);
-          return `let $${name} = $state("${name}")`;
-        })
-        .join("\n");
-    });
-};
-
-/**
  * Combines external and internal scripts, transforms them,
  * extracts imports, generates the final component module file,
  * and prepares the script to be injected into the runtime.
@@ -217,24 +121,34 @@ const transformScript = (fullScript) => {
  */
 const generateComponentScript = async (scriptJS, externalJS, componentName) => {
   if (!scriptJS && !externalJS) return;
+  const useAsyncRegex = /^\s*["']use async['"]\s*[;|\n]/gm;
+  let isAsync = false;
 
-  const fullScript = [externalJS, scriptJS].filter(Boolean).join("\n\n");
-  const transformedScript = transformScript(fullScript);
+  const fullScript = [externalJS, scriptJS]
+    .filter(Boolean)
+    .map((script) => {
+      const isCurrentAsync = useAsyncRegex.test(script);
+      if (isCurrentAsync) {
+        isAsync = true;
+        return script.replace(useAsyncRegex, "").trim();
+      }
+      return script;
+    })
+    .join("\n\n");
 
-  const { imports, cleanedCode } = extractAndRemoveImports(transformedScript);
+  const { imports, cleanedCode } = extractAndRemoveImports(fullScript);
 
-  await fs.promises.mkdir(resolvePath("@/builtScript"), {
+  await fsp.mkdir(resolvePath("@/builtScript"), {
     recursive: true,
   });
   const outputPath = resolvePath(`@/builtScript/${componentName}.mjs`);
 
   const scriptForFile = formatJS(`
-  ${CONST.parserStrings.hardcodedImports}
   ${imports.join("\n")}
-  ${CONST.parserStrings.exportBeforeScript}
+  ${CONST.parserStrings.exportBeforeScript(isAsync)}
   ${cleanedCode}\n}`);
 
-  return fs.promises.writeFile(outputPath, scriptForFile);
+  return fsp.writeFile(outputPath, scriptForFile);
 };
 
 /**
@@ -247,7 +161,7 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
  * @param {string} html - Full original HTML string of the component.
  * @param {string} content - Content extracted from the `<content>` tag.
  * @param {string} componentName - The name of the component.
- * @param {string} externalCSS - Optional external CSS to include in the output.
+ * @param {string=} externalCSS - Optional external CSS to include in the output.
  * @returns {string} The transformed innerHTML string, escaped and indented.
  */
 const injectInnerHTMLToComponent = (
@@ -256,78 +170,51 @@ const injectInnerHTMLToComponent = (
   componentName,
   externalCSS,
 ) => {
-  let modifiedContent = injectHostElementAttribute(
-    content,
-    "render-if",
-    componentName,
-  );
+  let modifiedContent = content;
 
-  const componentTags = new Set();
-  const tagRegex =
-    /<([A-Z][a-zA-Z0-9]*)[^>]*>.*?<\/\1>|<([A-Z][a-zA-Z0-9]*)[^>]*\/>/g;
-  let match;
-
-  while ((match = tagRegex.exec(modifiedContent)) !== null) {
-    const pascalTag = match[1] || match[2];
-    componentTags.add(pascalTag);
-  }
+  const componentTags = extractComponentTagsFromString(html);
 
   componentTags.forEach((tag) => {
     const kebabTag = toKebabCase(tag);
 
-    const selfClosingTagRegex = new RegExp(`<${tag}([^>]*)/>`, "g");
+    const selfClosingTagRegex = new RegExp(`<\\s*${tag}([^>]*)/>`, "g");
     modifiedContent = modifiedContent.replace(
       selfClosingTagRegex,
       `<${kebabTag}$1></${kebabTag}>`,
     );
 
     modifiedContent = modifiedContent.replace(
-      new RegExp(`<${tag}([^>]*)>`, "g"),
+      new RegExp(`<\\s*${tag}([^>]*)>`, "g"),
       `<${kebabTag}$1>`,
     );
     modifiedContent = modifiedContent.replace(
-      new RegExp(`</${tag}>`, "g"),
+      new RegExp(`</\\s*${tag}\\s*>`, "g"),
       `</${kebabTag}>`,
     );
   });
 
   const styleMatch = styleRegex(html);
+  const cssImports = [];
+
   const styleCSS = [externalCSS, styleMatch ? styleMatch[1].trim() : ""]
     .filter(Boolean)
+    .map((css) => {
+      const { imports, cleanedCode } = extractAndRemoveCssImports(css);
+      cssImports.push(...imports);
+      return cleanedCode;
+    })
     .join("\n\n");
+
+  const convertedCSS = convertSelectorsPascalToSnake(styleCSS);
 
   return `
   <style>
-   ${styleCSS}
-   ${CONST.pageTransitionCss} 
+  ${cssImports.join("\n")}
+  ${convertedCSS}
   </style>
-  
   ${modifiedContent}
   `;
 };
-
-/**
- * Injects all component data (class name, tag, HTML, script) into a shared template file.
- * Replaces placeholder tokens in the template with actual component values.
- *
- * @param {Object} options - Options for injecting into the component template.
- * @param {string} options.className - The class name of the component (PascalCase).
- * @param {string} options.componentName - The original component name (e.g., "App").
- * @returns {Promise<string>} The fully populated component file content.
- */
-async function injectIntoComponentTemplate({ className, componentName }) {
-  const filePath = resolvePath("@Piglet/parser/base.mjs");
-  let fileContent = await fsp.readFile(filePath, "utf-8");
-
-  return `${fileContent
-    .replace(/^\/\/ noinspection.*\n?/gm, "")
-    .replace(/["@']@Piglet\/browser\//g, '"/Piglet/')
-    .replace(/COMPONENT_CLASS_NAME/g, className)
-    .replace(
-      /COMPONENT_NAME/g,
-      componentName,
-    )}\n loadComponent(${className})`.trim();
-}
 
 /**
  * Orchestrates the full generation of a component file based on HTML, CSS, and JS inputs.
@@ -348,9 +235,6 @@ const generateOutput = async (_, ...args) => {
   const externalCSS = args[3];
   const externalJS = args[4];
 
-  const isAppComponent = componentName === "App";
-  const className = isAppComponent ? "AppRoot" : componentName;
-
   const scriptMatch = scriptRegex(html);
   const scriptJS = scriptMatch ? scriptMatch[1].trim() : "";
   await generateComponentScript(scriptJS, externalJS, componentName);
@@ -364,16 +248,12 @@ const generateOutput = async (_, ...args) => {
     ).trim(),
   );
 
-  await fs.promises.mkdir(resolvePath("@/builtHTML"), {
+  await fsp.mkdir(resolvePath("@/builtHTML"), {
     recursive: true,
   });
   const outputPath = resolvePath(`@/builtHTML/${componentName}.html`);
-  await fs.promises.writeFile(outputPath, innerHTML);
-
-  return await injectIntoComponentTemplate({
-    className,
-    componentName,
-  });
+  await fsp.writeFile(outputPath, innerHTML);
+  console.msg("components.generated", componentName);
 };
 
 /**
@@ -397,10 +277,8 @@ const getContentTag = (html) => {
  * @param {string} filePath - Path to the component source file.
  */
 async function buildComponent(filePath) {
-  "use strict";
-
   try {
-    const html = await fs.promises.readFile(filePath, "utf-8");
+    const html = await fsp.readFile(filePath, "utf-8");
     const content = getContentTag(html);
 
     if (!content) {
@@ -425,24 +303,19 @@ async function buildComponent(filePath) {
     let externalJS = "";
 
     if (fs.existsSync(externalCSSPath)) {
-      externalCSS = await fs.promises.readFile(externalCSSPath, "utf-8");
+      externalCSS = await fsp.readFile(externalCSSPath, "utf-8");
     }
 
     if (fs.existsSync(externalJSPath)) {
-      externalJS = await fs.promises.readFile(externalJSPath, "utf-8");
+      externalJS = await fsp.readFile(externalJSPath, "utf-8");
     }
 
-    const output = await generateOutput`
+    await generateLayoutFile(filePath, componentName);
+
+    await generateOutput`
     Component name: ${componentName}
     Component content: ${html}${content}
     External data: ${externalCSS}${externalJS}`;
-
-    await fs.promises.mkdir(resolvePath("@/builtComponents"), {
-      recursive: true,
-    });
-    const outputPath = resolvePath(`@/builtComponents/${componentName}.mjs`);
-    await fs.promises.writeFile(outputPath, output);
-    console.msg("components.generated", outputPath);
   } catch (err) {
     if (err.message === "components.outputGenerationError") {
       console.msg(err.message, err);
@@ -461,18 +334,14 @@ async function buildComponent(filePath) {
  */
 async function extractDescriptionsFromFile(filePath) {
   try {
-    const fileContent = await fs.promises.readFile(filePath, "utf-8");
+    const fileContent = await fsp.readFile(filePath, "utf-8");
     const descriptionMatches = [];
-    const regex = /<script\s+content="description">([\s\S]*?)<\/script>/g;
+    const regex =
+      /<script\s+type=["']application\/json["']\s*>([\s\S]*?)<\/script>/g;
 
     let match;
     while ((match = regex.exec(fileContent)) !== null) {
       let raw = match[1].trim();
-
-      // Remove "export default" and trailing semicolons or extra closing
-      if (raw.startsWith("export default")) {
-        raw = raw.replace(/^export\s+default\s+/, "").trim();
-      }
 
       // Remove trailing semicolon if present
       if (raw.endsWith(";")) {
@@ -481,7 +350,10 @@ async function extractDescriptionsFromFile(filePath) {
 
       try {
         // Evaluate as JS object using `Function` constructor to avoid unsafe `eval`
-        const descriptionData = new Function(`return ${raw}`)();
+        const descriptionData = JSON.parse(raw);
+        const { attributes } = CONST.defaultWebType(filePath);
+        descriptionData.attributes ??= [];
+        descriptionData.attributes.push(...attributes);
         descriptionMatches.push(descriptionData);
       } catch (e) {
         console.msg("components.errorParsingDescription", e);
@@ -510,17 +382,21 @@ async function processAllComponents(dir = resolvePath("@/components")) {
     // Process the App.pig.html file if it exists
     if (fs.existsSync(appPath) && Object.values(arguments).length === 0) {
       console.msg("components.generatingFrom", "App.pig.html");
-      const appHtml = await fs.promises.readFile(appPath, "utf-8");
+      const appHtml = await fsp.readFile(appPath, "utf-8");
       parseRoutes(appHtml, pagesDir);
       for (const route of Object.values(routes)) {
         await buildComponent(route);
         const pageDescriptions = await extractDescriptionsFromFile(route);
-        descriptions.push(...pageDescriptions);
+        if (pageDescriptions.length === 0) {
+          descriptions.push(CONST.defaultWebType(route));
+        } else {
+          descriptions.push(...pageDescriptions);
+        }
       }
     }
 
     // Process the directory of components recursively
-    const files = await fs.promises.readdir(dir, { withFileTypes: true });
+    const files = await fsp.readdir(dir, { withFileTypes: true });
 
     for (const file of files) {
       const filePath = path.join(dir, file.name);
@@ -535,7 +411,12 @@ async function processAllComponents(dir = resolvePath("@/components")) {
         // Extract descriptions from this component
         const componentDescriptions =
           await extractDescriptionsFromFile(filePath);
-        descriptions.push(...componentDescriptions);
+
+        if (componentDescriptions.length === 0) {
+          descriptions.push(CONST.defaultWebType(filePath));
+        } else {
+          descriptions.push(...componentDescriptions);
+        }
       }
     }
   } catch (err) {
@@ -546,4 +427,10 @@ async function processAllComponents(dir = resolvePath("@/components")) {
   return descriptions;
 }
 
-export { buildComponent, processAllComponents };
+export {
+  buildComponent,
+  processAllComponents,
+  getContentTag,
+  styleRegex,
+  injectInnerHTMLToComponent,
+};

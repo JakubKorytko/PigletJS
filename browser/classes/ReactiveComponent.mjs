@@ -1,388 +1,292 @@
-/** @import {BaseReactiveComponentInterface, VirtualReactiveComponentInterface, Member, Virtual} from "@jsdocs/browser/classes/ReactiveComponent.d" */
+/** @import {BaseReactiveComponentInterface, VirtualReactiveComponentInterface, ReactiveMembers, ReactiveVirtualMembers} from "@jsdocs/browser/classes/ReactiveComponent.d" */
 
 import { useState, useObserver } from "@Piglet/browser/hooks";
 import {
-  fromPigletAttr,
-  getHost,
   parseHTML,
   sendToExtension,
+  fetchComponentData,
+  extractComponentTagsFromString,
 } from "@Piglet/browser/helpers";
-import { clearAllListenersForHost } from "@Piglet/browser/scriptRunner";
 import CONST from "@Piglet/browser/CONST";
+import scriptRunner, {
+  clearAllListenersForHost,
+} from "@Piglet/browser/scriptRunner";
 
 /**
  * @implements {BaseReactiveComponentInterface}
  */
 class ReactiveComponent extends HTMLElement {
-  /**
-   * @type {Virtual["attributeChangedCallback"]["Type"]}
-   * @returns {Virtual["attributeChangedCallback"]["ReturnType"]}
-   * @virtual
-   */
-  attributeChangedCallback() {}
+  #pendingStateUpdate = false;
 
   /**
-   * @type {Virtual["runScript"]["Type"]}
-   * @returns {Virtual["runScript"]["ReturnType"]}
-   * @virtual
+   * @template T
+   * @type {{value: T, property: string, prevValue: T}[]}
    */
-  runScript() {
-    return Promise.resolve();
-  }
+  #batchedChanges = [];
 
   /**
-   * @type {Virtual["onBeforeUpdate"]["Type"]}
-   * @returns {Virtual["onBeforeUpdate"]["ReturnType"]}
-   * @virtual
+   * @type {ReactiveVirtualMembers["onBeforeUpdate"]["Type"]}
+   * @returns {ReactiveVirtualMembers["onBeforeUpdate"]["ReturnType"]}
    */
   onBeforeUpdate() {}
 
   /**
-   * @type {Virtual["onAfterUpdate"]["Type"]}
-   * @returns {Virtual["onAfterUpdate"]["ReturnType"]}
-   * @virtual
+   * @type {ReactiveVirtualMembers["onAfterUpdate"]["Type"]}
+   * @returns {ReactiveVirtualMembers["onAfterUpdate"]["ReturnType"]}
    */
   onAfterUpdate() {}
 
-  /** @type {Virtual["__id"]["Type"]} */
-  __id;
+  /**
+   * @type {ReactiveVirtualMembers["__mountCallback"]["Type"]}
+   * @returns {ReactiveVirtualMembers["__mountCallback"]["ReturnType"]}
+   * @virtual
+   */
+  __mountCallback(reason) {}
 
-  /** @type {Virtual["__mutationObserver"]["Type"]} */
-  __mutationObserver = null;
-
-  /** @type {Virtual["__caller"]["Type"]} */
-  __caller = "";
-
-  /** @type {Virtual["__componentName"]["Type"]} */
+  /** @type {ReactiveVirtualMembers["__componentName"]["Type"]} */
   __componentName = "";
 
-  /** @type {Virtual["__tree"]["Type"]} */
-  __tree = {};
-
-  /** @type {Virtual["__componentId"]["Type"]} */
+  /** @type {ReactiveVirtualMembers["__componentId"]["Type"]} */
   __componentId;
 
-  /** @type {Virtual["__componentKey"]["Type"]} */
+  /** @type {ReactiveVirtualMembers["__componentKey"]["Type"]} */
   __componentKey = "";
 
-  /** @type {Virtual["__stateless"]["Type"]} */
-  __stateless;
-
-  /** @type {Virtual["__mountCallback"]["Type"]} */
-  __mountCallback = () => {};
-
-  /** @type {Member["__mountData"]["Type"]} */
+  /** @type {ReactiveMembers["__mountData"]["Type"]} */
   __mountData;
 
-  /** @type {Member["_forwarded"]["Type"]} */
-  _forwarded = {};
-
-  /** @type {Member["__children"]["Type"]} */
-  __children = [];
-
-  /** @type {Member["__isMounted"]["Type"]} */
-  __isMounted = false;
-
-  /** @type {Member["__isHTMLInjected"]["Type"]} */
-  __isHTMLInjected = false;
-
-  /** @type {Member["__root"]["Type"]} */
-  __root = null;
-
-  /** @type {Member["__observers"]["Type"]} */
+  /** @type {ReactiveMembers["__observers"]["Type"]} */
   __observers;
 
-  /** @type {Member["__attrs"]["Type"]} */
-  __attrs = {};
+  /** @type {ReactiveMembers["attrs"]["Type"]} */
+  attrs = {};
 
-  /** @type {Member["__pendingAttributeUpdate"]["Type"]} */
-  __pendingAttributeUpdate = false;
+  /** @type {ReactiveMembers["forwardedQueue"]["Type"]} */
+  forwardedQueue = [];
 
-  /** @type {Member["__batchedAttributeChanges"]["Type"]} */
-  __batchedAttributeChanges = [];
+  /** @type {ReactiveMembers["_storedChildren"]["Type"]} */
+  _storedChildren = document.createDocumentFragment();
 
-  /** @type {Member["__waitingForScript"]["Type"]} */
-  __waitingForScript = [];
+  /** @type {ReactiveMembers["childrenInjected"]["Type"]} */
+  childrenInjected = false;
 
-  /** @type {Member["__killed"]["Type"]} */
-  __killed = false;
+  /** @type {ReactiveMembers["states"]["Type"]} */
+  states = {};
 
-  /** @type {Member["__useFragment"]["Type"]} */
-  __useFragment = false;
-
-  /**
-   * @type {Member["__isKilled"]["Type"]}
-   * @returns {Member["__killed"]["Type"]}
-   */
-  get __isKilled() {
-    const parent = getHost(this, true);
-    const grandParent = getHost(parent ?? this, true);
-
-    return this.__killed || parent?.__killed || grandParent?.__killed;
-  }
-
-  /**
-   * @type {Member["kill"]["Type"]}
-   * @returns {Member["kill"]["ReturnType"]}
-   */
-  kill() {
-    this.__killed = true;
-    this.remove();
-  }
+  /** @type {ReactiveMembers["internal"]["Type"]} */
+  internal = {
+    owner: undefined,
+    HMR: true,
+    mounted: false,
+    children: [],
+    waiters: [],
+    fragment: {
+      content: undefined,
+      enabled: false,
+      fragmentRoot: undefined,
+    },
+    get parent() {
+      return this.owner._parent;
+    },
+  };
 
   /**
-   * @type {Member["disableHMR"]["Type"]}
-   * @returns {Member["disableHMR"]["ReturnType"]}
+   * @type {ReactiveMembers["initialSetup"]["Type"]}
+   * @returns {ReactiveMembers["initialSetup"]["ReturnType"]}
    */
-  disableHMR() {
-    this.__preventReload = true;
-  }
-
-  /**
-   * @type {Member["injectFragment"]["Type"]}
-   * @returns {Member["injectFragment"]["ReturnType"]}
-   */
-  injectFragment() {
-    if (this.__useFragment && this.__fragment) {
-      this.__useFragment = false;
-      this.shadowRoot.appendChild(this.__fragment);
-      this._mount({ name: "loadContent" });
-    }
-  }
-
-  /**
-   * @type {Member["isInDocumentFragmentDeep"]["Type"]}
-   * @returns {Member["isInDocumentFragmentDeep"]["ReturnType"]}
-   */
-  isInDocumentFragmentDeep() {
-    let currentRoot = getHost(this, true);
-
-    while (currentRoot) {
-      if (currentRoot.__useFragment) {
-        return currentRoot;
-      }
-      currentRoot = getHost(currentRoot, true);
-    }
-    return false;
-  }
-
-  constructor() {
-    super();
-
-    this.__useFragment = this.getAttribute("fragment") !== null;
-    if (this.__isKilled) return;
-
-    this.__caller = this.getAttribute(CONST.callerAttribute);
-    this.removeAttribute(CONST.callerAttribute);
-    this.__componentName = this.constructor.name;
+  initialSetup(attrs) {
+    this.attrs = attrs ?? {};
+    this.internal.owner = this;
+    this._parent = this.attrs.parent ?? undefined;
+    this.internal.fragment.enabled = this.attrs.fragment ?? false;
+    this.internal.fragment.fragmentRoot = this.attrs.fragmentRoot ?? undefined;
     this.__observers = new Map();
-
-    /**
-     * Observes attribute changes.
-     */
-    this.__mutationObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === "attributes") {
-          const name = mutation.attributeName;
-          const oldValue = mutation.oldValue;
-          const newValue = this.getAttribute(name);
-
-          if (name.startsWith(CONST.attributePrefix)) {
-            const attrName = fromPigletAttr(name);
-
-            this.__batchedAttributeChanges.push({
-              newValue,
-              attrName,
-              oldValue,
-            });
-
-            this.__attrs[attrName] = newValue;
-
-            if (!this.__pendingAttributeUpdate) {
-              this.__pendingAttributeUpdate = true;
-
-              Promise.resolve().then(() => {
-                this.__pendingAttributeUpdate = false;
-
-                const changes = this.__batchedAttributeChanges;
-                this.__batchedAttributeChanges = [];
-
-                this._mount(CONST.reason.attributesChange(changes));
-              });
-            }
-          }
-        }
-      }
-    });
-
-    this.__mutationObserver.observe(this, {
-      attributes: true,
-      attributeOldValue: true,
-    });
-
-    for (const attr of this.attributes) {
-      if (attr.name.startsWith(CONST.attributePrefix)) {
-        const attrName = fromPigletAttr(attr.name);
-        this.__attrs[attrName] = attr.value;
-      }
-    }
-
-    if (this.constructor.name === CONST.appRootName) {
-      this.__componentId = 0;
-    } else if (this.__componentId === undefined) {
-      this.__componentId = ++window.Piglet.componentCounter;
-    }
-
-    this.__componentKey = `${this.constructor?.name}${this.__componentId}`;
-  }
-
-  /**
-   * @type {Member["_mount"]["Type"]}
-   * @returns {Member["_mount"]["ReturnType"]}
-   */
-  _mount(reason) {
-    const parent = getHost(this, true);
-
-    if (parent && parent.__isMounted && this.__isHTMLInjected) {
-      this.__isMounted = true;
-      this.__mountCallback(reason);
-      this._updateChildren(reason);
-    } else if (this.constructor.name === "AppRoot") {
-      this.__isMounted = true;
-      this._updateChildren(reason);
-    }
-  }
-
-  /**
-   * @type {Member["_updateChildren"]["Type"]}
-   * @returns {Member["_updateChildren"]["ReturnType"]}
-   */
-  _updateChildren(reason) {
-    for (const child of this.__children) {
-      if (!child.__isMounted || child.__stateless) {
-        child._mount(CONST.reason.parentUpdate(reason));
-      } else {
-        child._updateChildren(reason);
-      }
-    }
-  }
-
-  /**
-   * @type {Member["reloadComponent"]["Type"]}
-   * @returns {Member["reloadComponent"]["ReturnType"]}
-   */
-  async reloadComponent() {
-    if (this.__isKilled || this.__preventReload) {
-      return;
-    }
-    this.__isHTMLInjected = false;
-    this.__isMounted = false;
-    await this.runScript({ name: "reload" });
-    await this.loadContent(false);
-  }
-
-  /**
-   * @type {Member["loadContent"]["Type"]}
-   * @returns {Member["loadContent"]["ReturnType"]}
-   */
-  async loadContent(canUseMemoized) {
-    const componentName = this.constructor.name;
-    const url = `/component/html/${componentName}`;
-
-    try {
-      let html;
-
-      if (canUseMemoized) {
-        html = await window.fetchWithCache(url);
-      } else {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw CONST.error.failedToFetchHTML(componentName);
-        }
-        html = await response.text();
-      }
-
-      const fragment = parseHTML(html, this);
-
-      if (this.__useFragment) {
-        this.__fragment = fragment;
-      } else {
-        this.shadowRoot.replaceChildren();
-        this.shadowRoot.appendChild(fragment);
-      }
-      this.__isHTMLInjected = true;
-      this._mount({ name: "loadContent" });
-    } catch (error) {
-      window.Piglet.log(CONST.pigletLogs.appRoot.errorLoading(componentName));
-      return null;
-    }
-  }
-
-  /**
-   * @type {Member["_unmount"]["Type"]}
-   * @returns {Member["_unmount"]["ReturnType"]}
-   */
-  _unmount() {
-    this.__mountCallback = undefined;
-    this.__isMounted = false;
-    this.__children = [];
-    for (const remove of this.__observers.values()) {
-      remove?.(this);
-    }
-    this.__observers.clear();
-  }
-
-  /**
-   * @type {Member["connectedCallback"]["Type"]}
-   * @returns {Member["connectedCallback"]["ReturnType"]}
-   */
-  connectedCallback() {
+    this.__componentId = window.Piglet.componentCounter++;
+    this.__componentName = this.constructor.name;
+    this.__componentKey = `${this.__componentName}${this.__componentId}`;
     this.__mountData = {
       key: this.__componentKey,
       tag: this.tagName,
       ref: this,
     };
+    this._parent?.internal.children.push(this);
+    window.Piglet.constructedComponents[this.__componentKey] = this;
+  }
 
+  constructor(attrs) {
+    super();
+
+    this.initialSetup(attrs);
+
+    const { fragmentRoot } = this.internal.fragment;
+    const fragmentEnabled = fragmentRoot?.internal.fragment.enabled;
+
+    if (fragmentRoot && !fragmentEnabled) {
+      return undefined;
+    }
+
+    this.attachShadow({ mode: "open" });
+  }
+
+  /**
+   * @type {ReactiveMembers["connectedCallback"]["Type"]}
+   * @returns {ReactiveMembers["connectedCallback"]["ReturnType"]}
+   */
+  connectedCallback() {
+    const parent = this.internal.parent.internal;
+
+    if (parent.mounted) {
+      this._mount(CONST.reason.onMount);
+    } else {
+      parent.waiters.push(this);
+    }
+  }
+
+  /**
+   * @type {ReactiveMembers["disconnectedCallback"]["Type"]}
+   * @returns {ReactiveMembers["disconnectedCallback"]["ReturnType"]}
+   */
+  disconnectedCallback() {
+    this.unmount();
+  }
+
+  /**
+   * @type {ReactiveMembers["_mount"]["Type"]}
+   * @returns {ReactiveMembers["_mount"]["ReturnType"]}
+   */
+  async _mount(reason) {
+    await this.runScript(reason);
+    const shouldContinue = await this.loadContent(CONST.reasonCache(reason));
+    if (!shouldContinue) return Promise.resolve(false);
+    sendToExtension(CONST.extension.tree);
+    this.__mountCallback(reason);
+    this.internal.mounted = true;
     window.Piglet.mountedComponents.add(this.__mountData);
-
-    if (this.__isKilled) {
-      this.remove();
-      return;
-    }
     window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
-    this.__root = this.shadowRoot ?? this.getRootNode();
-    if (this.__caller) {
-      const host = getHost(this.__root);
-      this.__caller = host?.__componentKey;
+    /** @type {Promise<Awaited<boolean>[]>|[]} */
+    const promises = [];
+    while (this.internal.waiters.length > 0) {
+      promises.push(
+        this.internal.waiters.shift()._mount(CONST.reason.parentUpdate),
+      );
     }
-    const parent = getHost(this, true);
-    if (parent && !parent.__children.includes(this)) {
-      parent.__children.push(this);
+    return Promise.all(promises);
+  }
+
+  /**
+   * @type {ReactiveMembers["unmount"]["Type"]}
+   * @returns {ReactiveMembers["unmount"]["ReturnType"]}
+   */
+  unmount() {
+    window.Piglet.mountedComponents.delete(this.__mountData);
+    this.__mountCallback = () => {};
+    this.internal.mounted = false;
+    for (const remove of this.__observers.values()) {
+      remove?.(this);
     }
-    this.runScript(CONST.reason.addedToDOM).then(() => {
-      this.__ranScript = true;
-      if (this.__waitingForScript.length > 0) {
-        for (const child of this.__waitingForScript) {
-          child.loadContent(true);
-        }
-        this.__waitingForScript = [];
-      }
-    });
+    this.__observers.clear();
+    this.shadowRoot?.replaceChildren();
     sendToExtension(CONST.extension.tree);
   }
 
   /**
-   * @type {Member["onMount"]["Type"]}
-   * @returns {Member["onMount"]["ReturnType"]}
+   * @type {ReactiveMembers["disableHMR"]["Type"]}
+   * @returns {ReactiveMembers["disableHMR"]["ReturnType"]}
    */
-  onMount(callback) {
-    this.__mountCallback = callback;
-    this._mount(CONST.reason.onMount);
+  disableHMR() {
+    this.internal.HMR = false;
   }
 
   /**
-   * @type {Member["observeState"]["Type"]}
-   * @returns {Member["observeState"]["ReturnType"]}
+   * @type {ReactiveMembers["injectFragment"]["Type"]}
+   * @returns {ReactiveMembers["injectFragment"]["ReturnType"]}
+   */
+  injectFragment() {
+    if (!this.internal.fragment.content || !this.internal.fragment.enabled)
+      return;
+
+    this.internal.fragment.enabled = false;
+    this.shadowRoot.appendChild(this.internal.fragment.content);
+    this.__mountCallback(CONST.reason.fragmentInjected);
+  }
+
+  /**
+   * @type {ReactiveMembers["appendChildren"]["Type"]}
+   * @returns {ReactiveMembers["appendChildren"]["ReturnType"]}
+   */
+  appendChildren(fragment) {
+    const kinderGarten = fragment.querySelector("kinder-garten");
+
+    if (!kinderGarten) {
+      return;
+    }
+
+    if (!this.childrenInjected) {
+      kinderGarten.append(...this.childNodes);
+      this.childrenInjected = true;
+      return;
+    }
+
+    kinderGarten.append(this._storedChildren);
+  }
+
+  /**
+   * @type {ReactiveMembers["loadContent"]["Type"]}
+   * @returns {ReactiveMembers["loadContent"]["ReturnType"]}
+   */
+  async loadContent(canUseMemoized) {
+    const { fragmentRoot } = this.internal.fragment;
+
+    const isFragmentRoot = this.internal.fragment.enabled;
+    const isFragmentElement = !!fragmentRoot;
+    const isFragmentRootEnabled = fragmentRoot?.internal.fragment.enabled;
+
+    if (!isFragmentRoot && isFragmentElement && !isFragmentRootEnabled) {
+      return false;
+    }
+
+    const componentName = this.__componentName;
+    const url = `${CONST.componentRoute.html}/${componentName}`;
+
+    let html;
+
+    if (canUseMemoized) {
+      html = await window.fetchWithCache(url);
+    } else {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw CONST.error.failedToFetchHTML(componentName);
+      }
+      html = await response.text();
+      window.Piglet.__fetchCache.set(url, html);
+    }
+
+    const fragment = parseHTML(html, this);
+
+    if (!this.internal.fragment.enabled) {
+      this.shadowRoot.replaceChildren();
+    }
+
+    this.appendChildren(fragment);
+
+    if (this.internal.fragment.enabled) {
+      this.internal.fragment.content = fragment;
+    } else {
+      this.shadowRoot.appendChild(fragment);
+    }
+
+    if (isFragmentElement || isFragmentRoot) {
+      for (const child of this.internal.children) {
+        child.connectedCallback();
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * @type {ReactiveMembers["observeState"]["Type"]}
+   * @returns {ReactiveMembers["observeState"]["ReturnType"]}
    */
   observeState(property) {
     const callback = {
@@ -391,7 +295,7 @@ class ReactiveComponent extends HTMLElement {
     };
 
     const [addObserver, removeObserver] = useObserver(
-      this.__caller ?? this.__componentKey,
+      this.__componentKey,
       property,
     );
 
@@ -405,31 +309,30 @@ class ReactiveComponent extends HTMLElement {
   }
 
   /**
-   * @type {Member["state"]["Type"]}
-   * @returns {Member["state"]["ReturnType"]}
+   * @type {ReactiveMembers["state"]["Type"]}
+   * @returns {ReactiveMembers["state"]["ReturnType"]}
    */
-  state(property, initialValue, asRef = false) {
+  state(property, initialValue, asRef = false, avoidClone = false) {
     const state = useState(
-      this.__caller ?? this.__componentKey,
+      this.__componentKey,
       property,
       initialValue,
-      !!this.__caller,
       asRef,
+      avoidClone,
     );
     this.observeState(property);
     return state;
   }
 
-  #pendingStateUpdate = false;
-  #batchedChanges = [];
+  clearListeners() {
+    clearAllListenersForHost(this);
+  }
 
   /**
-   * @type {Member["stateChange"]["Type"]}
-   * @returns {Member["stateChange"]["ReturnType"]}
+   * @type {ReactiveMembers["stateChange"]["Type"]}
+   * @returns {ReactiveMembers["stateChange"]["ReturnType"]}
    */
   stateChange(value, property, prevValue) {
-    clearAllListenersForHost(this);
-
     this.#batchedChanges.push({ value, property, prevValue });
 
     if (!this.#pendingStateUpdate) {
@@ -439,36 +342,40 @@ class ReactiveComponent extends HTMLElement {
         this.#batchedChanges = [];
         this.#pendingStateUpdate = false;
 
-        this._mount(CONST.reason.stateChange(changes));
+        this.__mountCallback(CONST.reason.stateChange(changes));
       });
     }
   }
 
-  /**
-   * @type {Member["disconnectedCallback"]["Type"]}
-   * @returns {Member["disconnectedCallback"]["ReturnType"]}
-   */
-  disconnectedCallback() {
-    if (window.Piglet.componentsCount?.[this.__componentName] > 0) {
-      window.Piglet.componentsCount[this.__componentName]--;
-    }
-    window.Piglet.mountedComponents.delete(this.__mountData);
-    sendToExtension(CONST.extension.tree);
-  }
-
-  /**
-   * @type {Member["dispatchEvent"]["Type"]}
-   * @returns {Member["dispatchEvent"]["ReturnType"]}
-   */
   dispatchEvent(event) {
     return false;
   }
 
   /**
-   * @type {Member["adoptedCallback"]["Type"]}
-   * @returns {Member["adoptedCallback"]["ReturnType"]}
+   * @type {ReactiveMembers["runScript"]["Type"]}
+   * @returns {ReactiveMembers["runScript"]["ReturnType"]}
    */
-  adoptedCallback() {}
+  async runScript(reason) {
+    try {
+      const { script } = await fetchComponentData(
+        this.__componentName,
+        [CONST.componentRoute.script],
+        CONST.reasonCache(reason),
+      );
+      if (!script) {
+        return;
+      }
+      const tags = extractComponentTagsFromString(script.toString());
+      await window.Piglet.AppRoot?.loadCustomComponents(tags);
+      scriptRunner(this, script, reason);
+    } catch (error) {
+      window.Piglet.log(
+        CONST.pigletLogs.errorLoadingScript,
+        CONST.coreLogsLevels.warn,
+        error,
+      );
+    }
+  }
 }
 
 export default ReactiveComponent;
