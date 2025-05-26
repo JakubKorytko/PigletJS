@@ -1,5 +1,8 @@
-<!--suppress CheckImageSize -->
-<img src="./templates/exampleApp/src/public/logo.png" alt="PigletJS" width="100"/>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./templates/exampleApp/src/public/images/favicon.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./templates/exampleApp/src/public/images/favicon_white.svg">
+  <img alt="Piglet icon" src="./templates/exampleApp/src/public/images/favicon.svg">
+</picture>
 
 # PigletJS
 

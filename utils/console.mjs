@@ -103,16 +103,16 @@ console.printPigAscii = async () => {
     const lines = data.split("\n");
     const maxWidth = Math.max(...lines.map((line) => line.length));
 
-    const hotPink = "\x1b[38;5;213m";
+    const hotOrange = "\x1b[38;5;208m";
     const reset = "\x1b[0m";
 
-    console.log("\n\n" + hotPink + lines.join("\n") + reset);
+    console.log("\n\n" + hotOrange + lines.join("\n") + reset);
 
     const label = "PigletJS";
     const padding = Math.floor((maxWidth - label.length) / 2);
     const centeredLabel = " ".repeat(Math.max(0, padding)) + label;
 
-    console.log(hotPink + "\n" + centeredLabel + reset + "\n\n");
+    console.log(hotOrange + "\n" + centeredLabel + reset + "\n\n");
   } catch (err) {
     console.error("Failed to read pig_ascii.txt:", err.message);
   }
