@@ -1,7 +1,4 @@
-// noinspection JSIgnoredPromiseFromCall
-
-import setupPiglet from "./builder/build.mjs";
-
+import setupPiglet from "./builder/index.mjs";
 const args = process.argv.slice(2);
 
-setupPiglet(import.meta.dirname, args.includes("--production"));
+setupPiglet(import.meta.dirname, args.includes("--dev"));

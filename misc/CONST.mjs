@@ -14,7 +14,7 @@ const PORT = 2137;
 
 const isProd = process.env.NODE_ENV === "production";
 
-const dirPath = (isProd) => `PigletJS${isProd ? "_Prod" : ""}`;
+const dirPath = (isProd) => (isProd ? "piglet" : "PigletJS");
 
 // noinspection HttpUrlsUsage
 export default {
@@ -224,7 +224,6 @@ export default {
       "tsconfig.json",
       "typedoc.config.js",
       "web-types.json",
-      "prod_start.mjs",
       "start.mjs",
       "setup.mjs",
     ]),
@@ -264,4 +263,110 @@ export default {
       },
     ],
   }),
+  wizardSteps: [
+    {
+      type: "multi",
+      name: "files",
+      prompt:
+        "Select config files to copy (not required for app to run, git/IDE related):",
+      options: [
+        {
+          label: "jsconfig.json",
+          description:
+            "If skipped, consider adding @Piglet/* -> ./piglet/* path to your ts/jsconfig",
+          checked: true,
+        },
+        {
+          label: "package.json",
+          description:
+            'Can be skipped, the only important thing is setting "web-types" to "./web-types.json" in your package.json',
+          checked: true,
+        },
+        {
+          label: ".gitignore",
+          description:
+            'Can be skipped if "build" is already in your .gitignore',
+          checked: true,
+        },
+      ],
+    },
+    {
+      type: "single",
+      name: "template",
+      prompt: "Which template do you want to use?:",
+      options: [
+        "Showcase example app",
+        "Directories structure only",
+        "No template at all",
+      ],
+    },
+    {
+      type: "multi",
+      name: "additional",
+      prompt: "Additional options:",
+      options: [
+        {
+          label: "Copy extension to project root",
+          description:
+            "When added to your browser, it allows inspecting components tree & state + changing the state in real time",
+        },
+        {
+          label: "Add piglet.js to hosts file",
+          description:
+            "Allows you to access the website using http://piglet.js:PORT instead of localhost (requires admin privileges)",
+        },
+      ],
+    },
+  ],
+  consoleCodes: {
+    colorReset: "\x1b[0m",
+    colors: {
+      blue: "\x1b[34m",
+      green: "\x1b[32m",
+      yellow: "\x1b[33m",
+      gray: "\x1b[90m",
+      bold: "\x1b[1m",
+      orange: "\x1b[38;5;208m",
+      black: "\x1b[30m",
+      cyan: "\x1b[36m",
+      magenta: "\x1b[35m",
+      red: "\x1b[31m",
+      white: "\x1b[37m",
+    },
+    bgColors: {
+      orange: "\x1b[48;5;208m",
+      green: "\x1b[48;5;34m",
+      inverse: "\x1b[7m",
+    },
+    hideCursor: "\x1B[?25l",
+    showCursor: "\x1B[?25h",
+    clearScreen: "\x1Bc",
+    ctrlC: "\u0003",
+    esc: "\u001B",
+    arrowUp: "\u001B\u005B\u0041",
+    arrowDown: "\u001B\u005B\u0042",
+    arrowRight: "\u001B\u005B\u0043",
+    arrowLeft: "\u001B\u005B\u0044",
+  },
+  wizardFilesToCopy: {
+    prod: [
+      { src: "piglet.mjs", target: "pig.mjs" },
+      { src: ".gitignore" },
+      { src: "package.json" },
+      {
+        src: path.join("builder", "app_jsconfig.json"),
+        target: "jsconfig.json",
+      },
+    ],
+    dev: [
+      { src: "README.md" },
+      { src: ".gitignore" },
+      { src: "package.json" },
+      { src: "start.mjs" },
+      {
+        src: path.join("builder", "app_jsconfig.json"),
+        target: "jsconfig.json",
+      },
+    ],
+  },
 };

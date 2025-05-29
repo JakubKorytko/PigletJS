@@ -1,3 +1,2 @@
-import runApplication from "./PigletJS_Prod/watcher/spawn.mjs";
-
+import runApplication from "./piglet/watcher/spawn.mjs";
 runApplication(import.meta.dirname, true);

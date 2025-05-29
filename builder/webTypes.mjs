@@ -25,7 +25,7 @@ import console from "@Piglet/utils/console";
  * @param {WebTypesElement[]} newElements - List of elements to merge.
  */
 export async function mergeWebTypes(newElements) {
-  const basePath = resolvePath("@Piglet/builder/static/native-web-types.json");
+  const basePath = resolvePath("@Piglet/builder/native-web-types.json");
   const outputPath = resolvePath("./web-types.json");
 
   let baseJson;

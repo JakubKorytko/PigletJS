@@ -1,11 +1,15 @@
-import readline from "readline";
+/** @import {Logger} from "./stackedLogger.mjs" */
+
 import fsp from "fs/promises";
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
-import runApplication from "../watcher/spawn.mjs";
 import CONST from "../misc/CONST.mjs";
 import console from "../utils/console.mjs";
+import runSetup from "./wizard.mjs";
+import { createStackedLogger } from "./stackedLogger.mjs";
+
+const CURRENT_DIR = process.cwd();
 
 /**
  * Minifies the given code by removing comments and whitespace.
@@ -26,50 +30,72 @@ function safeMinify(code) {
  * Minifies all MJS files in the given directory.
  *
  * @param {string} dir - The directory to minify.
+ * @param {Logger['log']} logger - Optional logger function to log messages.
  * @returns {Promise<void>}
  */
-async function minifyMjsFiles(dir) {
+async function minifyMjsFiles(dir, logger) {
   const entries = await fsp.readdir(dir, { withFileTypes: true });
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      await minifyMjsFiles(fullPath);
+      await minifyMjsFiles(fullPath, logger);
     } else if (entry.isFile() && entry.name.endsWith(".mjs")) {
       const content = await fsp.readFile(fullPath, "utf-8");
       const minified = safeMinify(content);
       await fsp.writeFile(fullPath, minified, "utf-8");
-      console.log(`Minified: ${fullPath}`);
+      logger("minify", entry.name);
     }
   }
 }
 
 /**
- * Recursively copies all files and directories from a source directory to a destination directory.
+ * Checks if a file exists at the given path.
+ *
+ * @param {string} filepath The path to the file to check.
+ * @returns {Promise<boolean>} A promise that resolves to `true` if the file exists, `false` otherwise.
+ */
+async function fileExists(filepath) {
+  try {
+    await fsp.access(filepath, fs.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Recursively copies all files and directories from a source directory to a destination directory,
+ * excluding specified paths.
  *
  * @param {string} srcDir - The source directory to copy from.
  * @param {string} destDir - The destination directory to copy to.
+ * @param {string[]} [excludedPaths=[]] - Array of paths to exclude.
+ * @param {Logger['log']} logger - Optional logger function to log messages.
  * @returns {Promise<void>}
  */
-async function copyRecursive(srcDir, destDir) {
+async function copyRecursive(srcDir, destDir, excludedPaths = [], logger) {
   await fsp.mkdir(destDir, { recursive: true });
   const entries = await fsp.readdir(srcDir, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (
-      CONST.productionExclude.dirs.has(entry.name) ||
-      CONST.productionExclude.files.has(entry.name)
-    )
-      continue;
-
     const srcPath = path.join(srcDir, entry.name);
     const destPath = path.join(destDir, entry.name);
 
+    if (
+      excludedPaths.some((excluded) => srcPath.includes(excluded)) ||
+      CONST.productionExclude.dirs.has(entry.name) ||
+      CONST.productionExclude.files.has(entry.name)
+    ) {
+      continue;
+    }
+
     if (entry.isDirectory()) {
-      await copyRecursive(srcPath, destPath);
+      await copyRecursive(srcPath, destPath, excludedPaths, logger);
     } else {
       await fsp.copyFile(srcPath, destPath);
+      logger("copy", entry.name);
     }
   }
 }
@@ -78,108 +104,77 @@ async function copyRecursive(srcDir, destDir) {
  * Prepares the production build by removing the output directory, copying the project root,
  * minifying MJS files, removing production side-effects, and logging a message.
  *
- * @param {string} dirname - The base project directory.
+ * @param {string} pigletPath - The PigletJS directory path.
+ * @param {string} targetDir - The target directory where the production build will be created.
+ * @param {Logger['log']} logger - Optional logger function to log messages.
  */
-async function prepareProd(dirname) {
-  const projectRoot = path.join(dirname, CONST.dirPath(false));
-  const outputDir = path.join(dirname, CONST.dirPath(true));
+async function prepareProd(pigletPath, targetDir, logger) {
+  const outputDir = path.join(targetDir, CONST.dirPath(true));
 
   await fsp.rm(outputDir, { recursive: true, force: true });
-  await copyRecursive(projectRoot, outputDir);
-  console.log(`✅ ${CONST.dirPath(true)} created successfully.`);
-  await minifyMjsFiles(outputDir);
-  console.log("✅ Minification completed.");
-  await fsp.rm(path.join(dirname, "start.mjs"));
-  await fsp.rm(path.join(dirname, CONST.dirPath(true), "piglet.mjs"));
-  console.log("✅ Removed production side-effects.");
-  console.log("Run 'node piglet.mjs' to start the app!");
+  await copyRecursive(
+    pigletPath,
+    outputDir,
+    [
+      path.join("builder", "wizard.mjs"),
+      path.join("builder", "index.mjs"),
+      path.join("builder", "app_jsconfig.json"),
+      path.join("builder", "host.mjs"),
+    ],
+    logger,
+  );
+  await minifyMjsFiles(outputDir, logger);
+  if (fs.existsSync(path.join(targetDir, "start.mjs")))
+    await fsp.rm(path.join(targetDir, "start.mjs"));
+  if (fs.existsSync(path.join(outputDir, "piglet.mjs")))
+    await fsp.rm(path.join(outputDir, "piglet.mjs"));
 }
 
 /**
- * Prompts the user with a yes/no question in the console.
+ * Copies a file from `src` to `dest` if the destination does not already exist.
  *
- * @param {string} question - The question to ask the user.
- * @returns {Promise<boolean>} Resolves to true if user answers "y", false otherwise.
+ * @param {string} src The source file path.
+ * @param {string} dest The destination file path.
+ * @param {Logger['log']} logger Optional logger function to log messages.
+ * @returns {Promise<void>} A promise that resolves when the file is copied, or skips if the file exists.
  */
-function askYesNo(question) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    const yellow = "\x1b[33m";
-    const reset = "\x1b[0m";
-    const emoji = "💬 ";
-
-    rl.question(`${yellow}${emoji}${question} (y/n): ${reset}`, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase() === "y");
-    });
-  });
-}
-
-/**
- * Prompts the user to select one of the provided choices.
- *
- * @param {string} question - The prompt question to display.
- * @param {string[]} choices - Array of string choices to display.
- * @returns {Promise<string>} The selected choice.
- */
-function askChoice(question, choices) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const yellow = "\x1b[33m";
-  const reset = "\x1b[0m";
-  const emoji = "💬 ";
-  const numberColor = "\x1b[36m"; // Cyan for numbers
-  const selectColor = "\x1b[32m"; // Green for "Select"
-
-  const formatted = choices
-    .map((c, i) => `${numberColor}${i + 1})${reset} ${c}`)
-    .join("\n");
-
-  return new Promise((resolve) => {
-    rl.question(
-      `\n${yellow}${emoji}${question}${reset}\n${formatted}\n\n${selectColor}Select [1-${choices.length}]:${reset} `,
-      (answer) => {
-        rl.close();
-        const index = parseInt(answer.trim(), 10) - 1;
-        resolve(choices[index]);
-      },
-    );
-  });
+async function copyFileSafe(src, dest, logger) {
+  const exists = await fileExists(dest);
+  if (exists) {
+    logger("skip", path.basename(dest));
+    return;
+  }
+  await fsp.copyFile(src, dest);
+  logger("copy", path.basename(dest));
 }
 
 /**
  * Recursively copies all files and folders from a template directory to a target directory,
  * skipping files that already exist.
  *
- * @param {string} templateDir - Source directory containing the template files.
+ * @param {string} pigletDir - Source directory containing the template files.
  * @param {string} targetDir - Target directory to copy files to.
+ * @param {Logger['log']} logger - Optional logger function to log messages.
  * @returns {Promise<void>}
  */
-async function copyTemplateFiles(templateDir, targetDir) {
-  const entries = await fsp.readdir(templateDir, { withFileTypes: true });
+async function copyTemplateFiles(pigletDir, targetDir, logger) {
+  const entries = await fsp.readdir(pigletDir, { withFileTypes: true });
   for (const entry of entries) {
-    const srcPath = path.join(templateDir, entry.name);
+    const srcPath = path.join(pigletDir, entry.name);
     const destPath = path.join(targetDir, entry.name);
 
     const exists = fs.existsSync(destPath);
     if (exists) {
-      console.msg("template.skipExistingFile", entry.name);
+      logger("skip", entry.name);
       continue;
     }
 
     if (entry.isDirectory()) {
       await fsp.mkdir(destPath, { recursive: true });
-      await copyTemplateFiles(srcPath, destPath);
+      await copyTemplateFiles(srcPath, destPath, logger);
     } else {
       await fsp.copyFile(srcPath, destPath);
-      console.msg("template.copiedFile", entry.name);
+      logger("copy", entry.name);
     }
   }
 }
@@ -187,70 +182,55 @@ async function copyTemplateFiles(templateDir, targetDir) {
 /**
  * Optionally applies a selected project template and sets up directory structure.
  *
- * @param {string} dirname - The base project directory.
+ * @param {string} pigletDir - The PigletJS directory containing the templates.
+ * @param {string} targetDir - The target directory where the template should be applied.
+ * @param {string} template - The template to apply (e.g., "exampleApp" or "structureOnly").
+ * @param {Logger['log']} logger - Optional logger function to log messages.
  * @returns {Promise<void>}
  */
-async function maybeUseTemplate(dirname) {
-  const useTemplate = await askYesNo(CONST.consoleMessages.template.initialize);
-  if (!useTemplate) return;
+async function maybeUseTemplate(pigletDir, targetDir, template, logger) {
+  if (template === "none") return;
 
-  const type = await askChoice(CONST.consoleMessages.template.whichTemplate, [
-    CONST.consoleMessages.template.exampleApp,
-    CONST.consoleMessages.template.structureOnly,
-  ]);
+  const templatePath = path.join(pigletDir, "templates", template);
 
-  const selected = type.startsWith("⭐ Full") ? "exampleApp" : "structureOnly";
-  const templatePath = path.join(dirname, "PigletJS", "templates", selected);
+  await copyTemplateFiles(templatePath, targetDir, logger);
 
-  console.nl();
-  console.msg("template.applyingTemplate", selected);
-  await copyTemplateFiles(templatePath, dirname);
-  console.nl();
+  if (template !== "structureOnly") return;
 
-  if (selected === "structureOnly") {
-    const foldersToCreate = [
-      "src/components",
-      "src/modules",
-      "src/public",
-      "server/api",
-    ];
+  const foldersToCreate = [
+    "src/components",
+    "src/modules",
+    "src/public",
+    "server/api",
+  ];
 
-    for (const folder of foldersToCreate) {
-      const fullPath = path.join(dirname, folder);
-      if (!fs.existsSync(fullPath)) {
-        await fsp.mkdir(fullPath, { recursive: true });
-        console.msg("template.createdFolder", folder);
-      } else {
-        console.msg("template.existsFolder", folder);
-      }
+  for (const folder of foldersToCreate) {
+    const fullPath = path.join(targetDir, folder);
+    if (!fs.existsSync(fullPath)) {
+      await fsp.mkdir(fullPath, { recursive: true });
+      logger("copy", folder);
+    } else {
+      logger("skip", folder);
     }
   }
 }
 
 /**
  * Optionally copies a browser extension template if user confirms.
- *
- * @param {string} dirname - The base project directory.
+ * @param {string} pigletDir - The PigletJS directory containing the extension.
+ * @param {string} targetDir - The target directory where the extension should be copied.
+ * @param {Logger['log']} logger - Optional logger function to log messages.
  * @returns {Promise<void>}
  */
-async function maybeCopyExtension(dirname) {
-  console.nl();
-  const includeExtension = await askYesNo(
-    CONST.consoleMessages.template.doYouWantExtension,
-  );
-  console.nl();
-  if (includeExtension) {
-    const extensionSrc = path.join(dirname, "PigletJS", "extension");
-    const extensionDest = path.join(dirname, "extension");
+async function maybeCopyExtension(pigletDir, targetDir, logger) {
+  const extensionSrc = path.join(pigletDir, "extension");
+  const extensionDest = path.join(targetDir, "extension");
 
-    if (fs.existsSync(extensionDest)) {
-      console.msg("template.skipExtension");
-    } else {
-      console.msg("template.copyExtension");
-      await fsp.mkdir(extensionDest, { recursive: true });
-      await copyTemplateFiles(extensionSrc, extensionDest);
-    }
-    console.nl();
+  if (fs.existsSync(extensionDest)) {
+    logger("skip", "extension");
+  } else {
+    await fsp.mkdir(extensionDest, { recursive: true });
+    await copyTemplateFiles(extensionSrc, extensionDest, logger);
   }
 }
 
@@ -258,24 +238,30 @@ async function maybeCopyExtension(dirname) {
  * Runs a script to add the dev host to the system and starts the application.
  *
  * @param {string} dirname - The working directory in which to run the script.
+ * @returns {Promise<void>} Resolves when the script completes successfully.
  */
 function runAddHostAndStartApp(dirname) {
-  console.nl();
-  console.msg("hosts.adding");
+  return new Promise((resolve, reject) => {
+    console.log("");
+    console.msg("hosts.adding");
 
-  const child = spawn("node", ["./PigletJS/builder/host.mjs"], {
-    cwd: dirname,
-    stdio: "inherit",
-    shell: true,
-  });
+    const child = spawn("node", [path.join(dirname, "builder", "host.mjs")], {
+      cwd: dirname,
+      stdio: "inherit",
+      shell: true,
+    });
 
-  child.on("exit", (code) => {
-    if (code === 0) {
-      console.msg("hosts.addedToHosts");
-    } else {
-      console.msg("hosts.failedToAddHost");
-    }
-    runApplication(dirname);
+    child.on("exit", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Process exited with code ${code}`));
+      }
+    });
+
+    child.on("error", (err) => {
+      reject(err);
+    });
   });
 }
 
@@ -284,36 +270,64 @@ function runAddHostAndStartApp(dirname) {
  * applying a template, copying extension files, and setting up host entries.
  *
  * @param {string} dirname - Project root directory.
- * @param {boolean} create - Whether to create a new project structure.
- * @param {boolean} host - Whether to only add a host entry.
- * @param {boolean} prod - Whether to generate production build
+ * @param {boolean} devMode - Whether to build dev mode.
  * @returns {Promise<void>}
  */
-async function start(dirname, create, host, prod) {
-  if (prod) {
-    await prepareProd(dirname);
-    return;
-  }
+async function start(dirname, devMode) {
+  if (!devMode) {
+    const { host, extension, files, preLog, template, aborted } =
+      await runSetup();
 
-  if (create) {
-    await maybeUseTemplate(dirname);
-    await maybeCopyExtension(dirname);
+    if (aborted) {
+      process.exit(0);
+    }
 
-    const shouldAddHost = await askYesNo(
-      CONST.consoleMessages.hosts.doYouWantToAdd,
+    const logger = createStackedLogger({ preLog });
+
+    logger.create("copy", "Copied files");
+    logger.create("skip", "Skipped files (existing)");
+    logger.create("minify", "Minified files");
+
+    for (const file of CONST.wizardFilesToCopy.prod) {
+      const src = path.join(dirname, file.src);
+      const dest = path.join(CURRENT_DIR, file.target ?? file.src);
+
+      if (
+        (files && files.includes(file.target ?? file.src)) ||
+        file.target === "pig.mjs"
+      ) {
+        await copyFileSafe(src, dest, logger.log);
+      }
+    }
+
+    await maybeUseTemplate(dirname, CURRENT_DIR, template, logger.log);
+    if (extension) await maybeCopyExtension(dirname, CURRENT_DIR, logger.log);
+
+    await prepareProd(dirname, CURRENT_DIR, logger.log);
+
+    if (host) await runAddHostAndStartApp(dirname);
+
+    console.log(
+      CONST.consoleCodes.colors.orange +
+        "\nRun 'node pig.mjs' to start the app!\n" +
+        CONST.consoleCodes.colorReset,
     );
 
-    if (shouldAddHost) {
-      runAddHostAndStartApp(dirname);
-    } else {
-      runApplication(dirname);
-    }
-  } else if (host) {
-    runAddHostAndStartApp(dirname);
+    process.exit(0);
   } else {
-    console.clear();
-    await console.printPigAscii();
-    runApplication(dirname);
+    const logger = createStackedLogger();
+
+    logger.create("copy", "Copied files");
+    logger.create("skip", "Skipped files (existing)");
+
+    for (const file of CONST.wizardFilesToCopy.dev) {
+      const src = path.join(dirname, file.src);
+      const dest = path.join(CURRENT_DIR, file.target ?? file.src);
+
+      await copyFileSafe(src, dest, logger.log);
+    }
+
+    await maybeUseTemplate(dirname, CURRENT_DIR, "exampleApp", logger.log);
   }
 }
 

@@ -46,9 +46,7 @@ console.msg = function (path, ...args) {
     console.log(current, ...args);
   } else if (typeof current === "function") {
     try {
-      /** @type {function(...any): any} */
-      const fn = current;
-      const result = fn(...args);
+      const result = current(...args);
       console.log(result);
     } catch (err) {
       console.msg("consoleMsg.evaluatingError", path, err);
@@ -58,64 +56,101 @@ console.msg = function (path, ...args) {
   }
 };
 
-console.nl = () => console.log("");
-
 /**
- * Custom logging function with emoji and colored output that calls `console.msg`.
+ * Prints a pig ASCII art with styling and returns the formatted output.
+ * This is a synchronous version of the `printPigAscii` function.
  *
- * This function logs a message with a yellow emoji and resets color formatting.
- * It wraps around the `console.msg` function to provide a more colorful output.
- *
- * @param {string} path - The path to the console message in dot notation (e.g., `consoleMessages.error.fileNotFound`).
- * @param {...any} args - Additional arguments to be passed to the message or function.
+ * @param {string} data - The ASCII art string content
+ * @returns {string} - The formatted ASCII art that was printed
  */
-console.choice = function (path, ...args) {
-  const yellow = "\x1b[33m";
-  const reset = "\x1b[0m";
-  const emoji = "💬 ";
+console.printPigAsciiSync = (data) => {
+  const lines = data.split("\n");
+  const maxWidth = Math.max(...lines.map((line) => line.length));
 
-  const originalMsg = (...args) => {
-    console.msg(path, ...args);
-  };
+  const hotOrange = CONST.consoleCodes.colors.orange;
+  const reset = CONST.consoleCodes.colorReset;
 
-  const wrapper = (...args) => {
-    console.log(yellow + emoji + args.join(" ") + reset);
-    originalMsg(...args);
-  };
+  console.mLog("pigAscii", "\n\n" + hotOrange + lines.join("\n") + reset);
 
-  wrapper(...args);
+  const label = "PigletJS";
+  const padding = Math.floor((maxWidth - label.length) / 2);
+  const centeredLabel = " ".repeat(Math.max(0, padding)) + label;
+
+  console.mLog("pigAscii", hotOrange + "\n" + centeredLabel + reset + "\n\n");
+  return console.popLog("pigAscii");
 };
 
 /**
- * Reads the ASCII art from a file and prints it to the console with custom styling.
+ * Asynchronously reads and prints the PigletJS ASCII art from a file.
+ * Uses the synchronous version `printPigAsciiSync` to display the content.
  *
- * This function reads the contents of `pig_ascii.txt`, which is expected to contain
- * ASCII art. It prints the art to the console with hot pink coloring, followed by
- * the "PigletJS" label centered below it.
- *
- * @returns {Promise<void>} Resolves when the ASCII art is successfully printed, or rejects on error.
+ * @returns {Promise<void>}
  */
 console.printPigAscii = async () => {
   try {
     const filePath = path.resolve(import.meta.dirname, "../misc/pig_ascii.txt");
     const data = await fs.readFile(filePath, "utf8");
-
-    const lines = data.split("\n");
-    const maxWidth = Math.max(...lines.map((line) => line.length));
-
-    const hotOrange = "\x1b[38;5;208m";
-    const reset = "\x1b[0m";
-
-    console.log("\n\n" + hotOrange + lines.join("\n") + reset);
-
-    const label = "PigletJS";
-    const padding = Math.floor((maxWidth - label.length) / 2);
-    const centeredLabel = " ".repeat(Math.max(0, padding)) + label;
-
-    console.log(hotOrange + "\n" + centeredLabel + reset + "\n\n");
+    console.printPigAsciiSync(data);
   } catch (err) {
     console.error("Failed to read pig_ascii.txt:", err.message);
   }
+};
+
+/**
+ * Logs a message to the console and stores it in memory under a label.
+ *
+ * @param {string} label - The identifier to store the log message under
+ * @param {...any} args - The message parts to be logged
+ */
+console.mLog = function (label, ...args) {
+  this.memory ??= {};
+  this.memory[label] ??= "";
+  this.memory[label] += args.join(" ") + "\n";
+  console.log(...args);
+};
+
+/**
+ * Retrieves a log from memory and removes it without displaying.
+ *
+ * @param {string} label - The identifier of the log to retrieve
+ * @returns {string} The log content or an empty string if not found
+ */
+console.popLog = function (label) {
+  if (this.memory && this.memory[label]) {
+    const log = this.memory[label];
+    delete this.memory[label];
+    return log;
+  }
+  return "";
+};
+
+/**
+ * Clears the console and optionally shows or hides the cursor.
+ *
+ * @param {string} [cursor=""] - Controls cursor visibility: "show", "hide", or "" (no change)
+ */
+console.cls = function (cursor = "") {
+  console.clear();
+  process.stdout.write(CONST.consoleCodes.clearScreen);
+  if (cursor === "show") {
+    process.stdout.write(CONST.consoleCodes.showCursor);
+  } else if (cursor === "hide") {
+    process.stdout.write(CONST.consoleCodes.hideCursor);
+  }
+};
+
+/**
+ * Hides the terminal cursor.
+ */
+console.hideCursor = function () {
+  process.stdout.write(CONST.consoleCodes.hideCursor);
+};
+
+/**
+ * Shows the terminal cursor.
+ */
+console.showCursor = function () {
+  process.stdout.write(CONST.consoleCodes.showCursor);
 };
 
 export default console;
