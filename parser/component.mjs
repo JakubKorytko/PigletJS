@@ -381,7 +381,6 @@ async function processAllComponents(dir = resolvePath("@/components")) {
 
     // Process the App.pig.html file if it exists
     if (fs.existsSync(appPath) && Object.values(arguments).length === 0) {
-      console.msg("components.generatingFrom", "App.pig.html");
       const appHtml = await fsp.readFile(appPath, "utf-8");
       parseRoutes(appHtml, pagesDir);
       for (const route of Object.values(routes)) {
@@ -405,7 +404,6 @@ async function processAllComponents(dir = resolvePath("@/components")) {
         const nestedDescriptions = await processAllComponents(filePath);
         descriptions.push(...nestedDescriptions); // Flatten the array
       } else if (file.name.endsWith(".pig.html")) {
-        console.msg("components.generatingFrom", file.name);
         await buildComponent(filePath);
 
         // Extract descriptions from this component

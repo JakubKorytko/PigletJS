@@ -42,12 +42,26 @@ console.msg = function (path, ...args) {
     }
   }
 
+  let log = console.log;
+
+  let column = 3; // Default column
+
+  if (path === "components.generated") {
+    column = 1;
+  } else if (path === "components.watchingForChanges") {
+    column = 0;
+  }
+
+  if (global.server) {
+    log = global.server.pushToColumn.bind(global.server, column);
+  }
+
   if (typeof current === "string") {
-    console.log(current, ...args);
+    log(current, ...args);
   } else if (typeof current === "function") {
     try {
       const result = current(...args);
-      console.log(result);
+      log(result);
     } catch (err) {
       console.msg("consoleMsg.evaluatingError", path, err);
     }

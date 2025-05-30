@@ -79,7 +79,7 @@ export default {
       restarting: "\n🔁 Restarting server...",
       restarted: "\n🔁 Server restarted",
       running: (port) =>
-        `\n🚀 Server running at http://piglet.js:${port} if host exists and on http://localhost:${port}`,
+        `🚀 Server running at http://piglet.js:${port} if host exists and on http://localhost:${port}`,
       pressReload: '🔁 Press "r" to reload components.',
       pressRestart: '🔁 Press "s" to restart server.\n',
       initError: (err) => ["❌ Error during server initialization:", err],
@@ -100,7 +100,7 @@ export default {
       regeneratingError: "❌ Error while regenerating components:",
       missingContent: (filePath) =>
         `❌ Missing <content> tag in file: ${filePath}`,
-      generated: (outputPath) => `✅ Component generated: ${outputPath}`,
+      generated: (outputPath) => outputPath,
       generatingFrom: (fileName) =>
         `⏳ Generating component from file: ${fileName}`,
       processingError: (err) => ["❌ Error while processing components:", err],
@@ -112,8 +112,7 @@ export default {
         `❌ Error generating component from file: ${filePath}`,
         err,
       ],
-      watchingForChanges: (path) =>
-        `👀 Watching for changes in directory: ${path}`,
+      watchingForChanges: (path) => path,
       directoryDoNotExist: (path) => `Directory ${path} does not exist`,
       generatingError: (err) => ["❌ Error while generating component:", err],
       changed: (filename) => `✅ File changed: ${filename}`,

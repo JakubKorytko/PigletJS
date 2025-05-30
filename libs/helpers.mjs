@@ -11,6 +11,7 @@ import {
   extractComponentTagsFromString,
 } from "@Piglet/browser/sharedHelpers";
 import { resolvePath } from "@Piglet/utils/paths";
+import ServerInfo from "@Piglet/builder/serverInfo";
 
 /**
  * Symbolic representation of route names defined in the application.
@@ -74,6 +75,7 @@ function convertSelectorsPascalToSnake(cssText) {
  * @returns {Promise<void>}
  */
 async function runWatcher() {
+  global.server = new ServerInfo();
   if ([...process.argv].includes("--restart")) {
     console.msg("server.restarted");
   } else {
