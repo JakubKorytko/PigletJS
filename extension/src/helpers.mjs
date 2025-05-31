@@ -96,7 +96,7 @@ const setStateProperty = (input) => {
   return {
     key: parts.length === 1 ? lastPart : parts.at(1),
     stateName: parts.at(0),
-    path: path.split(".").slice(2),
+    path: parts.slice(2),
     value: parseValue(input.value),
   };
 };

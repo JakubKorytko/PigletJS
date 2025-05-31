@@ -79,7 +79,7 @@ const CONST = {
   },
   apiRoute: "/api",
   tagRegex: /<([a-z][a-z0-9-]*)\b[^>]*\/?>/g,
-  pascalCaseRegex: /[A-Z]([A-Z]*[a-z]+[A-Z]|[a-z]*[A-Z]+[a-z])[A-Za-z]*/g,
+  pascalCaseRegex: /[A-Z]([A-Z]*[a-z]+[A-Z]|[a-z]*[A-Z]+[a-z])[A-Za-z]*/,
   pageNotFound: "Page Not Found",
   extension: {
     initialMessage: "initial",

@@ -35,7 +35,8 @@ let $attrs;
  * @async
  * @function
  * @param {string} path - The relative API endpoint (e.g., "users/1").
- * @param {"json"|"text"|"blob"|"arrayBuffer"|"formData"} [expect="json"] - The expected response type.
+ * @param {RequestInit} [fetchOptions={}] - Optional fetch options to customize the request.
+ * @param {"json"|"text"|"blob"|"arrayBuffer"|"formData"|"raw"} [expect="raw"] - The expected response type.
  * @returns {Promise<any>} - The parsed response data. If parsing fails, may return plain text as a fallback.
  * @throws {Error} - Throws if fetch fails, if an unsupported `expect` type is provided,
  *                   or if parsing fails entirely.

@@ -50,14 +50,18 @@ class AppRoot extends ReactiveComponent {
    */
   async getLayoutPaths() {
     const paths = await fetch(`/component/layout/paths?noCache=${Date.now()}`);
-    if (paths.ok) {
-      this._layoutPaths = await paths.json();
-    } else {
-      window.Piglet.log(
-        CONST.pigletLogs.appRoot.errorLoading("layout paths"),
-        CONST.coreLogsLevels.error,
-      );
+    try {
+      if (paths.ok) {
+        this._layoutPaths = await paths.json();
+        return;
+      }
+    } catch (e) {
+      void 0; // Ignore JSON parsing errors
     }
+    window.Piglet.log(
+      CONST.pigletLogs.appRoot.errorLoading("layout paths"),
+      CONST.coreLogsLevels.error,
+    );
   }
 
   /**
