@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Document</title>
+    <title>PigletJS</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="description" content="Description" />
     <meta
@@ -13,17 +13,58 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css"
     />
+    <link href="favicon.svg" rel="shortcut icon" type="image/x-icon" />
+    <style>
+      :root {
+        --theme-color: #ff5f00;
+        --cover-background-color: #000;
+        --cover-background-image: radial-gradient(
+          ellipse at center bottom,
+          #ff5f00a8,
+          transparent
+        );
+
+        .search .clear-button.show {
+          display: flex;
+          align-items: center;
+        }
+      }
+
+      .sidebar-nav>ul>li>ul:has(* ul) {
+        p {
+          background: var(--sidebar-nav-pagelink-background);
+          padding-left: 20px;
+          margin:0;
+        }
+
+        a:not(p *) {
+          padding-left: 15px;
+        }
+      }
+
+    </style>
   </head>
 
   <body>
     <div id="app"></div>
     <script>
+      /** @author Jakub Korytko */
       window.$docsify = {
-        name: "",
-        repo: "",
+        name: "PigletJS",
+        search: 'auto',
+        repo: "https://github.com/JakubKorytko/PigletJS",
+        themeColor: "#ff5f00",
+        coverpage: true,
+        onlyCover: true,
+        logo: "/favicon.svg",
+        loadSidebar: true,
+        formatUpdated: 'Updated: {MM}/{DD}/{YYYY} {HH}:{mm}',
       };
     </script>
     <!-- Docsify v4 -->
     <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="//unpkg.com/docsify-copy-code"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
   </body>
 </html>
