@@ -7,8 +7,8 @@ class NavLink extends ReactiveDummyComponent {
     return ["to"];
   }
 
-  constructor(attrs) {
-    super(attrs);
+  constructor(attrs, root) {
+    super(attrs, root);
     this.handleClick = this.handleClick.bind(this);
     this.updateActiveState = this.updateActiveState.bind(this);
   }
@@ -43,12 +43,7 @@ class NavLink extends ReactiveDummyComponent {
    * @returns {NavLinkMembers["handleClick"]["ReturnType"]}
    */
   handleClick(event) {
-    if (window.$navigate && typeof window.$navigate === "function") {
-      window.$navigate(this.attrs.to);
-    } else {
-      console.warn("window.$navigate is not defined");
-    }
-
+    this.root.navigate(this.attrs.to);
     this.updateActiveState();
   }
 

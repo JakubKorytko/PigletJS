@@ -1,5 +1,6 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
 
 /**
  * A base class for reactive web components in the Piglet framework without a shadow DOM.
@@ -17,6 +18,12 @@ class BaseReactiveDummyComponentInterface {
    * Whether to batch ref updates
    */
   shouldBatchRefUpdates = true;
+
+  /**
+   * Reference to the AppRoot component
+   * @type {AppRoot}
+   */
+  root;
 
   /**
    * Called when the component is connected to the DOM

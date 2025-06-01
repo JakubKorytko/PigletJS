@@ -1,3 +1,5 @@
+import { AppRoot } from "./classes/index.d";
+
 type Navigate = (route: string) => boolean;
 type FetchWithCache = (url: string) => Promise<string>;
 
@@ -29,16 +31,17 @@ export function getDeepValue(obj: object, pathParts: string[]): any;
 /** Retrieves the host component for a given node, returning null if no ReactiveComponent is found */
 export function getMountedComponentsByTag(
   tagName: string,
+  root: AppRoot,
 ): Array<ReactiveComponent>;
 
 /** Retrieves a deep value from an object using a path (array of keys) */
 export function getDeepValue(obj: object, pathParts: string[]): any;
 
 /** Sends a message to the extension */
-export function sendToExtension(message: string): void;
+export function sendToExtension(message: string, root: AppRoot): void;
 
 /** Fetch a resource with a cache */
-export function fetchWithCache(url: string): Promise<string>;
+export function fetchWithCache(url: string, root: AppRoot): Promise<string>;
 
 /** Loads a component from a given path */
 export function loadComponent(

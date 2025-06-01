@@ -153,7 +153,7 @@ const queryElement = function (hostElement, selectorOrNode) {
       ) {
         return el.cloneNode(true);
       } else {
-        const newEl = new el.constructor(el.attrs);
+        const newEl = new el.constructor(el.attrs, hostElement.root);
         for (const child of el.childNodes) {
           if (child instanceof ReactiveComponent) {
             newEl.appendChild(child.cloneNode(true));
@@ -214,6 +214,9 @@ const generateComponentData = function (hostElement) {
       $this: hostElement,
       $document: hostElement.shadowRoot,
       out: CONST.stopComponentScriptExecution,
+      $navigate: hostElement.root.navigate,
+      $api: hostElement.root.api,
+      $types: hostElement.root.types,
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {

@@ -5,10 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PigletJS app</title>
     <link rel="icon" type="image/svg+xml" href="/public/images/favicon.svg" />
-    <link rel="icon" type="image/svg+xml" href="/public/images/favicon_white.svg" media="(prefers-color-scheme: dark)" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/public/images/favicon_white.svg"
+      media="(prefers-color-scheme: dark)"
+    />
     <link href="/public/styles/main.pig.css" rel="stylesheet" />
   </head>
   <body>
     <App />
+    <script type="application/json" id="piglet-config">
+      {
+        "allowDebugging": true,
+        "enableCoreLogs": {
+          "info": true
+        }
+      }
+    </script>
   </body>
 </html>

@@ -1,6 +1,11 @@
+import { AppRoot } from "./AppRoot.d";
+
 export interface SocketInterface {
   /** The active WebSocket instance */
   ws: WebSocket | null;
+
+  /** Reference to the application root */
+  root: AppRoot;
 
   /** The number of attempted reconnections after disconnection */
   reconnectAttempts: number;

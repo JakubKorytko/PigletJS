@@ -1,4 +1,5 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
 
 /**
  * @typedef {(obj: object, pathParts: string[]) => any} GetDeepValue
@@ -26,12 +27,12 @@
  */
 
 /**
- * @typedef {(tagName: string) => Array<ReactiveComponent>} GetMountedComponentsByTag
+ * @typedef {(tagName: string, root: AppRoot) => Array<ReactiveComponent>} GetMountedComponentsByTag
  * Gets all mounted ReactiveComponent instances for a specific tag name.
  */
 
 /**
- * @typedef {(requestType: string) => void} SendToExtension
+ * @typedef {(requestType: string, root: AppRoot) => void} SendToExtension
  * Sends a request to the extension (e.g., for communication or data).
  */
 
@@ -41,7 +42,7 @@
  */
 
 /**
- * @typedef {(url: string) => Promise<string>} FetchWithCache
+ * @typedef {(url: string, root: AppRoot) => Promise<string>} FetchWithCache
  * Fetch a resource with a cache.
  */
 

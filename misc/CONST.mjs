@@ -244,6 +244,9 @@ export default {
       $this,
       $document,
       out,
+      $navigate,
+      $api,
+      $types,
     }) {
     `,
   },

@@ -1,4 +1,5 @@
 import { Reason } from "../CONST";
+import {AppRoot} from "./AppRoot.d";
 
 type Internal = {
   owner: ReactiveComponent | undefined;
@@ -70,6 +71,9 @@ declare class ReactiveComponent extends HTMLElement {
 
   /** Record of states that was created in the component */
   states: Record<string, StateValue<unknown>>;
+
+  /** Reference to the AppRoot component */
+  root: AppRoot
 
   /** All the data for manipulating the tree and reactivity */
   internal: Internal;

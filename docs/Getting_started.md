@@ -84,6 +84,26 @@ Since PigletJS do not require any node modules nor npm at all, you can simply:
 
 1. Finish the setup by following the instructions in the terminal.
 
+## Configuration :id=configuration
+
+PigletJS has a simple configuration for enabling or disabling debugging features.
+You can configure the framework by creating a special script tag in `Pig.html` file, which is the main entry point of your application.
+
+```html
+<script type="application/json" id="piglet-config">
+  {
+    "allowDebugging": boolean, // Allow extension to read tree + write & read state (default: true)
+    "enableCoreLogs": {
+      "info": boolean, // Enable info logs (default: false)
+      "warn": boolean, // Enable warning logs (default: true)
+      "error": boolean // Enable error logs (default: true)
+    }
+  }
+</script>
+```
+
+**Note:** If you edit only part of `enableCoreLogs` object, the other properties will be set to `false`.
+
 ## Your first PigletJS app :id=your-first-pigletjs-app
 
 In this section, we will create a simple PigletJS application that demonstrates the basic features of the framework.

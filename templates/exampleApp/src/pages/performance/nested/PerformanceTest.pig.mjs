@@ -1,6 +1,6 @@
 import { createPerformanceWrapper } from "/modules/performanceWrapper.pig";
 
-const { RC } = window.Piglet.types;
+const { RC } = $types;
 
 const goBackElement = $element(".fa-arrow-circle-left");
 const performanceEntry = $element("PerformanceEntry", RC);

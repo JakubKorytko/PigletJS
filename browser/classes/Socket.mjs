@@ -24,11 +24,12 @@ class Socket {
   /** @type {SocketInterfaceMembers["reconnectInterval"]["Type"]} */
   reconnectInterval = 2000;
 
-  constructor() {
+  constructor(root) {
     if (Socket.instance) {
       return Socket.instance;
     }
 
+    this.root = root;
     this.ws = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
@@ -54,7 +55,7 @@ class Socket {
     this.ws = new WebSocket("ws://" + location.host);
 
     this.ws.onopen = () => {
-      window.Piglet.log(CONST.pigletLogs.socket.connected);
+      console.pig(CONST.pigletLogs.socket.connected);
       this.reconnectAttempts = 0;
     };
 
@@ -62,13 +63,14 @@ class Socket {
       const message = JSON.parse(event.data);
       if (message.type === CONST.socket.messageTypes.reload && message.data) {
         if (message.data === "layout") {
-          window.Piglet.AppRoot.changeRoute(window.Piglet.AppRoot._route);
+          this.root.changeRoute(this.root._route);
           return;
         }
         /** @type {ReactiveComponent[]} */
-        const components = getMountedComponentsByTag(message.data).filter(
-          (component) => component.internal.HMR,
-        );
+        const components = getMountedComponentsByTag(
+          message.data,
+          this.root,
+        ).filter((component) => component.internal.HMR);
         for (const component of components) {
           component._mount(CONST.reason.WSReload);
         }
@@ -80,7 +82,7 @@ class Socket {
       }
 
       if (message.type === CONST.socket.messageTypes.serverRestart) {
-        window.Piglet.log(CONST.pigletLogs.socket.serverRestarted);
+        console.pig(CONST.pigletLogs.socket.serverRestarted);
         this.tryReconnect();
       }
 
@@ -90,12 +92,12 @@ class Socket {
     };
 
     this.ws.onclose = () => {
-      window.Piglet.log(CONST.pigletLogs.socket.closed);
+      console.pig(CONST.pigletLogs.socket.closed);
       this.tryReconnect();
     };
 
     this.ws.onerror = (error) => {
-      window.Piglet.log(
+      console.pig(
         CONST.pigletLogs.socket.error,
         CONST.coreLogsLevels.error,
         error,
@@ -110,7 +112,7 @@ class Socket {
    */
   tryReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      window.Piglet.log(
+      console.pig(
         CONST.pigletLogs.socket.maxReconnectAttempts,
         CONST.coreLogsLevels.warn,
       );
@@ -118,7 +120,7 @@ class Socket {
     }
 
     this.reconnectAttempts++;
-    window.Piglet.log(
+    console.pig(
       CONST.pigletLogs.socket.reconnecting(
         this.reconnectInterval / 1000,
         this.reconnectAttempts,

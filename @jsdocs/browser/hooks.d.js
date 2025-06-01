@@ -1,3 +1,5 @@
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
+
 /**
  * @template T - The type of the state value.
  * @typedef {{
@@ -32,7 +34,8 @@
  *   path: StatePath, // State path
  *   initialValue?: T, // Initial value
  *   asRef?: boolean, // Whether the state is a ref
- *   avoidClone?: boolean // Whether to avoid cloning the state value
+ *   avoidClone?: boolean, // Whether to avoid cloning the state value
+ *   root: AppRoot // The root application context
  * ) => StateValue<T>} UseState
  * Hook to manage state in a component, providing access to the current value and the ability to observe it.
  */
@@ -41,7 +44,8 @@
  * @template T - The type of the state value.
  * @typedef {(
  *   componentName: string, // Component name
- *   path: StatePath // State path
+ *   path: StatePath, // State path
+ *   root: AppRoot // The root application context
  * ) => ObserverTuple<T>} UseObserver
  * Hook to manage observers for a state in a component.
  */

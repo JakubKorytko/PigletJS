@@ -20,8 +20,10 @@ class ReactiveDummyComponent extends HTMLElement {
    */
   _mount() {}
 
-  constructor(attrs) {
+  constructor(attrs, root) {
     super();
+
+    this.root = root ?? this.root;
     this.__componentId = `${crypto.getRandomValues(new Uint8Array(1))}${Date.now()}`;
     this.__componentKey = `dummy-${this.__componentId}`;
     this.attrs = attrs ?? {};
@@ -72,6 +74,7 @@ class ReactiveDummyComponent extends HTMLElement {
     const [addObserver, removeObserver] = useObserver(
       this._parent.__componentKey,
       property,
+      this.root,
     );
 
     if (this.__observers.has(property)) {

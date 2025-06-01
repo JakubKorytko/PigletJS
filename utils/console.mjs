@@ -5,9 +5,8 @@ import path from "path";
 /**
  * @typedef ExtendedConsole
  * @property {function(string, ...any): void} msg
- * @property {function(): void} nl
- * @property {function(string, ...any): void} choice
  * @property {function(): Promise<void>} printPigAscii
+ * @property {function(message: string, severity?: "info" | "warn" | "error", ...args: any[]): void} pig
  */
 
 /** @type {Console & Partial<ExtendedConsole>} */

@@ -1,3 +1,5 @@
+import { AppRoot } from "./classes/index.d";
+
 /** A path representing a state in a component. Can be a single string or an array of strings. */
 export type StatePath = string | string[];
 
@@ -24,10 +26,12 @@ export declare function useState<T>(
   initialValue?: T,
   asRef?: boolean,
   avoidClone?: boolean,
+  root: AppRoot,
 ): StateValue<T>;
 
 /** Hook to manage observers for a state in a component. */
 export declare function useObserver<T>(
   componentName: string,
   path: StatePath,
+  root: AppRoot,
 ): ObserverTuple<T>;

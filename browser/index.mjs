@@ -1,15 +1,33 @@
+/** @import {Log} from "@jsdocs/browser/config.d" */
+
 import Piglet from "@Piglet/browser/config";
-import {
-  navigate,
-  loadComponent,
-  fetchWithCache,
-  api,
-  pageRevealCallback,
-} from "@Piglet/browser/helpers";
+import { loadComponent, pageRevealCallback } from "@Piglet/browser/helpers";
 
 import * as Classes from "@Piglet/browser/classes/index";
+import CONST from "@Piglet/browser/CONST";
 
-window.addEventListener("pagereveal", pageRevealCallback);
+const root = document.body.querySelector("app-root");
+const config = document.querySelector('script[id="piglet-config"]');
+
+let customConfig = {};
+
+if (config) {
+  try {
+    customConfig = JSON.parse(config.textContent);
+  } catch (error) {
+    console.error("Failed to parse Piglet configuration:", error);
+  }
+}
+
+if (!root) {
+  console.error(
+    "No <app-root> element found in the document. Stopping execution.",
+  );
+  window.stop();
+  throw new Error("No <app-root> element found.");
+}
+
+window.addEventListener("pagereveal", pageRevealCallback.bind(root, root));
 
 const coreComponents = [
   Classes.AppRoot,
@@ -25,13 +43,31 @@ async function loadCoreComponents() {
   }
 }
 
-new Classes.Socket();
+new Classes.Socket(root);
 
-window.fetchWithCache = fetchWithCache;
-window.Piglet = Piglet;
-window.$api = api;
+root.config = {
+  ...Piglet,
+  ...customConfig,
+};
+
+/** @type {Log} */
+window.console.pig = function (
+  message,
+  severity = CONST.coreLogsLevels.info,
+  ...args
+) {
+  if (!root.config.enableCoreLogs[severity]) return;
+
+  if (!Object.values(CONST.coreLogsLevels).includes(severity)) {
+    severity = CONST.coreLogsLevels.info;
+  }
+
+  console[
+    severity === CONST.coreLogsLevels.info
+      ? CONST.coreLogLevelsAliases.info
+      : severity
+  ](message, ...args);
+};
 
 // noinspection JSIgnoredPromiseFromCall
 loadCoreComponents();
-
-window.$navigate ??= navigate;

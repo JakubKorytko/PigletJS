@@ -1,7 +1,9 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
+/** @import {Navigate, Api} from "@jsdocs/browser/helpers.d" */
 
 import { VirtualReactiveComponentInterface } from "@jsdocs/browser/classes/ReactiveComponent.d";
+import {buildComponentTree} from "@Piglet/browser/tree";
 
 /**
  * Root component of the application, handles routing and component loading
@@ -31,6 +33,116 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * @type {string}
    */
   __previousLayout = "";
+
+  /**
+   * Deep state proxy cache
+   * @type {WeakMap<string, StateValue<unknown>>}
+   */
+  __proxyCache = new WeakMap();
+
+  /**
+   * The fetch cache
+   * @type {Map<string, string>}
+   */
+  __fetchCache = new Map();
+
+  /**
+   * The fetch queue
+   * @type {Map<string, Promise<string>>}
+   */
+  __fetchQueue = new Map();
+
+  /**
+   * Counter for setting component IDs
+   * @type {number}
+   */
+  componentCounter = 0;
+
+  /**
+   * Whole application state
+   * @type {Record<string, StateInterface<unknown>>|{}}
+   */
+  globalState = {};
+
+  /**
+   * Tree of components in the application
+   * @type {Record<string, TreeNode>|Record<string, never>}
+   */
+  get tree() {
+    if (this.AppRoot) {
+      return buildComponentTree(this.AppRoot);
+    }
+
+    return {};
+  }
+
+  /**
+   * Extension communication methods
+   * @type {{
+   *     sendInitialData?: () => void, // Send initial data to the extension
+   *     sendTreeUpdate?: () => void, // Send tree update to the extension
+   *     sendStateUpdate?: () => void // Send state update to the extension
+   *   }}
+   */
+  extension = {};
+
+  /**
+   * Set of mounted components
+   * @type {
+   *    Set<{
+   *        tag: string, // The tag of the component
+   *        ref: HTMLElement|ReactiveComponent // The reference to the component
+   *    }>
+   * }
+   */
+  mountedComponents = new Set();
+
+  /**
+   * Record of components whose constructors have been called
+   * @type {Record<string, ReactiveComponent>}
+   */
+  constructedComponents = {};
+
+  /**
+   * Record of components registered in custom elements registry
+   * @type {Record<string, ReactiveComponent>}
+   */
+  registeredComponents = {};
+
+  /**
+   * Record of previously fetched component cache keys
+   * @type {Record<string, Record<'html' | 'script' | 'layout', string>>}
+   */
+  previousFetchComponentCacheKeys = {};
+
+  /**
+   * @type {{
+   *   RC: ReactiveComponent, // ReactiveComponent class
+   *   RDC: ReactiveDummyComponent, // ReactiveDummyComponent class
+   * }}
+   */
+  types;
+
+  /**
+   * Navigate function for changing routes
+   * @type {Navigate}
+   */
+  navigate;
+
+  /**
+   * API instance for making requests
+   * @type {Api}
+   */
+  api;
+
+  /**
+   * Resets the application state and component counter
+   * @returns {void}
+   */
+  reset() {
+    this.state = {};
+    this.componentCounter = 0;
+  }
 
   /**
    * Current route path

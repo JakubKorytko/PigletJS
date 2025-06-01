@@ -117,7 +117,7 @@ class RenderIf extends ReactiveDummyComponent {
       );
     } else {
       this._state =
-        window.Piglet.state[this._parent.__componentKey][
+        this.root.globalState[this._parent.__componentKey][
           conditionProperty
         ]._state;
       super.observeState(conditionProperty);

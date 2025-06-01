@@ -1,4 +1,5 @@
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
 
 /**
  * @interface SocketInterface
@@ -9,6 +10,12 @@ class SocketInterface {
    * @type {WebSocket|null}
    */
   ws;
+
+  /**
+   * Reference to the application root
+   * @type {AppRoot}
+   */
+  root;
 
   /**
    * The number of attempted reconnections after disconnection

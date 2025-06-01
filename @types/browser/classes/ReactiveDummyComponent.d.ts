@@ -1,9 +1,11 @@
 import { ReactiveComponent } from "./ReactiveComponent.d.ts";
 import type { Reason } from "../CONST.d";
+import { AppRoot } from "./AppRoot.d";
 
 declare class ReactiveDummyComponent extends HTMLElement {
   __observers: Map<string, (component: ReactiveComponent) => void>;
   shouldBatchRefUpdates: boolean;
+  root: AppRoot;
   connectedCallback(): void;
   observeState(property: string): void;
   stateChange<T>(value: T, property: string, prevValue: T): void;

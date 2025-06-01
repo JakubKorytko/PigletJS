@@ -1,11 +1,15 @@
 /** @import {AppRootInterface, AppRootMembers, AppRootVirtualMembers} from "@jsdocs/browser/classes/AppRoot.d" */
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import {
+  api,
   fetchComponentData,
+  navigate,
   sendToExtension,
   toPascalCase,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
+import { buildComponentTree } from "@Piglet/browser/tree";
+import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
 
 /**
  * Injected using parser
@@ -24,12 +28,50 @@ class AppRoot extends ReactiveComponent {
   /** @type {AppRootMembers["__previousLayout"]["Type"]} */
   __previousLayout = "";
 
+  /** @type {AppRootMembers["__proxyCache"]["Type"]} */
+  __proxyCache = new WeakMap();
+
+  /** @type {AppRootMembers["__fetchCache"]["Type"]} */
+  __fetchCache = new Map();
+
+  /** @type {AppRootMembers["__fetchQueue"]["Type"]} */
+  __fetchQueue = new Map();
+
+  /** @type {AppRootMembers["componentCounter"]["Type"]} */
+  componentCounter = 0;
+
+  /** @type {AppRootMembers["globalState"]["Type"]} */
+  globalState = {};
+
+  /** @type {AppRootMembers["extension"]["Type"]} */
+  extension = {};
+
+  /** @type {AppRootMembers["mountedComponents"]["Type"]} */
+  mountedComponents = new Set();
+
+  /** @type {AppRootMembers["constructedComponents"]["Type"]} */
+  constructedComponents = {};
+
+  /** @type {AppRootMembers["registeredComponents"]["Type"]} */
+  registeredComponents = {};
+
+  /** @type {AppRootMembers["previousFetchComponentCacheKeys"]["Type"]} */
+  previousFetchComponentCacheKeys = {};
+
+  /** @type {AppRootMembers["types"]["Type"]} */
+  types = {
+    RC: ReactiveComponent,
+    RDC: ReactiveDummyComponent,
+  };
+
   static get observedAttributes() {
     return [CONST.routeAttribute];
   }
 
   constructor(attrs) {
     super(attrs);
+    this.api = api;
+    this.navigate = navigate.bind(this);
     this.addPopStateListener();
   }
 
@@ -39,9 +81,9 @@ class AppRoot extends ReactiveComponent {
    */
   connectedCallback() {
     this.appContent = document.createElement("app-content");
+    this.appContent.root = this;
     this.appContent.setAttribute("part", "app-content");
     this.shadowRoot.append(this.appContent);
-    window.Piglet.AppRoot = this;
   }
 
   /**
@@ -58,10 +100,24 @@ class AppRoot extends ReactiveComponent {
     } catch (e) {
       void 0; // Ignore JSON parsing errors
     }
-    window.Piglet.log(
+    console.pig(
       CONST.pigletLogs.appRoot.errorLoading("layout paths"),
       CONST.coreLogsLevels.error,
     );
+  }
+
+  /**
+   * @type {AppRootMembers["reset"]["Type"]}
+   * @returns {AppRootMembers["reset"]["ReturnType"]}
+   */
+  reset() {
+    this.state = {};
+    this.componentCounter = 0;
+  }
+
+  /** @type {AppRootMembers["tree"]["Type"]} */
+  get tree() {
+    return buildComponentTree(this);
   }
 
   /**
@@ -118,7 +174,7 @@ class AppRoot extends ReactiveComponent {
         );
 
         this.appContent.replaceChildren(...persistentChildren);
-        window.Piglet.reset();
+        this.reset();
       }
       this.loadRouteSync(base, layout);
       return this.appRootConnected();
@@ -160,6 +216,7 @@ class AppRoot extends ReactiveComponent {
         const { base, html } = await fetchComponentData(
           routePath,
           [CONST.componentRoute.base, CONST.componentRoute.html],
+          this.root,
           isReloaded,
         );
 
@@ -182,6 +239,7 @@ class AppRoot extends ReactiveComponent {
           CONST.componentRoute.html,
           CONST.componentRoute.layout,
         ],
+        this.root,
         isReloaded,
       );
 
@@ -198,7 +256,7 @@ class AppRoot extends ReactiveComponent {
         layout,
       };
     } catch (err) {
-      window.Piglet.log(
+      console.pig(
         CONST.pigletLogs.appRoot.errorLoading(route),
         CONST.coreLogsLevels.error,
         err,
@@ -227,8 +285,8 @@ class AppRoot extends ReactiveComponent {
    */
   loadRouteSync(base, layout) {
     this.renderComponent(base, layout);
-    sendToExtension(CONST.extension.initialMessage);
-    window.Piglet.log(
+    sendToExtension(CONST.extension.initialMessage, this.root);
+    console.pig(
       CONST.pigletLogs.appRoot.routeLoaded(this._route),
       CONST.coreLogsLevels.info,
     );
@@ -261,16 +319,17 @@ class AppRoot extends ReactiveComponent {
         seen.add(tag);
 
         try {
-          const { html } = await fetchComponentData(tag, [
-            CONST.componentRoute.base,
-            CONST.componentRoute.html,
-          ]);
+          const { html } = await fetchComponentData(
+            tag,
+            [CONST.componentRoute.base, CONST.componentRoute.html],
+            this.root,
+          );
 
           const nestedTags = this.extractCustomTags(html);
 
           await this.loadCustomComponents(nestedTags, seen);
         } catch (e) {
-          window.Piglet.log(
+          console.pig(
             CONST.pigletLogs.appRoot.unableToLoadComponent(tag),
             CONST.coreLogsLevels.warn,
             e,
@@ -313,7 +372,7 @@ class AppRoot extends ReactiveComponent {
         if (tag && tag.includes("-") && tag !== "app-content") {
           const customComponent = customElements.get(tag);
           if (customComponent) {
-            el = new customComponent({ parent: this });
+            el = new customComponent({ parent: this }, this.root);
           }
         }
         this.shadowRoot.appendChild(el);
@@ -321,7 +380,7 @@ class AppRoot extends ReactiveComponent {
     }
 
     if (component.prototype instanceof ReactiveComponent) {
-      const element = new component({ parent: this });
+      const element = new component({ parent: this }, this);
       if (element instanceof ReactiveComponent) {
         if (contentTag) {
           contentTag.replaceWith(this.appContent);

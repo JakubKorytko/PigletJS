@@ -9,6 +9,7 @@
  *  FetchWithCache,
  * } from '@jsdocs/browser/helpers.d'
  */
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
 
 import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent";
 import CONST from "@Piglet/browser/CONST";
@@ -70,7 +71,7 @@ const api = async function (path, fetchOptions = {}, expect = "raw") {
   try {
     const data = await parse();
     if (!contentType.includes(expected)) {
-      window.Piglet.log(
+      console.pig(
         CONST.warning.expectedButGot(expected, contentType),
         CONST.coreLogsLevels.warn,
       );
@@ -79,7 +80,7 @@ const api = async function (path, fetchOptions = {}, expect = "raw") {
   } catch (err) {
     try {
       const fallback = await res.text();
-      window.Piglet.log(
+      console.pig(
         CONST.warning.failedToParseAs(expected),
         CONST.coreLogsLevels.warn,
       );
@@ -91,23 +92,21 @@ const api = async function (path, fetchOptions = {}, expect = "raw") {
 };
 
 /** @type {Navigate} */
-const navigate = (route) => {
-  if (!window.Piglet.AppRoot) return false;
-
+const navigate = function (route) {
   window.history.pushState({}, "", route);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.Piglet.AppRoot.route = route;
+  this.route = route;
 
   return true;
 };
 
 /** @type {GetMountedComponentsByTag} */
-const getMountedComponentsByTag = function (tagName) {
+const getMountedComponentsByTag = function (tagName, root) {
   const componentRefs = [];
 
-  if (!window.Piglet?.mountedComponents?.size) return componentRefs;
+  if (!root.mountedComponents.size) return componentRefs;
 
-  for (const mountedComponent of window.Piglet.mountedComponents) {
+  for (const mountedComponent of root.mountedComponents) {
     if (mountedComponent.tag.toLowerCase() === tagName.toLowerCase()) {
       componentRefs.push(mountedComponent.ref);
     }
@@ -120,12 +119,22 @@ const getMountedComponentsByTag = function (tagName) {
 const debounceTimers = {};
 
 /** @type {SendToExtension} */
-const sendToExtension = (requestType) => {
-  const api = window.Piglet?.extension;
+const sendToExtension = (requestType, root) => {
+  if (!root.config.allowDebugging) return;
+
+  if (window.pigletExtensionCallbacks && !Object.keys(root.extension).length) {
+    root.extension = window.pigletExtensionCallbacks;
+    window.pigletExtensionCallbacks = undefined;
+
+    window.pigletExtensionDebugRoot = root;
+  }
+
+  const api = root.extension;
+
   const actions = {
-    initial: api?.sendInitialData,
-    state: api?.sendStateUpdate,
-    tree: api?.sendTreeUpdate,
+    initial: api?.sendInitialData.bind(root, root),
+    state: api?.sendStateUpdate.bind(root, root),
+    tree: api?.sendTreeUpdate.bind(root, root),
   };
 
   const action = actions[requestType];
@@ -134,7 +143,7 @@ const sendToExtension = (requestType) => {
   clearTimeout(debounceTimers[requestType]);
 
   debounceTimers[requestType] = setTimeout(() => {
-    window.Piglet.log(
+    console.pig(
       CONST.pigletLogs.sendToExtension,
       CONST.coreLogsLevels.info,
       requestType,
@@ -157,21 +166,21 @@ const loadComponent = function (_class) {
 };
 
 /** @type {FetchWithCache} */
-const fetchWithCache = async (url) => {
-  if (!window.Piglet.__fetchCache) {
-    window.Piglet.__fetchCache = new Map();
+const fetchWithCache = async (url, root) => {
+  if (!root.__fetchCache) {
+    root.__fetchCache = new Map();
   }
 
-  if (!window.Piglet.__fetchQueue) {
-    window.Piglet.__fetchQueue = new Map(); // URL → Promise
+  if (!root.__fetchQueue) {
+    root.__fetchQueue = new Map(); // URL → Promise
   }
 
-  if (window.Piglet.__fetchCache.has(url)) {
-    return window.Piglet.__fetchCache.get(url);
+  if (url && root.__fetchCache.has(url)) {
+    return root.__fetchCache.get(url);
   }
 
-  if (window.Piglet.__fetchQueue.has(url)) {
-    return window.Piglet.__fetchQueue.get(url);
+  if (root.__fetchQueue.has(url)) {
+    return root.__fetchQueue.get(url);
   }
 
   const fetchPromise = (async () => {
@@ -182,14 +191,14 @@ const fetchWithCache = async (url) => {
       }
 
       const data = await response.text();
-      window.Piglet.__fetchCache.set(url, data);
+      root.__fetchCache.set(url, data);
       return data;
     } finally {
-      window.Piglet.__fetchQueue.delete(url);
+      root.__fetchQueue.delete(url);
     }
   })();
 
-  window.Piglet.__fetchQueue.set(url, fetchPromise);
+  root.__fetchQueue.set(url, fetchPromise);
   return fetchPromise;
 };
 
@@ -197,15 +206,16 @@ const fetchWithCache = async (url) => {
  * Callback function to handle page reveal events.
  *
  * @param {Event} event - The event object triggered during the page reveal.
+ * @param {AppRoot} root - The root application instance.
  * @returns {Promise<void>}
  */
-const pageRevealCallback = (event) => {
+const pageRevealCallback = (event, root) => {
   if (
     !event.viewTransition &&
     document.startViewTransition &&
     !window.viewTransitionRunning
   ) {
-    return window.Piglet.AppRoot.appContent.runPageTransition("in", 200);
+    return root.appContent.runPageTransition("in", 200);
   }
 };
 
@@ -256,7 +266,7 @@ const parseHTML = (html, owner) => {
       ? owner
       : owner.internal.fragment.fragmentRoot;
     attrs.parent = owner;
-    const newEl = new customTag(attrs);
+    const newEl = new customTag(attrs, owner.root);
     el.replaceWith(newEl);
     if (!el.childNodes.length) {
       return;
@@ -285,14 +295,23 @@ const $create = function (strings, ...values) {
   attrs.parent = this;
   const customTag = customElements.get(kebabTag);
   if (customTag) {
-    return new customTag(attrs);
+    return new customTag(attrs, this.root);
   }
 
   return document.createElement(kebabTag);
 };
 
-/** @type {(componentName: string, types: string[], shouldCache?: boolean) => Promise<{ html?: string, script?: Function, base?: ReactiveComponent }>} */
-const fetchComponentData = async (componentName, types, shouldCache = true) => {
+/** @type {(
+ * componentName: string,
+ * types: string[],
+ * root: AppRoot,
+ * shouldCache?: boolean) => Promise<{ html?: string, script?: Function, base?: ReactiveComponent }>} */
+const fetchComponentData = async (
+  componentName,
+  types,
+  root,
+  shouldCache = true,
+) => {
   const data = {
     html: undefined,
     script: undefined,
@@ -300,14 +319,13 @@ const fetchComponentData = async (componentName, types, shouldCache = true) => {
     layout: undefined,
   };
 
-  window.Piglet.previousFetchComponentCacheKeys[componentName] ??= {
+  root.previousFetchComponentCacheKeys[componentName] ??= {
     html: "",
     script: "",
     layout: "",
   };
 
-  const previousCache =
-    window.Piglet.previousFetchComponentCacheKeys[componentName];
+  const previousCache = root.previousFetchComponentCacheKeys[componentName];
 
   if (!types.length) {
     return data;
@@ -359,18 +377,18 @@ const fetchComponentData = async (componentName, types, shouldCache = true) => {
   let cls;
 
   if (types.includes(CONST.componentRoute.base)) {
-    if (!window.Piglet.registeredComponents[componentName]) {
+    if (!root.registeredComponents[componentName]) {
       // noinspection JSClosureCompilerSyntax
       cls = class extends ReactiveComponent {
         static name = componentName;
-        constructor(attrs) {
-          super(attrs);
+        constructor(attrs, root) {
+          super(attrs, root);
         }
       };
       await loadComponent(cls);
-      window.Piglet.registeredComponents[componentName] = cls;
+      root.registeredComponents[componentName] = cls;
     } else {
-      cls = window.Piglet.registeredComponents[componentName];
+      cls = root.registeredComponents[componentName];
     }
 
     data.base = cls;
@@ -421,16 +439,15 @@ const createStateProxy = function (asRef, host) {
 
 /**
  * Wrapper for creating a deep proxy that triggers onChange when a property is set
- * @type {(target: Object, onChange: () => void) => Object} */
-const createDeepOnChangeProxy = function (target, onChange) {
+ * @type {(target: Object, root: AppRoot, onChange: () => void) => Object} */
+const createDeepOnChangeProxy = function (target, root, onChange) {
   return new Proxy(target, {
     get(target, property) {
       const item = target[property];
       if (item && typeof item === "object") {
-        if (window.Piglet.__proxyCache.has(item))
-          return window.Piglet.__proxyCache.get(item);
-        const proxy = createDeepOnChangeProxy(item, onChange);
-        window.Piglet.__proxyCache.set(item, proxy);
+        if (root.__proxyCache.has(item)) return root.__proxyCache.get(item);
+        const proxy = createDeepOnChangeProxy(item, root, onChange);
+        root.__proxyCache.set(item, proxy);
         return proxy;
       }
       if (typeof item === "function") {
@@ -467,8 +484,8 @@ const createNestedStateProxy = function (asRef, host) {
           host.states[prop] = host.state(prop, undefined, asRef);
           const state = host.states[prop];
           if (typeof state.value === "object" && state.value !== null) {
-            state.value = createDeepOnChangeProxy(state.value, () =>
-              window.Piglet.state[host.__componentKey]._notify?.(),
+            state.value = createDeepOnChangeProxy(state.value, host.root, () =>
+              host.root.globalState[host.__componentKey]._notify?.(),
             );
           }
         }
@@ -488,17 +505,17 @@ const createNestedStateProxy = function (asRef, host) {
           host.states[key] = host.state(key, initialValue, asRef, avoidClone);
           const state = host.states[key];
           if (typeof state.value === "object" && state.value !== null) {
-            window.Piglet.state[host.__componentKey][key]._state =
-              createDeepOnChangeProxy(state.value, () =>
-                window.Piglet.state[host.__componentKey][key]._notify?.(),
+            host.root.globalState[host.__componentKey][key]._state =
+              createDeepOnChangeProxy(state.value, host.root, () =>
+                host.root.globalState[host.__componentKey][key]._notify?.(),
               );
           }
         } else if (!isUsingUse) {
           const state = host.states[key];
 
           if (typeof value === "object" && value !== null) {
-            state.value = createDeepOnChangeProxy(value, () =>
-              window.Piglet.state[host.__componentKey][key]._notify?.(),
+            state.value = createDeepOnChangeProxy(value, host.root, () =>
+              host.root.globalState[host.__componentKey][key]._notify?.(),
             );
           } else {
             state.value = value;

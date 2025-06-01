@@ -2,6 +2,7 @@
 /** @import {MountData, TreeNode} from "@jsdocs/browser/tree.d" */
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
+/** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
 
 /**
  * @typedef {
@@ -97,6 +98,12 @@ class BaseReactiveComponentInterface {
    * @type {Record<string, StateValue<T>>}
    */
   states = {};
+
+  /**
+   * Reference to the AppRoot component
+   * @type {AppRoot}
+   */
+  root;
 
   /**
    * All the data for manipulating the tree and reactivity

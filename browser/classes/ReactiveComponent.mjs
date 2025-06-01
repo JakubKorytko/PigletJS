@@ -6,6 +6,7 @@ import {
   sendToExtension,
   fetchComponentData,
   extractComponentTagsFromString,
+  fetchWithCache,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 import scriptRunner, {
@@ -101,7 +102,7 @@ class ReactiveComponent extends HTMLElement {
     this.internal.fragment.enabled = this.attrs.fragment ?? false;
     this.internal.fragment.fragmentRoot = this.attrs.fragmentRoot ?? undefined;
     this.__observers = new Map();
-    this.__componentId = window.Piglet.componentCounter++;
+    this.__componentId = this.root.componentCounter++;
     this.__componentName = this.constructor.name;
     this.__componentKey = `${this.__componentName}${this.__componentId}`;
     this.__mountData = {
@@ -110,11 +111,20 @@ class ReactiveComponent extends HTMLElement {
       ref: this,
     };
     this._parent?.internal.children.push(this);
-    window.Piglet.constructedComponents[this.__componentKey] = this;
+    this.root.constructedComponents[this.__componentKey] = this;
   }
 
-  constructor(attrs) {
+  constructor(attrs, root) {
     super();
+
+    if (this.constructor.name === CONST.appRootName) {
+      // Unfortunately, due to super constructor being called first, we need to set these properties here
+      this.constructedComponents = {};
+      this.componentCounter = 0;
+      this.root = this;
+    } else {
+      this.root = root ?? this.root;
+    }
 
     this.initialSetup(attrs);
 
@@ -158,11 +168,11 @@ class ReactiveComponent extends HTMLElement {
     await this.runScript(reason);
     const shouldContinue = await this.loadContent(CONST.reasonCache(reason));
     if (!shouldContinue) return Promise.resolve(false);
-    sendToExtension(CONST.extension.tree);
+    sendToExtension(CONST.extension.tree, this.root);
     this.__mountCallback(reason);
     this.internal.mounted = true;
-    window.Piglet.mountedComponents.add(this.__mountData);
-    window.Piglet.log(CONST.pigletLogs.appRoot.componentConnected(this));
+    this.root.mountedComponents.add(this.__mountData);
+    console.pig(CONST.pigletLogs.appRoot.componentConnected(this));
     /** @type {Promise<Awaited<boolean>[]>|[]} */
     const promises = [];
     while (this.internal.waiters.length > 0) {
@@ -178,7 +188,7 @@ class ReactiveComponent extends HTMLElement {
    * @returns {ReactiveMembers["unmount"]["ReturnType"]}
    */
   unmount() {
-    window.Piglet.mountedComponents.delete(this.__mountData);
+    this.root.mountedComponents.delete(this.__mountData);
     this.__mountCallback = () => {};
     this.internal.mounted = false;
     for (const remove of this.__observers.values()) {
@@ -186,7 +196,7 @@ class ReactiveComponent extends HTMLElement {
     }
     this.__observers.clear();
     this.shadowRoot?.replaceChildren();
-    sendToExtension(CONST.extension.tree);
+    sendToExtension(CONST.extension.tree, this.root);
   }
 
   /**
@@ -251,14 +261,14 @@ class ReactiveComponent extends HTMLElement {
     let html;
 
     if (canUseMemoized) {
-      html = await window.fetchWithCache(url);
+      html = await fetchWithCache(url, this.root);
     } else {
       const response = await fetch(url);
       if (!response.ok) {
         throw CONST.error.failedToFetchHTML(componentName);
       }
       html = await response.text();
-      window.Piglet.__fetchCache.set(url, html);
+      this.root.__fetchCache.set(url, html);
     }
 
     const fragment = parseHTML(html, this);
@@ -297,6 +307,7 @@ class ReactiveComponent extends HTMLElement {
     const [addObserver, removeObserver] = useObserver(
       this.__componentKey,
       property,
+      this.root,
     );
 
     if (this.__observers.has(property)) {
@@ -319,6 +330,7 @@ class ReactiveComponent extends HTMLElement {
       initialValue,
       asRef,
       avoidClone,
+      this.root,
     );
     this.observeState(property);
     return state;
@@ -360,16 +372,17 @@ class ReactiveComponent extends HTMLElement {
       const { script } = await fetchComponentData(
         this.__componentName,
         [CONST.componentRoute.script],
+        this.root,
         CONST.reasonCache(reason),
       );
       if (!script) {
         return;
       }
       const tags = extractComponentTagsFromString(script.toString());
-      await window.Piglet.AppRoot?.loadCustomComponents(tags);
+      await this.root?.loadCustomComponents(tags);
       scriptRunner(this, script, reason);
     } catch (error) {
-      window.Piglet.log(
+      console.pig(
         CONST.pigletLogs.errorLoadingScript,
         CONST.coreLogsLevels.warn,
         error,

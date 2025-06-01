@@ -84,8 +84,8 @@ const setDeep = (obj, keys, value) => {
  * @param {any} value - The new value to set for the state.
  * @param {Array<string|number>} path - The path to the specific state property to update.
  */
-function updateState(key, stateName, value, path) {
-  const state = window.Piglet.state[stateName][key];
+function updateState(root, key, stateName, value, path) {
+  const state = root.globalState[stateName][key];
   if (path.length > 0) {
     setDeep(state._state, path, value);
     state._notify();
@@ -98,8 +98,8 @@ function updateState(key, stateName, value, path) {
  * Sends a state update to the parent window. This sends the current state of
  * all components after transforming and simplifying it.
  */
-function sendStateUpdate() {
-  const simplifiedState = extractSimpleData(window.Piglet.state);
+function sendStateUpdate(root) {
+  const simplifiedState = extractSimpleData(root.globalState);
   const transformedState = transformComponentState(simplifiedState);
 
   window.postMessage(
@@ -116,8 +116,9 @@ function sendStateUpdate() {
  * Sends a tree update to the parent window. This sends the current state of
  * the component tree after simplifying it.
  */
-function sendTreeUpdate() {
-  const simplifiedTree = extractSimpleData(window.Piglet.tree);
+function sendTreeUpdate(root) {
+  if (!root?.tree) return;
+  const simplifiedTree = extractSimpleData(root.tree);
 
   window.postMessage(
     {
@@ -133,10 +134,10 @@ function sendTreeUpdate() {
  * Sends the initial data (both the state and tree) to the parent window.
  * This is typically used when the extension is first loaded or when a new request is made.
  */
-function sendInitialData() {
-  const simplifiedState = extractSimpleData(window.Piglet.state);
+function sendInitialData(root) {
+  const simplifiedState = extractSimpleData(root.globalState);
   const transformedState = transformComponentState(simplifiedState);
-  const simplifiedTree = extractSimpleData(window.Piglet.tree);
+  const simplifiedTree = extractSimpleData(root.tree);
 
   window.postMessage(
     {
@@ -144,7 +145,6 @@ function sendInitialData() {
       payload: {
         state: transformedState,
         tree: simplifiedTree,
-        allowDebugging: window.Piglet?.allowDebugging,
       },
       source: "PIGLET_INJECTED",
     },
@@ -159,20 +159,21 @@ function sendInitialData() {
  * @param {MessageEvent} event - The message event containing the data to process.
  */
 window.addEventListener("message", (event) => {
+  const root = window.pigletExtensionDebugRoot;
+  if (!root) return;
+
   if (!(event.data?.source === "PIGLET_CONTENT")) return;
   if (event.data.type === "INITIAL_REQUEST") {
-    sendInitialData();
+    sendInitialData(root);
   }
   if (event.data.type === "MODIFY_STATE") {
     const { key, stateName, value, path } = event.data.payload;
-    updateState(key, stateName, value, path);
+    updateState(root, key, stateName, value, path);
   }
 });
 
-if (window.Piglet) {
-  window.Piglet.extension = {
-    sendInitialData,
-    sendTreeUpdate,
-    sendStateUpdate,
-  };
-}
+window.pigletExtensionCallbacks = {
+  sendInitialData,
+  sendTreeUpdate,
+  sendStateUpdate,
+};

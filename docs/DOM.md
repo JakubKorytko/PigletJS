@@ -1,4 +1,5 @@
 ## Elements selectors :id=element-selectors
+
 <p id="top" style="position: absolute; top: -50px"></p>
 
 ### `$element(selector, expect? = HTMLElement.prototype)`
@@ -15,11 +16,11 @@ You can use it to specify the expected type of the element:
 const element = $element("input", HTMLInputElement.prototype);
 
 // We expect the element to be our custom component
-const {RC} = window.Piglet.types;
+const { RC } = $types;
 const element = $element("CustomElement", RC);
 
 // We expect the element to be a built-in PigletJS component
-const {RDC} = window.Piglet.types;
+const { RDC } = $types;
 const element = $element("NavLink", RDC);
 ```
 

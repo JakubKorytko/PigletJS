@@ -1,4 +1,5 @@
 import { ReactiveComponent } from "@Piglet/browser/classes/ReactiveComponent";
+import type { Navigate, api } from "./helpers.d";
 
 // Proxy for an element with event listener methods and updates
 export interface ElementProxy {
@@ -52,6 +53,9 @@ export interface ComponentData {
     $$: (initialValue: any) => { __piglet_use_marker: true; initialValue: any }; // State initialization
     $$P: Record<string, any>; // Component deep state
     $: (strings: TemplateStringsArray, ...values: any[]) => HTMLElement; // Template literal for creating elements
+    $navigate: Navigate; // Navigate to a route
+    $api: api; // API for making requests
+    $types: ReactiveComponent["types"]; // Types for the component
   };
   callbacks: {
     $element: QueryElement; // Element query method

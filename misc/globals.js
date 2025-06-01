@@ -1,4 +1,5 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
+/** @import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent" */
 /** @import {ElementProxy} from "@jsdocs/browser/scriptRunner.d" */
 /** @import CONST from "@Piglet/browser/CONST" */
 
@@ -28,6 +29,14 @@ let $elements;
  * console.log(attributes.someAttribute); // Logs the value of the dynamic attribute
  */
 let $attrs;
+
+/**
+ * @type {{
+ *   RC: ReactiveComponent, // ReactiveComponent class
+ *   RDC: ReactiveDummyComponent, // ReactiveDummyComponent class
+ * }}
+ */
+let $types;
 
 /**
  * Fetches data from a given API path and parses the response into the expected format.

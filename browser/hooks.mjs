@@ -13,15 +13,16 @@ const useState = (
   initialValue,
   asRef,
   avoidClone = false,
+  root,
 ) => {
-  if (!window.Piglet.state[componentName]) {
-    window.Piglet.state[componentName] = {};
+  if (!root.globalState[componentName]) {
+    root.globalState[componentName] = {};
   }
 
   const key = Array.isArray(path) ? path.join(".") : path;
 
-  if (!window.Piglet.state[componentName][key]) {
-    window.Piglet.state[componentName][key] = new State(
+  if (!root.globalState[componentName][key]) {
+    root.globalState[componentName][key] = new State(
       initialValue,
       asRef,
       avoidClone,
@@ -37,15 +38,15 @@ const useState = (
      * Gets the current state value.
      */
     get value() {
-      return window.Piglet.state[componentName][key].state;
+      return root.globalState[componentName][key].state;
     },
 
     /**
      * Sets a new state value and triggers state update.
      */
     set value(newValue) {
-      window.Piglet.state[componentName][key].setState(newValue);
-      sendToExtension(CONST.extension.state);
+      root.globalState[componentName][key].setState(newValue);
+      sendToExtension(CONST.extension.state, root);
     },
   };
 };
@@ -54,19 +55,19 @@ const useState = (
  * @template T
  * @type {UseObserver<T>}
  */
-function useObserver(componentName, path) {
+const useObserver = function (componentName, path, root) {
   const key = Array.isArray(path) ? path.join(".") : path;
 
   if (
-    !window.Piglet.state[componentName] ||
-    !window.Piglet.state[componentName][key]
+    !root.globalState[componentName] ||
+    !root.globalState[componentName][key]
   ) {
     return [() => {}, () => {}];
   }
 
-  const state = window.Piglet.state[componentName][key];
+  const state = root.globalState[componentName][key];
 
   return [state.addObserver.bind(state), state.removeObserver.bind(state)];
-}
+};
 
 export { useState, useObserver };

@@ -1,17 +1,20 @@
 - [Getting started](Getting_started)
 
   - [Why PigletJS?](Getting_started#why-pigletjs)
-  - [Introduction](Getting_started#getting-started) 
+  - [Introduction](Getting_started#getting-started)
   - [Installation](Getting_started#installation)
+  - [Configuration](Getting_started#configuration)
   - [Your first PigletJS app](Getting_started#your-first-pigletjs-app)
 
 - [Structure](Structure#top)
 
   - [Entry points](Structure#routing-entry-point)
+
     - [HTML entry point](Structure#pig-html)
     - [Routing entry point](Structure#app-pig-html)
 
   - [src](Structure#web)
+
     - [pages](Structure#components)
     - [components](Structure#pages-components)
     - [modules](Structure#modules)

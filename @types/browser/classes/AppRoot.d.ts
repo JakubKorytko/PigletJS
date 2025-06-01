@@ -1,4 +1,6 @@
-import { ReactiveComponent } from "@Piglet/browser/classes/index";
+import ReactiveComponent from "./ReactiveComponent.d";
+import ReactiveDummyComponent from "./ReactiveDummyComponent.d";
+import type { api } from "../helpers.d";
 
 /** Root component of the application, handles routing and component loading. */
 declare class AppRoot extends ReactiveComponent {
@@ -15,6 +17,61 @@ declare class AppRoot extends ReactiveComponent {
 
   /** Previous layout path */
   __previousLayout: string;
+
+  /** Deep state proxy cache */
+  __proxyCache: Map<string, StateValue<unknown>>;
+
+  /** The fetch cache */
+  __fetchCache: Map<string, string>;
+
+  /** The fetch queue */
+  __fetchQueue: Map<string, Promise<string>>;
+
+  /** Counter for setting component IDs */
+  componentCounter: number;
+
+  /** Whole application state */
+  globalState: Record<string, StateInterface<unknown>> | {};
+
+  /** Tree of components in the application */
+  tree: Record<string, TreeNode<ReactiveComponent | Element>> | {};
+
+  /** Extension communication methods */
+  extension: {
+    sendInitialData?: () => void;
+    sendTreeUpdate?: () => void;
+    sendStateUpdate?: () => void;
+  };
+
+  /** Set of mounted components */
+  mountedComponents: Set<{
+    tag: string;
+    ref: HTMLElement | ReactiveComponent;
+  }>;
+
+  /** Record of components whose constructors have been called */
+  constructedComponents: Record<string, ReactiveComponent>;
+
+  /** Record of components registered in custom elements registry */
+  registeredComponents: Record<string, ReactiveComponent>;
+
+  /** Record of previously fetched component cache keys */
+  previousFetchComponentCacheKeys: Record<
+    string,
+    Record<"html" | "script" | "layout", string>
+  >;
+
+  types: {
+    RC: typeof ReactiveComponent; // ReactiveComponent class
+    RDC: typeof ReactiveDummyComponent; // ReactiveDummyComponent class
+  };
+
+  navigate: (route: string) => boolean; // Navigate function for changing routes
+
+  api: api; // API instance for making requests
+
+  /** Resets the application state and component counter */
+  reset: () => void;
 
   /** Fetches layout paths from the server */
   async getLayoutPaths(): Promise<void>;
