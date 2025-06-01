@@ -209,7 +209,6 @@ export default {
     dirs: new Set([
       ".git",
       ".idea",
-      "@jsdocs",
       "@types",
       "docs",
       "extension",

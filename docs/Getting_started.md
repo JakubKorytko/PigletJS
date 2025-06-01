@@ -18,7 +18,7 @@ It is designed to be **simple, lightweight, and easy to use**, while still provi
 - **Custom Route Handlers**: Seamless integration for custom routes such as API endpoints, components, and pages.
 - **Built-In Development Server**: Includes a server that watches for file changes and reloads the application automatically.
 - **Modern web standards**: Built on modern web standards including custom elements, view transitions, but ensuring compatibility with older browsers (not all though, bye bye IE11).
-- **Small size**: PigletJS is designed to be lightweight, with a small footprint that makes it easy to include in your projects. It currently does not have production build, but even now, setup script result is around **100KB**.
+- **Small size**: PigletJS is designed to be lightweight, with a small footprint that makes it easy to include in your projects. It currently does not have production build, but even now, setup script result is around **150KB**.
 This can, and will, be reduced in the future by removing unnecessary features and optimizing the code. Production build will also be available in the future that could even halve the size of the framework by removing hot reload, watcher etc.
 </details>
 
