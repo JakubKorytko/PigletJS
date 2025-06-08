@@ -1,6 +1,7 @@
 import ReactiveComponent from "./ReactiveComponent.d";
 import ReactiveDummyComponent from "./ReactiveDummyComponent.d";
 import type { api } from "../helpers.d";
+import type { HerdInterface } from "./Herd.d";
 
 /** Root component of the application, handles routing and component loading. */
 declare class AppRoot extends ReactiveComponent {
@@ -66,9 +67,14 @@ declare class AppRoot extends ReactiveComponent {
     RDC: typeof ReactiveDummyComponent; // ReactiveDummyComponent class
   };
 
-  navigate: (route: string) => boolean; // Navigate function for changing routes
+  /** Function to navigate to a new route */
+  navigate: (route: string) => boolean;
 
-  api: api; // API instance for making requests
+  /** API instance for making requests */
+  api: api;
+
+  /** Herd instance for state management */
+  herd: HerdInterface;
 
   /** Resets the application state and component counter */
   reset: () => void;

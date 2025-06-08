@@ -1,5 +1,5 @@
 import { Reason } from "../CONST";
-import {AppRoot} from "./AppRoot.d";
+import { AppRoot } from "./AppRoot.d";
 
 type Internal = {
   owner: ReactiveComponent | undefined;
@@ -73,7 +73,7 @@ declare class ReactiveComponent extends HTMLElement {
   states: Record<string, StateValue<unknown>>;
 
   /** Reference to the AppRoot component */
-  root: AppRoot
+  root: AppRoot;
 
   /** All the data for manipulating the tree and reactivity */
   internal: Internal;
@@ -120,7 +120,12 @@ declare class ReactiveComponent extends HTMLElement {
   ): { value: T };
 
   /** Internal hook called when a state value changes */
-  stateChange<T>(value: T, property: string, prevValue: T): void;
+  stateChange<T>(
+    value: T,
+    property: string,
+    prevValue: T,
+    isCalledByHerd?: boolean,
+  ): void;
 
   /** Dynamically load the component script (can be overridden) */
   runScript(reason: Reason): Promise<void>;

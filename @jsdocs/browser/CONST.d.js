@@ -104,6 +104,7 @@
  *   reason: {
  *     attributesChange: (changes: AttributeChange[]) => Reason, // Attributes change reason
  *     parentUpdate: Reason, // Parent update reason
+ *     herdUpdate: (changes: Array<unknown>) => Reason, // Herd update reason
  *     stateChange: (changes: Array<unknown>) => Reason, // State change reason
  *     fragmentInjected: Reason, // Fragment injected reason
  *     WSReload: Reason
@@ -114,6 +115,7 @@
  *   appRootName: string, // App root name
  *   appRootTag: string, // App root tag
  *   stopComponentScriptExecution: string, // Stop component script execution message
+ *   symbols: Record<string, unique symbol>, // Symbols used in PigletJS
  * }} Constants
  * PigletJS constants object, used to store widely used values.
  */

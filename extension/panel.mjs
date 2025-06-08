@@ -1,6 +1,6 @@
 // noinspection JSUnresolvedReference
 
-import { updateDOM } from "./src/helpers.mjs";
+import { updateDOM, attachMutationObserver } from "./src/helpers.mjs";
 
 /** @type {import("./src/chrome.d.js").Chrome} */
 const chromeExtension = globalThis.chrome;
@@ -9,6 +9,8 @@ let port;
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!port) port = chromeExtension.runtime.connect();
+
+  attachMutationObserver(document.getElementById("state"));
 
   document.querySelectorAll(".tab").forEach((tab) =>
     tab.addEventListener("click", () => {

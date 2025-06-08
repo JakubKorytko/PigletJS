@@ -83,6 +83,7 @@ interface Constants {
     attributesChange: (changes: AttributeChange[]) => Reason;
     parentUpdate: Reason;
     onMount: Reason;
+    herdUpdate: (changes: Array<unknown>) => Reason;
     stateChange: (changes: Array<unknown>) => Reason;
     fragmentInjected: Reason;
     WSReload: Reason;
@@ -93,6 +94,7 @@ interface Constants {
   appRootName: string;
   appRootTag: string;
   stopComponentScriptExecution: string;
+  symbols: Record<string, unique symbol>;
 }
 
 declare const CONST: Constants;

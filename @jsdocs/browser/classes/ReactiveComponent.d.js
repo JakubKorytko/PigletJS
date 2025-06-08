@@ -95,7 +95,7 @@ class BaseReactiveComponentInterface {
   /**
    * @template T
    * Record of states that was created in the component
-   * @type {Record<string, StateValue<T>>}
+   * @type {Record<string, StateValue<T> | [StateValue<T>, ]>}
    */
   states = {};
 
@@ -210,9 +210,10 @@ class BaseReactiveComponentInterface {
    * @param {T} value - The new value of the state
    * @param {string} property - The property that changed
    * @param {T} prevValue - The previous value of the state
+   * @param {boolean} [isCalledByHerd=false] - Whether the change was called by Herd
    * @returns {void}
    */
-  stateChange(value, property, prevValue) {}
+  stateChange(value, property, prevValue, isCalledByHerd) {}
 
   /**
    * Run the script of the component by dynamic import

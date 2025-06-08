@@ -7,3 +7,4 @@ export * from "./ReactiveDummyComponent.d.ts";
 export * from "./AppContent.d.ts";
 export * from "./KinderGarten.d.ts";
 export * from "./NavLink.d.ts";
+export * from "./Herd.d.ts";

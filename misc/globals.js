@@ -115,6 +115,31 @@ let $B;
 let $$P;
 
 /**
+ * Herd instance for managing global state and observers.
+ * @type {Record<string, any> & {
+ *     observe: (target: string) => void,
+ *     unobserve: (target: string) => void,
+ * }}
+ */
+let $H;
+
+/**
+ * [This is the same interface as `$H` but supports deep reactivity]
+ * Herd instance for managing global state and observers with deep reactivity.
+ * @type {Record<string, any> & {
+ *    observe: (target: string) => void,
+ *    unobserve: (target: string) => void,
+ * }}
+ */
+let $$H;
+
+/**
+ * A reason for the component script execution.
+ * @type {Reason}
+ */
+let $reason;
+
+/**
  * Callback called before the component is updated.
  * If the callback returns `false`, the update is canceled.
  * @type {Function} $onBeforeUpdate

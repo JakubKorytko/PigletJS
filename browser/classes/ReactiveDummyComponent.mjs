@@ -1,6 +1,7 @@
 /** @import {BaseReactiveDummyComponentInterface, ReactiveDummyVirtualMembers, ReactiveDummyMembers} from "@Piglet/browser/classes/ReactiveDummyComponent.d" */
 
 import { useObserver } from "@Piglet/browser/hooks";
+import { setNativeAttributes } from "@Piglet/browser/helpers";
 
 /** @implements {BaseReactiveDummyComponentInterface} */
 class ReactiveDummyComponent extends HTMLElement {
@@ -22,6 +23,8 @@ class ReactiveDummyComponent extends HTMLElement {
 
   constructor(attrs, root) {
     super();
+
+    setNativeAttributes.call(this);
 
     this.root = root ?? this.root;
     this.__componentId = `${crypto.getRandomValues(new Uint8Array(1))}${Date.now()}`;

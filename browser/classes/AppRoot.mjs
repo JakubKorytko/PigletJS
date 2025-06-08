@@ -10,6 +10,7 @@ import {
 import CONST from "@Piglet/browser/CONST";
 import { buildComponentTree } from "@Piglet/browser/tree";
 import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent";
+import Herd from "@Piglet/browser/classes/Herd";
 
 /**
  * Injected using parser
@@ -70,6 +71,7 @@ class AppRoot extends ReactiveComponent {
 
   constructor(attrs) {
     super(attrs);
+    this.herd = new Herd(this);
     this.api = api;
     this.navigate = navigate.bind(this);
     this.addPopStateListener();
@@ -112,6 +114,8 @@ class AppRoot extends ReactiveComponent {
    */
   reset() {
     this.state = {};
+    this.globalState = {};
+    this.__proxyCache = new WeakMap();
     this.componentCounter = 0;
   }
 
@@ -299,7 +303,9 @@ class AppRoot extends ReactiveComponent {
   extractCustomTags(pageSource) {
     const tags = new Set();
     let match;
-    while ((match = CONST.tagRegex.exec(pageSource)) !== null) {
+
+    const clonedRegex = new RegExp(CONST.tagRegex.source, "g");
+    while ((match = clonedRegex.exec(pageSource)) !== null) {
       const tag = match[1];
       if (tag.includes("-") && !["app-content"].includes(tag)) {
         tags.add(tag);

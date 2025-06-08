@@ -5,6 +5,34 @@ const chromeExtension = globalThis.chrome;
 
 let pigletSupport = true;
 
+const wasStateClearedRef = {
+  value: null,
+};
+
+/**
+ * Attaches a `MutationObserver` to a DOM node to monitor for changes in its child elements.
+ * Specifically, it observes for the removal of `<ul>` elements and updates a reference
+ * (`wasStateClearedRef.value`) to the currently focused element when such a removal occurs.
+ *
+ * @param {Node} node - The DOM node to observe for mutations.
+ */
+function attachMutationObserver(node) {
+  const observer = new MutationObserver((mutationsList) => {
+    for (const mutation of mutationsList) {
+      for (const removedNode of mutation.removedNodes) {
+        if (removedNode.tagName === "UL") {
+          wasStateClearedRef.value = document.activeElement;
+        }
+      }
+    }
+  });
+
+  observer.observe(node, {
+    childList: true,
+    subtree: true,
+  });
+}
+
 function renderTree(tree) {
   if (!tree || typeof tree !== "object") return document.createTextNode("");
 
@@ -83,7 +111,7 @@ function parseValue(value) {
  *   stateName: string,
  *   path: string[],
  *   value: any
- * }} An object with:
+ * } | undefined} An object with:
  *   - `stateName`: the top-level state identifier,
  *   - `key`: the direct key in the state object (second segment),
  *   - `path`: the remaining nested path (from the third segment onward),
@@ -91,10 +119,25 @@ function parseValue(value) {
  */
 const setStateProperty = (input) => {
   const parts = input.dataset.path.split(".");
-  const lastPart = parts.pop();
+
+  if (parts.length < 2) {
+    console.error(
+      `Invalid data-path format: "${input.dataset.path}". Expected at least two segments.`,
+    );
+    return;
+  }
+
+  if (parts.length === 2) {
+    return {
+      key: parts.at(1),
+      stateName: parts.at(0),
+      value: parseValue(input.value),
+      path: [],
+    };
+  }
 
   return {
-    key: parts.length === 1 ? lastPart : parts.at(1),
+    key: parts.at(1),
     stateName: parts.at(0),
     path: parts.slice(2),
     value: parseValue(input.value),
@@ -107,13 +150,27 @@ const addStateListeners = (port) => {
       /** @type {HTMLInputElement} */
       input,
     ) => {
+      input.initialValue ??= input.value;
+
       input.addEventListener("blur", () => {
+        if (wasStateClearedRef.value === input) return;
+        if (input.value === input.initialValue) return;
+
+        const data = setStateProperty(input);
+
+        if (!data) return;
+
         port.postMessage({
           type: "MODIFY_STATE",
-          payload: setStateProperty(input),
+          payload: data,
           source: "PIGLET_PANEL",
           tabId: chromeExtension.devtools?.inspectedWindow?.tabId,
         });
+      });
+
+      input.addEventListener("focus", () => {
+        if (wasStateClearedRef.value === input) return;
+        input.initialValue = input.value;
       });
 
       input.addEventListener("keydown", (e) => {
@@ -201,15 +258,17 @@ function updateStateTreePreservingUI(container, newState) {
 
   const active = document.activeElement;
   let focusKey = null;
-  let focusParent = null;
+  let focusInitialValue = null;
+  let focusValue = null;
   let selectionStart = null;
 
   if (
     active?.classList.contains("state-input") &&
     active instanceof HTMLInputElement
   ) {
-    focusKey = active.dataset.key;
-    focusParent = active.dataset.parent;
+    focusKey = active.dataset.path;
+    focusInitialValue = active.initialValue;
+    focusValue = active.value;
     selectionStart = active.selectionStart;
   }
 
@@ -226,9 +285,13 @@ function updateStateTreePreservingUI(container, newState) {
   });
 
   if (focusKey !== null) {
-    const selector = `.state-input[data-key="${focusKey}"][data-parent="${focusParent}"]`;
+    const selector = `.state-input[data-path="${focusKey}"]`;
     const newInput = container.querySelector(selector);
     if (newInput) {
+      if (focusInitialValue !== focusValue) {
+        newInput.value = focusValue;
+        newInput.initialValue = focusInitialValue;
+      }
       newInput.focus();
       if (selectionStart !== null) {
         newInput.setSelectionRange(selectionStart, selectionStart);
@@ -258,6 +321,9 @@ function updateDOM(type, payload, port) {
     updateTreePreservingUI(document.getElementById("tree"), payload);
   }
   addStateListeners(port);
+  if (type === "STATE_UPDATE" || type === "INITIAL_DATA") {
+    wasStateClearedRef.value = null;
+  }
 }
 
-export { updateDOM };
+export { updateDOM, attachMutationObserver };

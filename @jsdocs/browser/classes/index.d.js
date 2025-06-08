@@ -7,3 +7,4 @@ export * from "./ReactiveDummyComponent.d.js";
 export * from "./AppContent.d.js";
 export * from "./KinderGarten.d.js";
 export * from "./NavLink.d.js";
+export * from "./Herd.d.js";

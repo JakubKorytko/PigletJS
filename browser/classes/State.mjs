@@ -2,6 +2,8 @@
 
 import CONST from "@Piglet/browser/CONST";
 
+const { nestedDeepProxyMarker, setViaGetterMarker } = CONST.symbols;
+
 /**
  * @template T
  * @implements {StateInterface<T>}
@@ -18,7 +20,10 @@ class State {
 
   constructor(initialValue, asRef = false, avoidClone = false) {
     this._avoidClone = avoidClone;
-    this._state = this.cloneState(initialValue);
+    this._state =
+      initialValue?.[1] === nestedDeepProxyMarker
+        ? initialValue[0]
+        : this.cloneState(initialValue);
     this._isRef = asRef;
   }
 
@@ -49,7 +54,11 @@ class State {
    */
   setState(newState) {
     const oldState = this._state;
-    this._state = this.cloneState(newState);
+
+    this._state =
+      newState?.[1] === nestedDeepProxyMarker
+        ? newState[0]
+        : this.cloneState(newState);
     if (!this._isRef) {
       this._notify(oldState);
     } else {
@@ -62,7 +71,7 @@ class State {
    * @returns {StateMembers["cloneState"]["ReturnType"]}
    */
   cloneState(state) {
-    if (this._avoidClone) {
+    if (this._avoidClone || state === setViaGetterMarker) {
       return state;
     }
 
@@ -71,7 +80,7 @@ class State {
     try {
       clone = structuredClone(state);
     } catch (error) {
-      Piglet.log(CONST.pigletLogs.cloneWarning, CONST.coreLogsLevels.warn, {
+      console.pig(CONST.pigletLogs.cloneWarning, CONST.coreLogsLevels.warn, {
         error,
         state,
       });

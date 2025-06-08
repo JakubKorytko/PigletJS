@@ -217,6 +217,8 @@ const generateComponentData = function (hostElement) {
       $navigate: hostElement.root.navigate,
       $api: hostElement.root.api,
       $types: hostElement.root.types,
+      $H: hostElement.root.herd.shallow(hostElement),
+      $$H: hostElement.root.herd.deep(hostElement),
     },
     callbacks: {
       $onBeforeUpdate: (callback) => {

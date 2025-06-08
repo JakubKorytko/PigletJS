@@ -241,6 +241,8 @@ export default {
       $B,
       $$,
       $$P,
+      $H,
+      $$H,
       $this,
       $document,
       out,

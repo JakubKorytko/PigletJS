@@ -101,6 +101,10 @@ const CONST = {
     WSReload: {
       name: "WS Reload",
     },
+    herdUpdate: (changes) => ({
+      name: "herdUpdate",
+      data: changes,
+    }),
     stateChange: (changes) => ({
       name: "stateChange",
       data: changes,
@@ -113,6 +117,10 @@ const CONST = {
   appRootName: "AppRoot",
   appRootTag: "app-root",
   stopComponentScriptExecution: "stopComponentScriptExecution",
+  symbols: {
+    nestedDeepProxyMarker: Symbol(),
+    setViaGetterMarker: Symbol(),
+  },
 };
 
 export default CONST;

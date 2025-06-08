@@ -7,6 +7,7 @@ import {
   fetchComponentData,
   extractComponentTagsFromString,
   fetchWithCache,
+  setNativeAttributes,
 } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
 import scriptRunner, {
@@ -116,6 +117,8 @@ class ReactiveComponent extends HTMLElement {
 
   constructor(attrs, root) {
     super();
+
+    setNativeAttributes.call(this);
 
     if (this.constructor.name === CONST.appRootName) {
       // Unfortunately, due to super constructor being called first, we need to set these properties here
@@ -344,7 +347,7 @@ class ReactiveComponent extends HTMLElement {
    * @type {ReactiveMembers["stateChange"]["Type"]}
    * @returns {ReactiveMembers["stateChange"]["ReturnType"]}
    */
-  stateChange(value, property, prevValue) {
+  stateChange(value, property, prevValue, isCalledByHerd = false) {
     this.#batchedChanges.push({ value, property, prevValue });
 
     if (!this.#pendingStateUpdate) {
@@ -354,7 +357,11 @@ class ReactiveComponent extends HTMLElement {
         this.#batchedChanges = [];
         this.#pendingStateUpdate = false;
 
-        this.__mountCallback(CONST.reason.stateChange(changes));
+        this.__mountCallback(
+          isCalledByHerd
+            ? CONST.reason.herdUpdate(changes)
+            : CONST.reason.stateChange(changes),
+        );
       });
     }
   }

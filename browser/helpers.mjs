@@ -100,6 +100,8 @@ const navigate = function (route) {
   return true;
 };
 
+const { setViaGetterMarker, nestedDeepProxyMarker } = CONST.symbols;
+
 /** @type {GetMountedComponentsByTag} */
 const getMountedComponentsByTag = function (tagName, root) {
   const componentRefs = [];
@@ -115,11 +117,43 @@ const getMountedComponentsByTag = function (tagName, root) {
   return componentRefs;
 };
 
+/**
+ * Sets native attributes on a Node element.
+ * This function should be called with 'this' bound to a Node element via bind/call/apply.
+ * @param {Record<string, unknown>} attrs - An object containing attribute names and values to set on the element.
+ * @returns {void}
+ */
+function setNativeAttributes(attrs) {
+  for (const attr of Object.entries(attrs ?? {})) {
+    const [name, attrValue] = attr;
+    const value = String(attrValue);
+
+    switch (name) {
+      case "class":
+        this.classList.add(...value.split(" "));
+        break;
+      case "style":
+        this.style.cssText = value;
+        break;
+      case "id":
+        this.id = value;
+        break;
+      default:
+        break;
+    }
+  }
+}
+
 /** @type {Record<string, NodeJS.Timeout | number>} */
 const debounceTimers = {};
 
 /** @type {SendToExtension} */
 const sendToExtension = (requestType, root) => {
+  if (root.__componentName === "Herd") {
+    root.config = root.originalRoot.config;
+    root.extension = root.originalRoot.extension;
+  }
+
   if (!root.config.allowDebugging) return;
 
   if (window.pigletExtensionCallbacks && !Object.keys(root.extension).length) {
@@ -129,13 +163,21 @@ const sendToExtension = (requestType, root) => {
     window.pigletExtensionDebugRoot = root;
   }
 
-  const api = root.extension;
+  const { sendTreeUpdate, sendInitialData, sendStateUpdate } = root.extension;
 
-  const actions = {
-    initial: api?.sendInitialData.bind(root, root),
-    state: api?.sendStateUpdate.bind(root, root),
-    tree: api?.sendTreeUpdate.bind(root, root),
-  };
+  const actions = {};
+
+  if (typeof sendTreeUpdate === "function") {
+    actions.tree = sendTreeUpdate.bind(root, root);
+  }
+
+  if (typeof sendInitialData === "function") {
+    actions.initial = sendInitialData.bind(root, root);
+  }
+
+  if (typeof sendStateUpdate === "function") {
+    actions.state = sendStateUpdate.bind(root, root);
+  }
 
   const action = actions[requestType];
   if (typeof action !== "function") return;
@@ -287,9 +329,7 @@ const $create = function (strings, ...values) {
   }
 
   const originalTag = tagMatch[1];
-  const kebabTag = originalTag
-    .replace(/([a-z])([A-Z])/g, "$1-$2")
-    .toLowerCase();
+  const kebabTag = toKebabCase(originalTag);
 
   const attrs = values.find((v) => typeof v === "object" && v !== null);
   attrs.parent = this;
@@ -408,10 +448,12 @@ const createStateProxy = function (asRef, host) {
         if (typeof prop === "symbol") return undefined;
 
         if (!(prop in host.states)) {
-          host.states[prop] = host.state(prop, undefined, asRef);
+          host.states[prop] = host.state(prop, setViaGetterMarker, asRef);
         }
 
-        return host.states[prop].value;
+        const value = host.states[prop].value;
+
+        return value === setViaGetterMarker ? undefined : value;
       },
 
       set(target, prop, value) {
@@ -420,15 +462,15 @@ const createStateProxy = function (asRef, host) {
         const key = String(prop);
 
         const isUsingUse = value && value.__piglet_use_marker === true;
+        const isSetViaGetter = host.states?.[key]?.value === setViaGetterMarker;
         const initialValue = isUsingUse ? value.initialValue : value;
         const { avoidClone } = isUsingUse ? value : { avoidClone: false };
 
         if (!(key in host.states)) {
           host.states[key] = host.state(key, initialValue, asRef, avoidClone);
-        } else if (!isUsingUse) {
+        } else if (!isUsingUse || isSetViaGetter) {
           const state = host.states[key];
-
-          state.value = value;
+          state.value = isSetViaGetter ? initialValue : value;
         }
 
         return true;
@@ -481,12 +523,16 @@ const createNestedStateProxy = function (asRef, host) {
         if (typeof prop === "symbol") return undefined;
 
         if (!(prop in host.states)) {
-          host.states[prop] = host.state(prop, undefined, asRef);
+          host.states[prop] = host.state(prop, setViaGetterMarker, asRef);
           const state = host.states[prop];
           if (typeof state.value === "object" && state.value !== null) {
-            state.value = createDeepOnChangeProxy(state.value, host.root, () =>
-              host.root.globalState[host.__componentKey]._notify?.(),
-            );
+            state.value = [
+              createDeepOnChangeProxy(state.value, host.root, () => {
+                host.root.globalState[host.__componentKey][key]._notify?.();
+                sendToExtension(CONST.extension.state, host.root);
+              }),
+              nestedDeepProxyMarker,
+            ];
           }
         }
 
@@ -499,6 +545,7 @@ const createNestedStateProxy = function (asRef, host) {
         const key = String(prop);
 
         const isUsingUse = value && value.__piglet_use_marker === true;
+        const isSetViaGetter = host.states?.[key]?.value === setViaGetterMarker;
         const { avoidClone } = isUsingUse ? value : { avoidClone: false };
         const initialValue = isUsingUse ? value.initialValue : value;
         if (!(key in host.states)) {
@@ -510,15 +557,23 @@ const createNestedStateProxy = function (asRef, host) {
                 host.root.globalState[host.__componentKey][key]._notify?.(),
               );
           }
-        } else if (!isUsingUse) {
+        } else if (!isUsingUse || isSetViaGetter) {
           const state = host.states[key];
 
           if (typeof value === "object" && value !== null) {
-            state.value = createDeepOnChangeProxy(value, host.root, () =>
-              host.root.globalState[host.__componentKey][key]._notify?.(),
-            );
+            state.value = [
+              createDeepOnChangeProxy(
+                isSetViaGetter ? initialValue : value,
+                host.root,
+                () => {
+                  host.root.globalState[host.__componentKey][key]._notify?.();
+                  sendToExtension(CONST.extension.state, host.root);
+                },
+              ),
+              nestedDeepProxyMarker,
+            ];
           } else {
-            state.value = value;
+            state.value = isSetViaGetter ? initialValue : value;
           }
         }
 
@@ -547,4 +602,5 @@ export {
   createDeepOnChangeProxy,
   useMarkerGenerator,
   pageRevealCallback,
+  setNativeAttributes,
 };

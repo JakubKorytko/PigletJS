@@ -1,6 +1,7 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 /** @import {Navigate, Api} from "@jsdocs/browser/helpers.d" */
+/** @import {HerdInterface} from "@Piglet/browser/classes/Herd.d" */
 
 import { VirtualReactiveComponentInterface } from "@jsdocs/browser/classes/ReactiveComponent.d";
 import {buildComponentTree} from "@Piglet/browser/tree";
@@ -149,6 +150,12 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * @type {string}
    */
   route;
+
+  /**
+   * Reference to the herd instance
+   * @type {HerdInterface}
+   */
+  herd;
 
   /**
    * Fetches layout paths from the server

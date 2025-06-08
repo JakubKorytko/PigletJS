@@ -175,16 +175,19 @@ const injectInnerHTMLToComponent = (
   const componentTags = extractComponentTagsFromString(html);
 
   componentTags.forEach((tag) => {
+    const selfClosingTagRegex = new RegExp(
+      `<\\s*${tag}(|(\\s([^>]*)))\/>`,
+      "g",
+    );
     const kebabTag = toKebabCase(tag);
 
-    const selfClosingTagRegex = new RegExp(`<\\s*${tag}([^>]*)/>`, "g");
     modifiedContent = modifiedContent.replace(
       selfClosingTagRegex,
       `<${kebabTag}$1></${kebabTag}>`,
     );
 
     modifiedContent = modifiedContent.replace(
-      new RegExp(`<\\s*${tag}([^>]*)>`, "g"),
+      new RegExp(`<\\s*${tag}(|(\\s([^>]*)))>`, "g"),
       `<${kebabTag}$1>`,
     );
     modifiedContent = modifiedContent.replace(

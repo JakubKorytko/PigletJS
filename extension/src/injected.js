@@ -1,3 +1,15 @@
+let previousState;
+
+/**
+ * @typedef {{
+ * globalState: Object<string, any>,
+ * herd: {
+ *   globalState: Object<string, any>,
+ * },
+ * __componentName: string,
+ * }} PigletMinimalComponentProperties
+ */
+
 /**
  * Transforms the component state into a simplified structure for easier handling.
  * It extracts the state from the provided input object, which represents the state
@@ -11,15 +23,15 @@ function transformComponentState(input) {
 
   for (const component in input) {
     const componentData = input[component];
-    const state = {};
+    let state = {};
 
     for (const stateKey in componentData) {
       const stateData = componentData[stateKey];
 
       if (stateData._state !== undefined) {
         state[stateKey] = stateData._state;
-      } else if (stateData._state?.object) {
-        state[stateKey] = stateData?._state.object;
+      } else if (stateKey === "_state") {
+        state = { ...state, ...extractSimpleData(stateData) };
       }
     }
 
@@ -79,33 +91,75 @@ const setDeep = (obj, keys, value) => {
 /**
  * Updates the state of a specific component by setting the new state value.
  *
+ * @param {PigletMinimalComponentProperties} root - The root object containing the global state and Herd state.
  * @param {string} key - The key identifying the component.
  * @param {string} stateName - The name of the state to update.
  * @param {any} value - The new value to set for the state.
  * @param {Array<string|number>} path - The path to the specific state property to update.
  */
 function updateState(root, key, stateName, value, path) {
-  const state = root.globalState[stateName][key];
+  let state;
+
+  if (stateName === "Herd") {
+    if (root.__componentName === "Herd") {
+      state = root.globalState[key];
+    } else {
+      state = root.herd.globalState[key];
+    }
+  } else {
+    state = root.globalState[stateName][key];
+  }
+
+  if (!state) {
+    console.error(
+      `State "${stateName}" with key "${key}" not found in global state.`,
+    );
+    return;
+  }
+
   if (path.length > 0) {
     setDeep(state._state, path, value);
     state._notify();
   } else {
     state.setState(value);
   }
+
+  previousState = mergeHerdWithGlobalState(root);
 }
+
+/**
+ * Merges the global state and the Herd state into a single object.
+ * This function simplifies and transforms the global state and Herd state,
+ * then combines them into a unified structure.
+ *
+ * @param {PigletMinimalComponentProperties} root - The root object containing the global state and Herd state.
+ * @returns {Object} - The merged state object, including both the global state and Herd state.
+ */
+const mergeHerdWithGlobalState = (root) => {
+  const simplifiedState = extractSimpleData(root.globalState);
+  const transformedState = transformComponentState(simplifiedState);
+
+  if (root.__componentName === "Herd") {
+    return { ...previousState, Herd: { ...transformedState } };
+  }
+
+  previousState = { ...transformedState };
+
+  const simplifiedHerd = extractSimpleData(root.herd.globalState);
+  const transformedHerd = transformComponentState(simplifiedHerd);
+
+  return { ...transformedState, Herd: { ...transformedHerd } };
+};
 
 /**
  * Sends a state update to the parent window. This sends the current state of
  * all components after transforming and simplifying it.
  */
 function sendStateUpdate(root) {
-  const simplifiedState = extractSimpleData(root.globalState);
-  const transformedState = transformComponentState(simplifiedState);
-
   window.postMessage(
     {
       type: "STATE_UPDATE",
-      payload: transformedState,
+      payload: mergeHerdWithGlobalState(root),
       source: "PIGLET_INJECTED",
     },
     window.location.origin,
@@ -135,15 +189,13 @@ function sendTreeUpdate(root) {
  * This is typically used when the extension is first loaded or when a new request is made.
  */
 function sendInitialData(root) {
-  const simplifiedState = extractSimpleData(root.globalState);
-  const transformedState = transformComponentState(simplifiedState);
   const simplifiedTree = extractSimpleData(root.tree);
 
   window.postMessage(
     {
       type: "INITIAL_DATA",
       payload: {
-        state: transformedState,
+        state: mergeHerdWithGlobalState(root),
         tree: simplifiedTree,
       },
       source: "PIGLET_INJECTED",
@@ -172,6 +224,7 @@ window.addEventListener("message", (event) => {
   }
 });
 
+// noinspection JSUnusedGlobalSymbols
 window.pigletExtensionCallbacks = {
   sendInitialData,
   sendTreeUpdate,
