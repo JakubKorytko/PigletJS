@@ -17,8 +17,9 @@ Aside from boolean expressions, you can set to condition to one of the following
 
 - `$attrs.{...}`: This allows you to use attributes from the parent component as the condition.
 - `${...}`: This allows you to use a state/ref variable from the parent component as the condition.
+- `H${...}`: This allows you to use a herd variable as the condition.
 - `!{...}`: This allows you to use a state/ref variable from the parent component as the condition, but negated (i.e. `!$isVisible` will render the content if `$isVisible` is `false`).
-  The same apply to `$attrs` attributes, so `!$attrs.isVisible` will render the content if the `isVisible` attribute is not set or is set to a falsy value.
+  The same apply to `$attrs` and `H$` attributes, so `!$attrs.isVisible` will render the content if the `isVisible` attribute is not set or is set to a falsy value.
 
 **By 'parent component', I mean the component that contains the `<RenderIf />` component in its template.**
 
@@ -52,6 +53,12 @@ Aside from boolean expressions, you can set to condition to one of the following
     <p>
       This content is conditionally rendered based on the isVisible attribute,
       but negated.
+    </p>
+  </RenderIf>
+  <RenderIf condition="!H$myHerd.isAwesome">
+    <p>
+      This content is conditionally rendered based on the isAwesome herd
+      variable, but negated.
     </p>
   </RenderIf>
 </content>

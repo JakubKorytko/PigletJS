@@ -6,6 +6,11 @@ That can be achieved by passing attributes, but it can be cumbersome if you have
 Herd is a special mechanism that allows you to create state that is shared between multiple components and can be accessed by components at any level
 of the component tree without passing it through attributes.
 
+Herd, is also an only state that is persistent across navigations (except for components inside layouts, which are not destroyed on navigation if layout has not been changed).
+meaning that if you navigate to another page and then back, the herd will still be available.
+
+It can be treated as context in React, but applied to root component - thus it is available to all components in the application.
+
 ### Creating a Herd
 
 To create a herd, you can use the `$H` object, which is a special object available in the component's script.
