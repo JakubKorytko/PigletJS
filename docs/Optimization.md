@@ -1,4 +1,5 @@
 ## Delayed pass
+
 <p id="top" style="position: absolute; top: -50px"></p>
 
 PigletJS supports a feature called "delayed pass" that allows you to optimize the rendering of your components by deferring updates of its children.
@@ -55,8 +56,8 @@ You can also pass `fragment` attribute using the `.pass()` method in your compon
 ```html
 <script>
   // Your component code here
-  $element('CustomComponent').pass({
-    fragment: true
+  $element("CustomComponent").pass({
+    fragment: true,
   });
 </script>
 ```

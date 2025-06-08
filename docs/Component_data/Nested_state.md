@@ -32,8 +32,8 @@ const interval = setInterval(() => {
 }, 1000);
 
 $onBeforeUpdate(() => {
-    clearInterval(interval);
-})
+  clearInterval(interval);
+});
 ```
 
 Usage of nested state is the same as for [normal state](Component_data/State), the only difference is you use it with the `$$P` object instead of `$P`.

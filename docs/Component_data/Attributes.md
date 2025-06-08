@@ -5,7 +5,6 @@ They allow you to customize the behavior and appearance of components by providi
 
 You can pass attributes using the [`pass()`](DOM#element-selectors) method on a component instance proxy returned by [`$element(selector)`](DOM#element-selectors).
 
-
 ```javascript
 // MyParentComponent.pig.mjs
 $element("MyComponent").pass({
@@ -35,6 +34,7 @@ $element("MyComponent").pass({
   myObject: { key: "value" },
 });
 ```
+
 Or
 
 ```javascript
@@ -70,11 +70,10 @@ $element("MyComponent").pass({
   myObject: $B.myObject,
 });
 
-$element('button').on('click', () => {
+$element("button").on("click", () => {
   $B.myObject.key = "new value";
   $P.rerender = !$P.rerender; // Trigger re-render of the component
 });
-
 ```
 
 This can be resolved in two ways:
@@ -83,7 +82,7 @@ This can be resolved in two ways:
 
 ```javascript
 /** same code as above */
-$element('button').on('click', () => {
+$element("button").on("click", () => {
   $B.myObject = { key: "new value" }; // Replace the whole object
   $P.rerender = !$P.rerender; // Trigger re-render of the parent component
 });
@@ -96,12 +95,12 @@ $element('button').on('click', () => {
 $B.myObject = $$({ key: "value" });
 $P.rerender = $$(true); // This is here to trigger re-render of the parent component later as refs are not reactive by themselves
 $element("MyComponent").pass({
-    myObject: Object.assign({}, $B.myObject),
+  myObject: Object.assign({}, $B.myObject),
 });
 
-$element('button').on('click', () => {
-    $B.myObject.key = "new value";
-    $P.rerender = !$P.rerender; // Trigger re-render of the component
+$element("button").on("click", () => {
+  $B.myObject.key = "new value";
+  $P.rerender = !$P.rerender; // Trigger re-render of the component
 });
 ```
 

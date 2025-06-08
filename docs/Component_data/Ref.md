@@ -32,7 +32,7 @@ $B.counter = {
 
 ### Reactivity
 
-Refs are not reactive by default, meaning that changes to their values will not trigger a re-render of the component. 
+Refs are not reactive by default, meaning that changes to their values will not trigger a re-render of the component.
 
 The only exception for this is `RenderIf` component, which get proper callback when the ref of its parent component changes, so it can re-evaluate the condition and re-render itself if needed.
 

@@ -1,4 +1,5 @@
 ## Navigation in JavaScript :id=navigation
+
 <p id="top" style="position: absolute; top: -50px"></p>
 
 PigletJS provides a simple way to navigate between pages using the `$navigate` function inside your components.
@@ -68,3 +69,8 @@ const response = await $api(
 - It provides a simple way to make API calls and handle the response, without having to worry about the details of the `fetch` function.
 - It automatically handles the response parsing based on the `expect` parameter, making it easier to work with different response types.
 - You can avoid writing full URLs for your API endpoints, as `$api` automatically resolves the path relative to the `server/api` directory.
+
+## `$reason`
+
+Every PigletJS component has a `$reason` object that contains information about the reason for the current re-rendering of the component.
+This object can be used to determine why the component is being re-rendered and to optimize the rendering process.

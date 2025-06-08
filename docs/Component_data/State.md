@@ -53,7 +53,7 @@ $P.counter = $$({
   count: 0,
 });
 
-$element('ChildComponent').pass({
+$element("ChildComponent").pass({
   counter: $P.counter,
 });
 ```

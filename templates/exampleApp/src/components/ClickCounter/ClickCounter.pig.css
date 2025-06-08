@@ -1,29 +1,29 @@
 section {
-    position: relative;
-    width: 294px;
-    height: 400px;
+  position: relative;
+  width: 294px;
+  height: 400px;
 
-    main {
-        transform-origin: top left;
-        transform: scale(0.48);
-        width: calc(100% / 0.48);
-        height: calc(100% / 0.48);
-    }
+  main {
+    transform-origin: top left;
+    transform: scale(0.48);
+    width: calc(100% / 0.48);
+    height: calc(100% / 0.48);
+  }
 
-    footer {
-        position: absolute;
-        right: 25px;
-        bottom: -15px;
-        transform-origin: bottom right;
-        transform: scale(0.24);
-    }
+  footer {
+    position: absolute;
+    right: 25px;
+    bottom: -15px;
+    transform-origin: bottom right;
+    transform: scale(0.24);
+  }
 
-    area {
-        cursor: pointer;
-    }
+  area {
+    cursor: pointer;
+  }
 
-    img {
-        cursor: default;
-        user-select: none;
-    }
+  img {
+    cursor: default;
+    user-select: none;
+  }
 }

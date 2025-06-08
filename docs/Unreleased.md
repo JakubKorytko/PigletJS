@@ -1,4 +1,5 @@
 ## Asynchronous render callbacks
+
 <p id="top" style="position: absolute; top: -50px"></p>
 
 PigletJS supports asynchronous components, allowing you to load components dynamically when needed.
@@ -86,13 +87,6 @@ src/
         index.pig.html
         index.pig.css
 ```
-
-## Context API
-
-Other frameworks like React have a Context API that allows you to pass data through the component tree without having to pass props down manually at every level.
-This is useful for global data like themes, user information, or settings that many components might need access to.
-**While it is not implemented in PigletJS yet, it is a feature that will be added at some point (sooner rather than later).**
-There is already a solid foundation for this, thanks to how fragments work, so it should be relatively straightforward to implement.
 
 ## Better server status view
 

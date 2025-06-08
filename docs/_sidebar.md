@@ -34,6 +34,7 @@
   - [Nested state](Component_data/Nested_state)
   - [Ref](Component_data/Ref)
   - [Before & after update](Component_data/Before_and_after_update)
+  - [Herd](Component_data/Herd)
 
 - [Helpers](Helpers#top)
 
@@ -41,6 +42,7 @@
     - [Why use $navigate?](Helpers#navigate-why)
   - [API calls](Helpers#api-calls)
     - [Why use $api?](Helpers#api-why)
+  - [$reason](Helpers#reason)
 
 - [DOM](DOM#top)
 
@@ -70,7 +72,6 @@
   - [Extension styling](Unreleased#extension-styling)
   - [Custom transition view animations](Unreleased#custom-transition-view-animations)
   - [Support for index.pig.{ext}](Unreleased#support-for-indexpigext-files)
-  - [Context API](Unreleased#context-api)
   - [Better server status view](Unreleased#better-server-status-view)
   - [Customizable NotFound page](Unreleased#customizable-notfound-page)
   - [NPM & Chrome web store](Unreleased#npm-amp-chrome-web-store)

@@ -1,6 +1,5 @@
 ## Component data
 
-
 PigletJS components can hold data that can be passed to them as attributes, stored in state, or referenced using refs.
 This data can be used to control the component's behavior, appearance, and interactions with other components or the DOM.
 
