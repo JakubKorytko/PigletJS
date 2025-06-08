@@ -18,6 +18,7 @@ import {
   toKebabCase,
   extractComponentTagsFromString,
 } from "@Piglet/browser/sharedHelpers";
+import State from "@Piglet/browser/classes/State";
 
 /** @type {GetDeepValue} */
 const getDeepValue = function (obj, pathParts) {
@@ -583,6 +584,68 @@ const createNestedStateProxy = function (asRef, host) {
   );
 };
 
+/**
+ * Ensures that a state object exists for a given component and key in the global state.
+ * If the state does not exist, it creates a new `State` instance and optionally updates
+ * dependent `render-if` elements in the component's shadow DOM.
+ *
+ * @param {string} componentName - The name of the component to which the state belongs.
+ * @param {string} key - The key identifying the state within the component.
+ * @param {*} initialValue - The initial value to set for the state if it is created.
+ * @param {boolean} asRef - Whether the state should be stored by reference.
+ * @param {boolean} avoidClone - Whether to avoid cloning the initial value.
+ * @param {AppRoot} root - The root object containing the global state and constructed components.
+ * @param {boolean} [viaSetter=false] - Indicates if the function was called via a state setter.
+ */
+function createStateIfMissing(
+  componentName,
+  key,
+  initialValue,
+  asRef,
+  avoidClone,
+  root,
+  viaSetter = false,
+) {
+  if (!root.globalState[componentName]) {
+    root.globalState[componentName] = {};
+  }
+
+  if (!root.globalState[componentName][key]) {
+    root.globalState[componentName][key] = new State(
+      initialValue,
+      asRef,
+      avoidClone,
+    );
+
+    if (viaSetter) {
+      const component = root.constructedComponents[componentName];
+
+      const renderIfs = component?.shadowRoot.querySelectorAll("render-if");
+      for (const renderIf of renderIfs) {
+        let parsedCondition = renderIf.attrs.condition;
+
+        if (typeof parsedCondition !== "string") continue;
+
+        if (parsedCondition.startsWith("!"))
+          parsedCondition = parsedCondition.substring(1);
+
+        if (!parsedCondition.startsWith("$")) continue;
+
+        parsedCondition = parsedCondition.substring(1);
+
+        const parts = parsedCondition.split(".");
+        parsedCondition = parts.at(0);
+
+        const isDependent = parsedCondition === key;
+
+        if (isDependent) {
+          renderIf._updateFromAttribute();
+        }
+      }
+    }
+  }
+}
+
 export {
   getDeepValue,
   api,
@@ -603,4 +666,5 @@ export {
   useMarkerGenerator,
   pageRevealCallback,
   setNativeAttributes,
+  createStateIfMissing,
 };

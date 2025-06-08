@@ -1,7 +1,6 @@
 /** @import {UseState, UseObserver, StateValue} from "@jsdocs/browser/hooks.d" */
-import { sendToExtension } from "@Piglet/browser/helpers";
+import { createStateIfMissing, sendToExtension } from "@Piglet/browser/helpers";
 import CONST from "@Piglet/browser/CONST";
-import State from "@Piglet/browser/classes/State";
 
 /**
  * @template T
@@ -15,19 +14,16 @@ const useState = (
   avoidClone = false,
   root,
 ) => {
-  if (!root.globalState[componentName]) {
-    root.globalState[componentName] = {};
-  }
-
   const key = Array.isArray(path) ? path.join(".") : path;
-
-  if (!root.globalState[componentName][key]) {
-    root.globalState[componentName][key] = new State(
-      initialValue,
-      asRef,
-      avoidClone,
-    );
-  }
+  createStateIfMissing(
+    componentName,
+    key,
+    initialValue,
+    asRef,
+    avoidClone,
+    root,
+    false,
+  );
 
   /**
    * @template T
@@ -38,13 +34,22 @@ const useState = (
      * Gets the current state value.
      */
     get value() {
-      return root.globalState[componentName][key].state;
+      return root.globalState?.[componentName]?.[key]?.state;
     },
 
     /**
      * Sets a new state value and triggers state update.
      */
     set value(newValue) {
+      createStateIfMissing(
+        componentName,
+        key,
+        newValue,
+        asRef,
+        avoidClone,
+        root,
+        true,
+      );
       root.globalState[componentName][key].setState(newValue);
       sendToExtension(CONST.extension.state, root);
     },

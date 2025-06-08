@@ -100,7 +100,6 @@ class Herd {
 
       set value(newValue) {
         root.globalState[key].setState(newValue);
-        console.log("XD!");
         sendToExtension(CONST.extension.state, root);
       },
     };
@@ -119,9 +118,7 @@ class Herd {
    * @type {HerdInterfaceMembers['observe']['Type']}
    * @returns {HerdInterfaceMembers['observe']['ReturnType']}
    */
-  observe(componentInstance, path) {
-    const key = Array.isArray(path) ? path.join(".") : path;
-
+  observe(componentInstance, key) {
     const componentKey = componentInstance.__componentKey;
     const stateChange = componentInstance.stateChange.bind(componentInstance);
 

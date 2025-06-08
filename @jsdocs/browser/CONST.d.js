@@ -48,6 +48,7 @@
  *     maxReconnectAttempts: string, // Max reconnect attempts log
  *     serverRestarted: string // Server restarted log
  *   },
+ *   conditionNotFoundInState: (condition: string) => string, // Condition not found in state log
  *   sendToExtension: string, // Sending to extension log
  *   trackingTree: (component: { constructor: { name: string } }) => string, // Tracking tree log
  *   errorLoadingScript: string, // Error loading script log

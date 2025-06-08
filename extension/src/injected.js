@@ -31,7 +31,7 @@ function transformComponentState(input) {
       if (stateData._state !== undefined) {
         state[stateKey] = stateData._state;
       } else if (stateKey === "_state") {
-        state = { ...state, ...extractSimpleData(stateData) };
+        state = extractSimpleData(stateData);
       }
     }
 
@@ -139,16 +139,32 @@ const mergeHerdWithGlobalState = (root) => {
   const simplifiedState = extractSimpleData(root.globalState);
   const transformedState = transformComponentState(simplifiedState);
 
+  const newState =
+    typeof transformedState === "object"
+      ? { ...transformedState }
+      : transformedState;
+
   if (root.__componentName === "Herd") {
-    return { ...previousState, Herd: { ...transformedState } };
+    return typeof previousState === "object"
+      ? { ...previousState, Herd: newState }
+      : { Herd: newState };
   }
 
-  previousState = { ...transformedState };
+  previousState = newState;
 
   const simplifiedHerd = extractSimpleData(root.herd.globalState);
   const transformedHerd = transformComponentState(simplifiedHerd);
 
-  return { ...transformedState, Herd: { ...transformedHerd } };
+  const herdState =
+    typeof transformedHerd === "object"
+      ? { ...transformedHerd }
+      : transformedHerd;
+
+  if (typeof transformedState === "object") {
+    return { ...transformedState, Herd: herdState };
+  }
+
+  return { Herd: herdState };
 };
 
 /**

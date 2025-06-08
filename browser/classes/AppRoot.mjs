@@ -114,8 +114,26 @@ class AppRoot extends ReactiveComponent {
    */
   reset() {
     this.state = {};
-    this.globalState = {};
-    this.__proxyCache = new WeakMap();
+
+    const keys = Object.keys(this.globalState);
+    const constructed = keys.map((key) => this.constructedComponents[key]);
+
+    for (const component of constructed) {
+      let isInAppContent = false;
+      let currentElement = component;
+
+      while (currentElement) {
+        if (currentElement === this.appContent) {
+          isInAppContent = true;
+          break;
+        }
+        currentElement = currentElement.internal?.parent;
+      }
+
+      // We don't want to delete AppRoot & its layout components state.
+      if (isInAppContent) delete this.globalState[component.__componentKey];
+    }
+
     this.componentCounter = 0;
   }
 

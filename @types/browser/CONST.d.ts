@@ -35,6 +35,7 @@ interface PigletLogs {
     maxReconnectAttempts: string;
     serverRestarted: string;
   };
+  conditionNotFoundInState: (condition: string) => string;
   sendToExtension: string;
   trackingTree: (component: { constructor: { name: string } }) => string;
   errorLoadingScript: string;

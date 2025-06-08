@@ -85,13 +85,21 @@ class RenderIf extends ReactiveDummyComponent {
       return;
     }
 
-    if (!conditionProperty.startsWith("$")) {
+    let state = this.root.globalState[this._parent.__componentKey];
+    let isUsingHerd = false;
+
+    if (conditionProperty.startsWith("H$")) {
+      // Handle Herd state
+      state = this.root.herd.globalState;
+      conditionProperty = conditionProperty.substring(2);
+      isUsingHerd = true;
+    } else if (!conditionProperty.startsWith("$")) {
       this._condition = true;
       this.updateVisibility();
       return;
+    } else {
+      conditionProperty = conditionProperty.substring(1);
     }
-
-    conditionProperty = conditionProperty.substring(1);
 
     const parts = conditionProperty.split(".");
     const isAttribute = parts[0] === CONST.attributesObjectName;
@@ -116,11 +124,22 @@ class RenderIf extends ReactiveDummyComponent {
           this._parent.attrs[conditionProperty.toLowerCase()],
       );
     } else {
-      this._state =
-        this.root.globalState[this._parent.__componentKey][
-          conditionProperty
-        ]._state;
-      super.observeState(conditionProperty);
+      if (!state[conditionProperty]) {
+        console.pig(
+          CONST.pigletLogs.conditionNotFoundInState(conditionProperty),
+          CONST.coreLogsLevels.warn,
+        );
+        this._condition = false;
+        this.updateVisibility();
+        return;
+      }
+      this._state = state[conditionProperty]._state;
+
+      if (isUsingHerd) {
+        this.root.herd.observe(this, conditionProperty);
+      } else {
+        super.observeState(conditionProperty);
+      }
       this._updateCondition(this._state);
     }
   }
