@@ -118,7 +118,7 @@ class ReactiveComponent extends HTMLElement {
   constructor(attrs, root) {
     super();
 
-    setNativeAttributes.call(this);
+    setNativeAttributes.call(this, attrs);
 
     if (this.constructor.name === CONST.appRootName) {
       // Unfortunately, due to super constructor being called first, we need to set these properties here

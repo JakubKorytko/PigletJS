@@ -35,6 +35,8 @@ const CONST = {
       maxReconnectAttempts: "[Socket] Max reconnect attempts reached",
       serverRestarted: "[Socket] Server restart detected!",
     },
+    conditionNotFoundInState: (conditionProperty) =>
+      `Condition "${conditionProperty}" not found in state.`,
     sendToExtension: "Sending to extension:",
     trackingTree: ({ constructor: { name } }) => `[${name}] tracking tree`,
     errorLoadingScript: "Error loading script:",

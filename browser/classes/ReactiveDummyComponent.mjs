@@ -24,7 +24,7 @@ class ReactiveDummyComponent extends HTMLElement {
   constructor(attrs, root) {
     super();
 
-    setNativeAttributes.call(this);
+    setNativeAttributes.call(this, attrs);
 
     this.root = root ?? this.root;
     this.__componentId = `${crypto.getRandomValues(new Uint8Array(1))}${Date.now()}`;
