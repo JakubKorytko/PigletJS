@@ -6,7 +6,7 @@ import { routeAliases } from "@Piglet/libs/routes";
 import notFound from "@Piglet/libs/notfound";
 
 export default (req, res) => {
-  let pathWithoutPiglet = req.url.replace("/Piglet/", "");
+  let pathWithoutPiglet = req.url.split("?")[0].replace("/Piglet/", "");
 
   if (req.url === "/Piglet" || req.url === "/Piglet/") {
     pathWithoutPiglet = "index";

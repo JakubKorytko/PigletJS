@@ -30,7 +30,7 @@ const routeNames = CONST.routes.reduce((acc, route) => {
  * @returns {symbol} One of the symbols from `routeNames` representing the route type.
  */
 const getRouteFromRequest = (req) => {
-  const path = req.url;
+  const path = req.url.split("?")[0];
 
   const startsWithExact = (prefix) =>
     path === prefix || path.startsWith(prefix + "/");

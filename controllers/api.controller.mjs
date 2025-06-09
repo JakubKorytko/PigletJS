@@ -6,7 +6,7 @@ import console from "@Piglet/utils/console";
 
 export default async (req, res) => {
   const url = new URL(req.url, `https://${req.headers.host}`);
-  const segments = url.pathname
+  const segments = url.pathname.split("?")[0]
     .replace(/^\/api\/?/, "")
     .split("/")
     .filter(Boolean);
