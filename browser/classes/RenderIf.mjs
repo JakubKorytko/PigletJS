@@ -92,6 +92,7 @@ class RenderIf extends ReactiveDummyComponent {
       // Handle Herd state
       state = this.root.herd.globalState;
       conditionProperty = conditionProperty.substring(2);
+      this.root.herd.observe(this, conditionProperty);
       isUsingHerd = true;
     } else if (!conditionProperty.startsWith("$")) {
       this._condition = true;

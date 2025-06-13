@@ -8,7 +8,7 @@ export interface HerdInterface {
   globalState: Record<string, unknown>;
 
   /** Map for tracking observer waiters */
-  observerWaiters: Map<string, [ReactiveComponent, string]>;
+  observerWaiters: Map<string, ReactiveComponent[]>;
 
   /** Map of registered observers */
   observers: Map<string, (target: HerdInterface) => void>;
