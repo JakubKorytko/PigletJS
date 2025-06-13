@@ -51,6 +51,8 @@ const CONST = {
     skippingViewTransition:
       "Skipping view transition due to an ongoing transition.",
     staleNavigation: "Stale navigation detected, skipping...",
+    canceledByMiddleware: (routeName) =>
+      `Route ${routeName} was canceled by middleware.`,
   },
   socket: {
     messageTypes: {
@@ -132,6 +134,7 @@ const CONST = {
   pigletEvents: {
     routeChanged: "piglet:routeChanged",
     beforeRouteChange: "piglet:beforeRouteChange",
+    canceledByMiddleware: "piglet:canceledByMiddleware",
   },
 };
 

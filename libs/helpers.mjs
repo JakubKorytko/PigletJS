@@ -1,3 +1,5 @@
+/** @import {CustomServer, PigletRequest, ServerResponse} from "@Piglet/libs/server.mjs"; */
+
 import CONST from "@Piglet/misc/CONST";
 import fs from "fs";
 import { processAllComponents } from "@Piglet/parser/component";
@@ -6,11 +8,12 @@ import { routes } from "@Piglet/libs/routes";
 import { mergeWebTypes } from "@Piglet/builder/webTypes";
 import console from "@Piglet/utils/console";
 import {
-  toPascalCase,
-  toKebabCase,
   extractComponentTagsFromString,
+  toKebabCase,
+  toPascalCase,
 } from "@Piglet/browser/sharedHelpers";
 import { resolvePath } from "@Piglet/utils/paths";
+import Parser from "@Piglet/parser/values";
 
 /**
  * Symbolic representation of route names defined in the application.
@@ -143,16 +146,90 @@ const isRequestFromServer = (req) => {
 };
 
 /**
+ * Determines the type of component based on its route name.
+ *
+ * @param {string} routeName - The route name to analyze.
+ * @returns {string} - The type of the component, which can be "HTML", "Script", "Layout", "Component", or "Unknown".
+ */
+function determineComponentType(routeName) {
+  const { html, script, layout } = CONST.customRouteSubAliases.component;
+  const { component } = CONST.customRouteAliases;
+  if (routeName.startsWith(html)) return "HTML";
+  if (routeName.startsWith(script)) return "Script";
+  if (routeName.startsWith(layout)) return "Layout";
+  if (routeName.startsWith(component)) return "Component";
+  return "Unknown";
+}
+
+/**
+ * Transforms a route name and HTTP request into a readable request object.
+ * The transformation includes determining the type of the route, extracting parameters,
+ * and cleaning up the route value for specific types like "Component" and "Page".
+ *
+ * @param {unique symbol} routeName - The symbolic representation of the route name.
+ * @param {PigletRequest} req - The HTTP request object.
+ * @returns {PigletRequest["pigDescription"] | undefined} - A readable request object containing the type, value, and parameters,
+ * or `undefined` if the route type is "Piglet".
+ */
+const transformIntoReadableRequest = (routeName, req) => {
+  let type =
+    routeName.description.charAt(0).toUpperCase() +
+    routeName.description.slice(1);
+
+  if (type === "Piglet") return undefined;
+
+  const url = new URL(req.url, "fake:/");
+  const paramsDict = Object.fromEntries(url.searchParams.entries());
+  delete paramsDict["noCache"];
+  let value = req.url.split("?")[0];
+
+  if (type === "Component") {
+    const { html, script, layout } = CONST.customRouteSubAliases.component;
+    const { component } = CONST.customRouteAliases;
+    const replaceRegex = new RegExp(
+      `${html}|${script}|${layout}|${component}|/`,
+      "g",
+    );
+    const componentType = determineComponentType(value);
+
+    value = value.replace(replaceRegex, "");
+    type = `Component:${componentType}`;
+  }
+
+  if (type === "Page") {
+    value = Parser.routeAliases[value] || value;
+    type = "Page";
+  }
+
+  return {
+    type,
+    value,
+    params: paramsDict,
+  };
+};
+
+/**
  * HTTP server request handler that dispatches
  * to the appropriate custom route handler.
  *
- * @param {import("http").IncomingMessage} req - The HTTP request object.
+ * @param {PigletRequest} req - The HTTP request object.
  * @param {import("http").ServerResponse} res - The HTTP response object.
  * @returns {Promise<*>}
  */
 const serverHandler = async (req, res) => {
   if (isRequestFromServer(req)) {
-    return req.socket.server.customRoutes[getRouteFromRequest(req)](req, res);
+    const routeName = getRouteFromRequest(req);
+    const route = req.socket.server.customRoutes[routeName];
+    req.pigDescription = transformIntoReadableRequest(routeName, req);
+
+    if (typeof req.socket.server.customRoutes.middleware === "function") {
+      const middleware = req.socket.server.customRoutes.middleware;
+      await middleware(req, res);
+    }
+
+    if (!res.writableEnded && !res.headersSent) {
+      return route(req, res);
+    }
   }
 };
 

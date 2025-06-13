@@ -6,6 +6,7 @@ export type RouteChangeEventDetail = {
   isInitial: boolean;
   isReloaded: boolean;
   native: boolean;
+  redirected: boolean;
 };
 
 /** Interface for the NavLink component */
