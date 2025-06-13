@@ -2,9 +2,20 @@
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 /** @import {Navigate, Api} from "@jsdocs/browser/helpers.d" */
 /** @import {HerdInterface} from "@Piglet/browser/classes/Herd.d" */
+/** @import {RouteChangeEventDetail} from "@jsdocs/browser/classes/NavLink.d" */
 
 import { VirtualReactiveComponentInterface } from "@jsdocs/browser/classes/ReactiveComponent.d";
 import {buildComponentTree} from "@Piglet/browser/tree";
+
+/**
+ * @typedef {{
+ *    id: number,
+ *    route: string,
+ *    done: boolean,
+ *    isStale: boolean,
+ *    success: () => void,
+ * }} Navigator
+ */
 
 /**
  * Root component of the application, handles routing and component loading
@@ -137,15 +148,6 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
   api;
 
   /**
-   * Resets the application state and component counter
-   * @returns {void}
-   */
-  reset() {
-    this.state = {};
-    this.componentCounter = 0;
-  }
-
-  /**
    * Current route path
    * @type {string}
    */
@@ -156,6 +158,30 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * @type {HerdInterface}
    */
   herd;
+
+  /**
+   * Routes object containing route paths and their corresponding components
+   * @type {Record<string, string> | Record<string, never>}
+   */
+  _routes;
+
+  /**
+   * Queue for handling navigation requests
+   * @type {Array<AppRootInterface['route']>}
+   */
+  __navigationQueue;
+
+  /**
+   * Unique identifier for the navigator instance
+   * @type {number};
+   */
+  __navigatorId;
+
+  /**
+   * Candidate route for navigation
+   * @type {string}
+   */
+  __routeCandidate;
 
   /**
    * Fetches layout paths from the server
@@ -169,21 +195,6 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    */
   addPopStateListener() {}
 
-  /**
-   * Changes the current route and updates the view
-   * @method
-   * @param {string} newRoute - New route path to navigate to
-   * @returns {Promise<void>}
-   */
-  async changeRoute(newRoute) {}
-
-  /**
-   * Handles view transitions when the route changes
-   * @param {{ base: ReactiveComponent | undefined, layout: string }} baseAndLayout - Base path for the layout
-   * @param {boolean} isReloaded - Indicates if the view is reloaded
-   * @returns {Promise<void>}
-   */
-  async viewTransition({ base, layout }, isReloaded);
 
   /**
    * Preloads layout and base for a given route
@@ -192,21 +203,6 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * @returns {Promise<{ base: ReactiveComponent | undefined, layout: string }>}
    */
   async preLoadRoute(route, isReloaded = false);
-
-  /**
-   * Loads and renders the view for a given route
-   * @param {string} route - Route path to load
-   * @returns {Promise<void>}
-   */
-  async loadRoute(route) {}
-
-  /**
-   * Synchronously take care of rendering the route
-   * @param {ReactiveComponent | undefined} base - Base component to render
-   * @param {string} layout - Layout path to use
-   * @returns {void}
-   */
-  loadRouteSync(base, layout);
 
   /**
    * Extracts custom component tags from HTML source
@@ -235,9 +231,72 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * Renders a component into the view
    * @param {typeof ReactiveComponent | undefined} component - Component class or function to render
    * @param {string} layout - Layout string to use
+   * @returns {void}
+   */
+  renderComponent(component, layout) {}
+
+  /**
+   * Resets the application state and component counter
+   * @returns {void}
+   */
+  reset() {
+    this.state = {};
+    this.componentCounter = 0;
+  }
+
+  /**
+   * Resets the application state before a route transition
+   * @returns {void}
+   */
+  resetBeforeTransition() {};
+
+  /**
+   * Handles the transition callback after a route change
+   * @param base {ReactiveComponent | undefined} - Base component for the route
+   * @param layout {string} - Layout string for the route
+   * @param isInitial {boolean} - Indicates if this is the initial route load
    * @returns {Promise<void>}
    */
-  async renderComponent(component, layout) {}
+  transitionCallback({base, layout}, isInitial = false) {
+    return Promise.resolve();
+  };
+
+  /**
+   * Starts a route chain for the navigator
+   * @param navigator {Navigator} - The navigator instance to start the route chain
+   * @param routeData {RouteChangeEventDetail} - Data for the route change event
+   * @returns {boolean}
+   */
+  startRouteChain(navigator, routeData) {
+    return true;
+  }
+
+  /**
+   * Creates a new navigator instance for handling route changes
+   * @param {string} route - The route path for the navigator
+   * @returns {Navigator}
+   */
+  createNavigator(route) {
+    return {
+      id: this.__navigatorId++,
+      route: this.route,
+      done: false,
+      isStale: false,
+      success: () => {},
+    };
+  }
+
+  /**
+   * Reloads the route and its components
+   * @returns {void}
+   */
+  reload() {}
+
+  /**
+   * Force a full reload of the application
+   * @returns {void}
+   */
+  __forceFullReload() {}
 }
 
 /** @typedef {InterfaceMethodTypes<AppRootInterface>} AppRootMembers */

@@ -137,7 +137,7 @@ class ReactiveDummyComponent extends HTMLElement {
   }
 
   dispatchEvent(event) {
-    return false;
+    window.dispatchEvent(event);
   }
 }
 

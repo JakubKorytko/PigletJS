@@ -41,6 +41,9 @@ interface PigletLogs {
   errorLoadingScript: string;
   errorInComponentScript: string;
   cloneWarning: string;
+  errorDuringViewTransition: string;
+  skippingViewTransition: string;
+  staleNavigation: string;
 }
 
 interface Constants {
@@ -96,6 +99,7 @@ interface Constants {
   appRootTag: string;
   stopComponentScriptExecution: string;
   symbols: Record<string, unique symbol>;
+  pigletEvents: Record<string, `piglet:${string}`>;
 }
 
 declare const CONST: Constants;

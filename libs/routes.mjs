@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 import console from "@Piglet/utils/console";
-export const routes = {};
-export const routeAliases = {};
+import Parser from "@Piglet/parser/values";
+
+const { routes, routeAliases } = Parser;
 
 /**
  * Recursively finds all .pig.html component files in a directory.
@@ -61,3 +62,5 @@ export function parseRoutes(html, pagesDir) {
     }
   }
 }
+
+export { routes, routeAliases };

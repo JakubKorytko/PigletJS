@@ -2,6 +2,15 @@ import ReactiveComponent from "./ReactiveComponent.d";
 import ReactiveDummyComponent from "./ReactiveDummyComponent.d";
 import type { api } from "../helpers.d";
 import type { HerdInterface } from "./Herd.d";
+import type { RouteChangeEventDetail } from "./NavLink.d";
+
+type Navigator = {
+  id: number; // Unique identifier for the navigation
+  route: string; // The route being navigated to
+  done: boolean; // Indicates if the navigation is complete
+  isStale: boolean; // Indicates if the navigation is stale
+  success: () => void; // Callback function to call on successful navigation
+};
 
 /** Root component of the application, handles routing and component loading. */
 declare class AppRoot extends ReactiveComponent {
@@ -76,6 +85,18 @@ declare class AppRoot extends ReactiveComponent {
   /** Herd instance for state management */
   herd: HerdInterface;
 
+  /** Routes object containing route paths and their corresponding components */
+  _routes: Record<string, string> | Record<string, never>;
+
+  /** Queue for handling navigation request */
+  __navigationQueue: Array<AppRoot["route"]>;
+
+  /** Unique identifier for the navigator instance */
+  __navigatorId: number;
+
+  /** Candidate route for navigation */
+  __routeCandidate: string;
+
   /** Resets the application state and component counter */
   reset: () => void;
 
@@ -84,15 +105,6 @@ declare class AppRoot extends ReactiveComponent {
 
   /** Adds popstate event listener for handling browser navigation */
   addPopStateListener(): void;
-
-  /** Changes the current route and updates the view */
-  changeRoute(newRoute: string): Promise<void>;
-
-  /** Handles view transitions when the route changes */
-  async viewTransition(
-    { base, layout }: { base: ReactiveComponent | undefined; layout: string },
-    isReloaded: boolean,
-  ): Promise<void>;
 
   /** Preloads layout and base for a given route */
   async preLoadRoute(
@@ -106,9 +118,6 @@ declare class AppRoot extends ReactiveComponent {
   /** Loads and renders the view for a given route */
   loadRoute(route: string): Promise<void>;
 
-  /** Synchronously take care of rendering the route */
-  loadRouteSync(base: ReactiveComponent | undefined, layout: string): void;
-
   /** Extracts custom component tags from HTML source */
   extractCustomTags(pageSource: string): string[];
 
@@ -119,11 +128,38 @@ declare class AppRoot extends ReactiveComponent {
   async appRootConnected(): Promise<void>;
 
   /** Renders a component into the view */
-  renderComponent(component: typeof HTMLElement | undefined): Promise<void>;
+  renderComponent(
+    component: typeof HTMLElement | undefined,
+    layout: string,
+  ): void;
 
   /** Gets the current route path */
   get route(): string;
 
   /** Sets a new route path */
   set route(newRoute: string);
+
+  /** Resets the application state before a route transition */
+  resetBeforeTransition(): void;
+
+  /** Handles the transition callback after a route change */
+  transitionCallback: (
+    { base, layout }: { base: ReactiveComponent | undefined; layout: string },
+    isInitial?: boolean,
+  ) => Promise<void>;
+
+  /** Starts a route chain for the navigator */
+  startRouteChain: (
+    navigator: Navigator,
+    routeData: RouteChangeEventDetail,
+  ) => boolean;
+
+  /** Creates a new navigator instance for handling route changes */
+  createNavigator(route: string): Navigator;
+
+  /** Reloads the route and its components */
+  reload(): void;
+
+  /** Force a full reload of the application */
+  __forceFullReload: () => void;
 }

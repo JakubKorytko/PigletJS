@@ -2,6 +2,7 @@
 /** @import ReactiveDummyComponent from "@Piglet/browser/classes/ReactiveDummyComponent" */
 /** @import {ElementProxy} from "@jsdocs/browser/scriptRunner.d" */
 /** @import CONST from "@Piglet/browser/CONST" */
+/** @import {Navigate} from "@jsdocs/browser/helpers.d" */
 
 /**
  * @template T
@@ -13,6 +14,12 @@ function $element(nodeOrSelector, expect) {}
 
 /** @type {(selector: string) => (ElementProxy & HTMLElement | null)[]} */
 let $elements;
+
+/**
+ * An interface for navigating between routes in the application.
+ * @type {Navigate}
+ */
+let $navigate;
 
 /**
  * An object that contains attributes assigned to the component. The `attributes` object
