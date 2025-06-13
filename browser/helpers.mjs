@@ -593,7 +593,6 @@ const createNestedStateProxy = function (asRef, host) {
  * @param {boolean} asRef - Whether the state should be stored by reference.
  * @param {boolean} avoidClone - Whether to avoid cloning the initial value.
  * @param {AppRoot} root - The root object containing the global state and constructed components.
- * @param {boolean} [viaSetter=false] - Indicates if the function was called via a state setter.
  */
 function createStateIfMissing(
   componentName,
@@ -602,7 +601,6 @@ function createStateIfMissing(
   asRef,
   avoidClone,
   root,
-  viaSetter = false,
 ) {
   if (!root.globalState[componentName]) {
     root.globalState[componentName] = {};
@@ -615,30 +613,28 @@ function createStateIfMissing(
       avoidClone,
     );
 
-    if (viaSetter) {
-      const component = root.constructedComponents[componentName];
+    const component = root.constructedComponents[componentName];
 
-      const renderIfs = component?.shadowRoot.querySelectorAll("render-if");
-      for (const renderIf of renderIfs) {
-        let parsedCondition = renderIf.attrs.condition;
+    const renderIfs = component?.shadowRoot.querySelectorAll("render-if");
+    for (const renderIf of renderIfs) {
+      let parsedCondition = renderIf.attrs.condition;
 
-        if (typeof parsedCondition !== "string") continue;
+      if (typeof parsedCondition !== "string") continue;
 
-        if (parsedCondition.startsWith("!"))
-          parsedCondition = parsedCondition.substring(1);
-
-        if (!parsedCondition.startsWith("$")) continue;
-
+      if (parsedCondition.startsWith("!"))
         parsedCondition = parsedCondition.substring(1);
 
-        const parts = parsedCondition.split(".");
-        parsedCondition = parts.at(0);
+      if (!parsedCondition.startsWith("$")) continue;
 
-        const isDependent = parsedCondition === key;
+      parsedCondition = parsedCondition.substring(1);
 
-        if (isDependent) {
-          renderIf._updateFromAttribute();
-        }
+      const parts = parsedCondition.split(".");
+      parsedCondition = parts.at(0);
+
+      const isDependent = parsedCondition === key;
+
+      if (isDependent) {
+        renderIf._updateFromAttribute();
       }
     }
   }
