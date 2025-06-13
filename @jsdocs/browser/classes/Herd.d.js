@@ -20,7 +20,7 @@ class HerdInterface {
 
   /**
    * Map for tracking observer waiters
-   * @type {Map<string, [ReactiveComponent, string]>}
+   * @type {Map<string, ReactiveComponent[]>}
    */
   observerWaiters;
 
