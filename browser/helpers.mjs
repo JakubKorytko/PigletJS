@@ -96,8 +96,6 @@ const api = async function (path, fetchOptions = {}, expect = "raw") {
 const navigate = function (route) {
   window.history.pushState({}, "", route);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  this.route = route;
-
   return true;
 };
 
