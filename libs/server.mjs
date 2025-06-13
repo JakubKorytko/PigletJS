@@ -7,8 +7,27 @@ import {
 } from "@Piglet/libs/socket";
 import coreControllers from "@Piglet/controllers/index";
 
+/** @typedef {import("http").Server} Server */
+/** @typedef {import("http").ServerResponse} ServerResponse */
+/** @typedef {import("http").IncomingMessage} IncomingMessage */
+
 /**
- * @typedef {http.Server & { customRoutes: Record<string, Function> }} CustomServer
+ * @typedef {
+ * http.Server & {
+ *    customRoutes: Record<string, Function>,
+ *    middleware: (callbackFn: (req: PigletRequest, res: ServerResponse) => boolean) => void}
+ * } CustomServer
+ */
+
+/**
+ * @typedef {IncomingMessage & {
+ *  pigDescription: {
+ *     type: string,
+ *     value: string,
+ *     params: Record<string, string>
+ *   },
+ *   socket: IncomingMessage["Socket"] & {server: CustomServer}
+ * }} PigletRequest
  */
 
 /**
@@ -23,6 +42,9 @@ const createServer = () => {
   runReloadClientOnWSMessageListener();
 
   const server = new Proxy(http.createServer(serverHandler), proxyHandler);
+  server.middleware = (callback) => {
+    server.customRoutes.middleware = callback;
+  };
 
   server.on("upgrade", socketHandler);
 
@@ -35,3 +57,6 @@ const createServer = () => {
 };
 
 export default createServer();
+/** @exports PigletRequest */
+/** @exports CustomServer */
+/** @exports ServerResponse */

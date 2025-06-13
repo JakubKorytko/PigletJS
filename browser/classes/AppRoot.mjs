@@ -17,19 +17,11 @@ import Herd from "@Piglet/browser/classes/Herd";
 /** For IDE autocompletion */
 let Parser;
 
-/** @type {(detail: RouteChangeEventDetail, before?: boolean, native?: boolean) => CustomEvent<RouteChangeEventDetail>} */
-const RouteEvent = function (detail, before = false, native = false) {
-  return new CustomEvent(
-    before
-      ? CONST.pigletEvents.beforeRouteChange
-      : CONST.pigletEvents.routeChanged,
-    {
-      detail: {
-        ...detail,
-        native,
-      },
-    },
-  );
+/** @type {(detail: RouteChangeEventDetail, type: `piglet:${string}`) => CustomEvent<RouteChangeEventDetail>} */
+const RouteEvent = function (detail, type) {
+  return new CustomEvent(type, {
+    detail,
+  });
 };
 
 // noinspection JSPotentiallyInvalidUsageOfClassThis
@@ -98,6 +90,8 @@ class AppRoot extends ReactiveComponent {
 
   constructor(attrs) {
     super(attrs);
+    if (AppRoot.instance) return AppRoot.instance;
+    AppRoot.instance = this;
     this.herd = new Herd(this);
     this.api = api;
     this.navigate = navigate.bind(this);
@@ -514,23 +508,52 @@ class AppRoot extends ReactiveComponent {
     window.location.reload();
   }
 
-  /** @param {AppRoot["_route"] | typeof CONST.symbols.popStateMarker} targetRoute */
-  set route(targetRoute) {
+  /** @param {AppRoot["_route"] | typeof CONST.symbols.popStateMarker} passedRoute */
+  set route(passedRoute) {
     return new Promise(async () => {
-      const native = targetRoute === CONST.symbols.popStateMarker;
-      const route = native ? window.location.pathname : targetRoute;
-      this.__routeCandidate = route;
+      const native = passedRoute === CONST.symbols.popStateMarker;
+      const targetRoute = native ? window.location.pathname : passedRoute;
 
       const routeData = {
-        route,
         previousRoute: this._route,
         isInitial: this._route === "",
-        isReloaded: route === this._route,
         native,
+        redirected: false,
       };
 
+      let testConnection;
+      try {
+        testConnection = await fetch(targetRoute);
+      } catch {}
+      const testURL = new URL(testConnection.url);
+      const route = testURL.pathname;
+
+      routeData.route = route;
+      routeData.isReloaded = this._route === route;
+      if (route !== targetRoute) {
+        routeData.redirected = true;
+      }
+
+      this.__routeCandidate = route;
+
+      const statusCode = String(testConnection.status)[0];
+
+      if (["4", "5"].includes(statusCode)) {
+        this.dispatchEvent(
+          new RouteEvent(routeData, CONST.pigletEvents.canceledByMiddleware),
+        );
+        console.pig(
+          CONST.pigletLogs.canceledByMiddleware(route),
+          CONST.coreLogsLevels.info,
+        );
+        return;
+      }
+
       const navigator = this.createNavigator(route);
-      this.dispatchEvent(new RouteEvent(routeData, true));
+
+      this.dispatchEvent(
+        new RouteEvent(routeData, CONST.pigletEvents.beforeRouteChange),
+      );
 
       const wasStale = !(await this.startRouteChain(navigator, routeData));
       if (wasStale) {
@@ -542,7 +565,9 @@ class AppRoot extends ReactiveComponent {
         window.history.pushState({}, "", route);
       }
 
-      this.dispatchEvent(new RouteEvent(routeData, false));
+      this.dispatchEvent(
+        new RouteEvent(routeData, CONST.pigletEvents.routeChanged),
+      );
     });
   }
 }

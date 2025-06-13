@@ -57,6 +57,7 @@
  *   errorDuringViewTransition: string // Error during view transition log
  *   skippingViewTransition: string, // Skipping view transition log
  *   staleNavigation: string // Stale navigation log
+ *   canceledByMiddleware: (routeName: string) => string // Canceled by middleware log
  * }} PigletLogs
  * PigletJS logs object.
  */

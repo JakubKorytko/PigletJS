@@ -9,6 +9,7 @@ import { ReactiveDummyComponent } from "@Piglet/browser/classes/index";
  *  isInitial: boolean,
  *  isReloaded: boolean,
  *  native: boolean,
+ *  redirected: boolean,
  * }} RouteChangeEventDetail
  */
 

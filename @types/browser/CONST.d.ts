@@ -44,6 +44,7 @@ interface PigletLogs {
   errorDuringViewTransition: string;
   skippingViewTransition: string;
   staleNavigation: string;
+  canceledByMiddleware: (routeName: string) => string;
 }
 
 interface Constants {
