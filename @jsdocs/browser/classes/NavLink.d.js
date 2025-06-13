@@ -3,6 +3,16 @@
 import { ReactiveDummyComponent } from "@Piglet/browser/classes/index";
 
 /**
+ * @typedef {{
+ *  route: string,
+ *  previousRoute: string,
+ *  isInitial: boolean,
+ *  isReloaded: boolean,
+ *  native: boolean,
+ * }} RouteChangeEventDetail
+ */
+
+/**
  * Interface for the NavLink component
  * @interface NavLinkInterface
  * @implements {VirtualReactiveDummyComponentInterface} */
@@ -16,9 +26,10 @@ class NavLinkInterface extends ReactiveDummyComponent {
 
   /**
    * Method for adding/removing the active class
+   * @param {CustomEvent<RouteChangeEventDetail> | undefined} event - The event data containing the route information
    * @returns {void}
    */
-  updateActiveState() {}
+  updateActiveState(event) {}
 }
 
 /** @typedef {InterfaceMethodTypes<NavLinkInterface>} NavLinkMembers */
@@ -28,5 +39,6 @@ export {
   /** @exports NavLinkInterface */
   /** @exports NavLinkMembers */
   /** @exports NavLinkVirtualMembers */
+  /** @exports RouteChangeEventDetail */
   NavLinkInterface,
 };

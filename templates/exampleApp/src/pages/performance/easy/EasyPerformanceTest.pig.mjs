@@ -60,7 +60,7 @@ const scrollHandler = (e) => {
 scrollElement.on("click", scrollHandler);
 
 const cleanupListeners = () => {
-  window.removeEventListener("popstate", popStateHandler);
+  window.removeEventListener("piglet:beforeRouteChange", popStateHandler);
   componentElement.off("touchmove", touchMoveHandler);
   goBackElement.off("click", goBackHandler);
 };
@@ -68,7 +68,7 @@ const cleanupListeners = () => {
 componentElement.on("touchmove", touchMoveHandler);
 
 goBackElement.on("click", goBackHandler);
-window.addEventListener("popstate", popStateHandler);
+window.addEventListener("piglet:beforeRouteChange", popStateHandler);
 
 const generateResult = (time, componentsToRender) =>
   `Rendered <span>${componentsToRender}</span> components in <span>${time}ms</span>`;

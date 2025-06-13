@@ -63,7 +63,7 @@ class Socket {
       const message = JSON.parse(event.data);
       if (message.type === CONST.socket.messageTypes.reload && message.data) {
         if (message.data === "layout") {
-          this.root.changeRoute(this.root._route);
+          this.root.reload();
           return;
         }
         /** @type {ReactiveComponent[]} */
@@ -78,7 +78,7 @@ class Socket {
         /** @type {AppRoot} */
         const appRoot = document.querySelector(CONST.appRootTag);
         // noinspection JSIgnoredPromiseFromCall
-        appRoot.changeRoute(appRoot._route);
+        appRoot.reload();
       }
 
       if (message.type === CONST.socket.messageTypes.serverRestart) {
@@ -87,7 +87,7 @@ class Socket {
       }
 
       if (message.type === CONST.socket.messageTypes.fullReload) {
-        window.location.reload();
+        this.root.__forceFullReload();
       }
     };
 

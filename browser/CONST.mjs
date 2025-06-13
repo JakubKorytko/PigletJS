@@ -46,6 +46,11 @@ const CONST = {
       "Object will be set as a reference, which means that changes to the passed object may lead to unexpected behavior. " +
       "You can try to use a different method to clone the state before passing it to Piglet, such as JSON.stringify/JSON.parse. " +
       "If you aware of this and want to silence this warning, make sure you are creating the state using $$(..., true).",
+    errorDuringViewTransition:
+      "Error during view transition, probably caused by the fact that page is cached by the browser.",
+    skippingViewTransition:
+      "Skipping view transition due to an ongoing transition.",
+    staleNavigation: "Stale navigation detected, skipping...",
   },
   socket: {
     messageTypes: {
@@ -122,6 +127,11 @@ const CONST = {
   symbols: {
     nestedDeepProxyMarker: Symbol(),
     setViaGetterMarker: Symbol(),
+    popStateMarker: Symbol(),
+  },
+  pigletEvents: {
+    routeChanged: "piglet:routeChanged",
+    beforeRouteChange: "piglet:beforeRouteChange",
   },
 };
 

@@ -17,7 +17,14 @@
  */
 
 /**
- * @typedef {(route: string) => boolean} Navigate
+ * @typedef {{
+ *     condition: boolean, // The condition for navigation to succeed
+ *     fallback?: string, // Optional fallback route if navigation fails, defaults to '/',
+ * }} NavigateOptions
+ */
+
+/**
+ * @typedef {(route: string, options?: NavigateOptions) => boolean} Navigate
  * Navigates to a given route.
  */
 

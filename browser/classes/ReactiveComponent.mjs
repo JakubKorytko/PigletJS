@@ -367,7 +367,7 @@ class ReactiveComponent extends HTMLElement {
   }
 
   dispatchEvent(event) {
-    return false;
+    window.dispatchEvent(event);
   }
 
   /**

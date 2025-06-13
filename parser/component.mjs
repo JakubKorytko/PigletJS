@@ -13,6 +13,7 @@ import { formatHTML, formatJS } from "@Piglet/parser/format";
 import CONST from "@Piglet/misc/CONST";
 import console from "@Piglet/utils/console";
 import { generateLayoutFile } from "@Piglet/parser/layout";
+import Parser from "@Piglet/parser/values";
 
 /**
  * Extracts @import statements from CSS code and returns the cleaned code.
@@ -21,7 +22,7 @@ import { generateLayoutFile } from "@Piglet/parser/layout";
  * @returns {{ imports: string[], cleanedCode: string }}
  */
 function extractAndRemoveCssImports(css) {
-  const importRegex = /^@import\s+[^;]+;/gm;
+  const importRegex = /^\s*@import\s+[^;]+;/gm;
   const imports = [];
   let cleaned;
 
@@ -45,7 +46,7 @@ function extractAndRemoveCssImports(css) {
  * @returns {{ imports: string[], cleanedCode: string }}
  */
 function extractAndRemoveImports(code) {
-  const importRegex = /^import\s+[\s\S]*?["'][^"']+["'];?/gm;
+  const importRegex = /^\s*import\s+[\s\S]*?["'][^"']+["'];?/gm;
   const imports = [];
   let cleaned;
 
@@ -145,8 +146,9 @@ const generateComponentScript = async (scriptJS, externalJS, componentName) => {
 
   const scriptForFile = formatJS(`
   ${imports.join("\n")}
-  ${CONST.parserStrings.exportBeforeScript(isAsync)}
-  ${cleanedCode}\n}`);
+  export default ${isAsync ? "async" : ""} function({${Parser.exportValues}}) {
+  ${cleanedCode}\n
+  }`);
 
   return fsp.writeFile(outputPath, scriptForFile);
 };

@@ -20,7 +20,10 @@ export function api(
 ): Promise<any>;
 
 /** Navigates to a given route */
-export function navigate(route: string): boolean;
+export function navigate(
+  route: string,
+  options?: { condition: boolean; fallback?: string },
+): boolean;
 
 /** Converts a string to kebab-case format */
 export function toKebabCase(str: string): string;

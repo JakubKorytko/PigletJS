@@ -54,6 +54,9 @@
  *   errorLoadingScript: string, // Error loading script log
  *   errorInComponentScript: string, // Error in component script log
  *   cloneWarning: string, // Clone warning log
+ *   errorDuringViewTransition: string // Error during view transition log
+ *   skippingViewTransition: string, // Skipping view transition log
+ *   staleNavigation: string // Stale navigation log
  * }} PigletLogs
  * PigletJS logs object.
  */
@@ -117,6 +120,7 @@
  *   appRootTag: string, // App root tag
  *   stopComponentScriptExecution: string, // Stop component script execution message
  *   symbols: Record<string, unique symbol>, // Symbols used in PigletJS
+ *   pigletEvents: Record<string, `piglet:${string}`>, // PigletJS events
  * }} Constants
  * PigletJS constants object, used to store widely used values.
  */

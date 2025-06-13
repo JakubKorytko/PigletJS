@@ -1,7 +1,7 @@
 /** @import {Log} from "@jsdocs/browser/config.d" */
 
 import Piglet from "@Piglet/browser/config";
-import { loadComponent, pageRevealCallback } from "@Piglet/browser/helpers";
+import { loadComponent } from "@Piglet/browser/helpers";
 
 import * as Classes from "@Piglet/browser/classes/index";
 import CONST from "@Piglet/browser/CONST";
@@ -26,8 +26,6 @@ if (!root) {
   window.stop();
   throw new Error("No <app-root> element found.");
 }
-
-window.addEventListener("pagereveal", pageRevealCallback.bind(root, root));
 
 const coreComponents = [
   Classes.AppRoot,
