@@ -124,7 +124,7 @@ class RenderIf extends ReactiveDummyComponent {
           this._parent.attrs[conditionProperty.toLowerCase()],
       );
     } else {
-      if (!state[conditionProperty]) {
+      if (!state?.[conditionProperty]) {
         console.pig(
           CONST.pigletLogs.conditionNotFoundInState(conditionProperty),
           CONST.coreLogsLevels.warn,
