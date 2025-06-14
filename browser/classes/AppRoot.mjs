@@ -510,6 +510,7 @@ class AppRoot extends ReactiveComponent {
 
   /** @param {AppRoot["_route"] | typeof CONST.symbols.popStateMarker} passedRoute */
   set route(passedRoute) {
+    if (!passedRoute) return;
     return new Promise(async () => {
       const native = passedRoute === CONST.symbols.popStateMarker;
       const targetRoute = native ? window.location.pathname : passedRoute;

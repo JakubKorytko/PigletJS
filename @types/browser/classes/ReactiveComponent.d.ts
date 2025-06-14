@@ -1,5 +1,6 @@
 import { Reason } from "../CONST";
 import { AppRoot } from "./AppRoot.d";
+import { AttributeChange } from "../CONST";
 
 type Internal = {
   owner: ReactiveComponent | undefined;
@@ -18,6 +19,7 @@ type Internal = {
 type PassInfo = {
   ref: ReactiveComponent | null;
   updates: Record<string, any>;
+  changes: AttributeChange[];
   delayed: boolean;
 };
 

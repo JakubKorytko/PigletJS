@@ -84,7 +84,7 @@ function renderSummary(summary) {
 function checkboxMenu(header, options) {
   return new Promise((resolve) => {
     const stdin = process.stdin;
-    stdin.setRawMode(true);
+    if (process.stdin.isTTY) stdin.setRawMode(true);
     stdin.setEncoding("utf8");
 
     const normalizedOptions = options.map((opt) =>
@@ -137,7 +137,7 @@ function checkboxMenu(header, options) {
     }
 
     function exitAndResolve(result) {
-      stdin.setRawMode(false);
+      if (process.stdin.isTTY) stdin.setRawMode(false);
       stdin.removeAllListeners("data");
       console.cls("show");
       previousRenders.push(console.popLog("checkBox"));
@@ -207,7 +207,7 @@ function selectSingleOption(header, options) {
   return new Promise((resolve) => {
     const stdin = process.stdin;
     const stdout = process.stdout;
-    stdin.setRawMode(true);
+    if (process.stdin.isTTY) stdin.setRawMode(true);
     stdin.setEncoding("utf8");
     stdout.write(CONSOLE_CODES.hideCursor);
 
@@ -234,7 +234,7 @@ function selectSingleOption(header, options) {
     }
 
     function exitAndResolve(result) {
-      stdin.setRawMode(false);
+      if (process.stdin.isTTY) stdin.setRawMode(false);
       stdin.removeAllListeners("data");
       console.cls("show");
       previousRenders.push(console.popLog("single"));

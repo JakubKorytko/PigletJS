@@ -9,14 +9,14 @@ interface LogLevelsAliases {
 }
 
 interface AttributeChange {
-  newValue: string | null;
-  attrName: string;
-  oldValue: string | null;
+  value: string | null;
+  property: string;
+  prevValue: string | null;
 }
 
 interface Reason {
   name: string;
-  data?: Record<string, object | string | number | boolean | null>;
+  data?: AttributeChange[];
   originalReason?: Reason;
 }
 
@@ -88,8 +88,8 @@ interface Constants {
     attributesChange: (changes: AttributeChange[]) => Reason;
     parentUpdate: Reason;
     onMount: Reason;
-    herdUpdate: (changes: Array<unknown>) => Reason;
-    stateChange: (changes: Array<unknown>) => Reason;
+    herdUpdate: (changes: AttributeChange[]) => Reason;
+    stateChange: (changes: AttributeChange[]) => Reason;
     fragmentInjected: Reason;
     WSReload: Reason;
   };

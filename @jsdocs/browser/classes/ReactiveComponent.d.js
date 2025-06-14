@@ -3,6 +3,7 @@
 /** @import ReactiveComponent from "@Piglet/browser/classes/ReactiveComponent" */
 /** @import {InterfaceMethodTypes} from "@jsdocs/_utils" */
 /** @import AppRoot from "@Piglet/browser/classes/AppRoot" */
+/** @import {AttributeChange} from "@Piglet/browser/CONST.d" */
 
 /**
  * @typedef {
@@ -26,6 +27,7 @@
  * {
  *  ref: ReactiveComponent|null,
  *  updates: Record<string, any>,
+ *  changes: AttributeChange[],
  *  delayed: boolean
  * }
  *} PassInfo
