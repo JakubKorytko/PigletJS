@@ -137,11 +137,9 @@ class Herd {
 
     const observerWaiters = this.observerWaiters.get(key) ?? [];
 
-    if (
-      !this.globalState[key] &&
-      !observerWaiters.includes(componentInstance)
-    ) {
-      this.observerWaiters.set(key, [...observerWaiters, componentInstance]);
+    if (!this.globalState[key]) {
+      if (!observerWaiters.includes(componentInstance))
+        this.observerWaiters.set(key, [...observerWaiters, componentInstance]);
       return;
     }
 

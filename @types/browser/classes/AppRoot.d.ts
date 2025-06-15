@@ -133,6 +133,9 @@ declare class AppRoot extends ReactiveComponent {
     layout: string,
   ): void;
 
+  /** Gets the layout components for the current route */
+  getLayoutComponents(): ReactiveComponent[];
+
   /** Gets the current route path */
   get route(): string;
 
