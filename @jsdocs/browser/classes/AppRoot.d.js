@@ -236,6 +236,12 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
   renderComponent(component, layout) {}
 
   /**
+   * Gets the layout components for the current route
+   * @returns {ReactiveComponent[]}
+   */
+  getLayoutComponents() {};
+
+  /**
    * Resets the application state and component counter
    * @returns {void}
    */
