@@ -560,7 +560,23 @@ class AppRoot extends ReactiveComponent {
       let testConnection;
       try {
         testConnection = await fetch(targetRoute);
-      } catch {}
+      } catch (err) {
+        console.pig(
+          CONST.pigletLogs.appRoot.errorLoading(targetRoute),
+          CONST.coreLogsLevels.error,
+          err,
+        );
+        return;
+      }
+
+      if (!testConnection?.url) {
+        console.pig(
+          CONST.pigletLogs.appRoot.errorLoading(targetRoute),
+          CONST.coreLogsLevels.error,
+        );
+        return;
+      }
+
       const testURL = new URL(testConnection.url);
       const route = testURL.pathname + testURL.search;
 
@@ -569,6 +585,9 @@ class AppRoot extends ReactiveComponent {
       }
 
       this.__routeCandidate = route;
+
+      routeData.route = route;
+      routeData.isReloaded = this._route === route;
 
       const statusCode = String(testConnection.status)[0];
 
@@ -582,9 +601,6 @@ class AppRoot extends ReactiveComponent {
         );
         return;
       }
-
-      routeData.route = route;
-      routeData.isReloaded = this._route === route;
 
       const navigator = this.createNavigator(route);
 

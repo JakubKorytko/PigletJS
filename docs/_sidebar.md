@@ -23,6 +23,7 @@
     - [404 page](Structure#notfound-page)
 
   - [server](Structure#server)
+    - [middleware](Structure#middleware)
     - [api](Structure#api-directory)
     - [controller.mjs](Structure#controller-mjs)
 
@@ -40,6 +41,7 @@
 
   - [Navigation](Helpers#navigation)
     - [Why use $navigate?](Helpers#navigate-why)
+    - [Route events](Helpers#route-events)
   - [API calls](Helpers#api-calls)
     - [Why use $api?](Helpers#api-why)
   - [$reason](Helpers#reason)
