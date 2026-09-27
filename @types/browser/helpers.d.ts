@@ -1,6 +1,11 @@
 import { AppRoot } from "./classes/index.d";
 
-type Navigate = (route: string) => boolean;
+type NavigateOptions = {
+  condition?: boolean;
+  fallback?: string;
+};
+
+type Navigate = (route: string, options?: NavigateOptions) => boolean;
 type FetchWithCache = (url: string) => Promise<string>;
 
 /** Converts a string to PascalCase format */
@@ -20,10 +25,7 @@ export function api(
 ): Promise<any>;
 
 /** Navigates to a given route */
-export function navigate(
-  route: string,
-  options?: { condition: boolean; fallback?: string },
-): boolean;
+export function navigate(route: string, options?: NavigateOptions): boolean;
 
 /** Converts a string to kebab-case format */
 export function toKebabCase(str: string): string;
@@ -51,4 +53,4 @@ export function loadComponent(
   component: typeof ReactiveComponent,
 ): Promise<CustomElementConstructor>;
 
-export type { FetchWithCache, Navigate };
+export type { FetchWithCache, Navigate, NavigateOptions };

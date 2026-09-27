@@ -301,6 +301,30 @@ server.listen(CONST.PORT, () => {
 
 Except for the `index.mjs` file, you can create any number of files in the `server` directory to handle your server-side logic.
 
+### Middleware :id=middleware
+
+`server.middleware` registers one callback that runs before the matched route handler.
+`req.pigDescription` describes the request:
+
+- `type` — `"Page"`, `"Api"`, `"File"`, `"Module"`, or `"Component:HTML"` / `"Component:Script"` / `"Component:Layout"`. Internal `/Piglet` requests omit `pigDescription`.
+- `value` — for a page, the page component name (for example `"Home"`). For a component, the name with the `/component` prefix removed. For other types, the request path without the query string.
+- `params` — query parameters. PigletJS cache-busting `noCache` is already removed.
+
+If the callback ends the response or sends headers, PigletJS skips the route handler.
+A `4xx` or `5xx` status also cancels client-side navigation and fires `piglet:canceledByMiddleware`. A redirect is followed, and the client navigates to the final path.
+
+```javascript
+import server from "@Piglet/libs/server";
+
+server.middleware((req, res) => {
+  const description = req.pigDescription;
+  if (description?.type === "Page" && description.value === "Admin") {
+    res.statusCode = 401;
+    res.end("Unauthorized");
+  }
+});
+```
+
 ### API directory :id=api-directory
 
 For API endpoints, you should create a directory named `api` inside the `server` directory.

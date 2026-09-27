@@ -200,7 +200,7 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * Preloads layout and base for a given route
    * @param {string} route - Route path to preload
    * @param {boolean} isReloaded - Indicates if the route is reloaded
-   * @returns {Promise<{ base: ReactiveComponent | undefined, layout: string }>}
+   * @returns {Promise<{ base: ReactiveComponent | undefined, layout: string, html?: string }>}
    */
   async preLoadRoute(route, isReloaded = false);
 
@@ -243,11 +243,12 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
 
   /**
    * Resets the application state and component counter
+   * @param {ReactiveComponent[]} [layoutComponents] - Components whose state should survive the reset
    * @returns {void}
    */
-  reset() {
+  reset(layoutComponents = []) {
     this.state = {};
-    this.componentCounter = 0;
+    this.componentCounter = layoutComponents.length;
   }
 
   /**
@@ -271,10 +272,10 @@ class AppRootInterface extends VirtualReactiveComponentInterface {
    * Starts a route chain for the navigator
    * @param navigator {Navigator} - The navigator instance to start the route chain
    * @param routeData {RouteChangeEventDetail} - Data for the route change event
-   * @returns {boolean}
+   * @returns {Promise<boolean>}
    */
   startRouteChain(navigator, routeData) {
-    return true;
+    return Promise.resolve(true);
   }
 
   /**

@@ -86,7 +86,7 @@ The route can only navigate to one of your application's pages - it cannot navig
 - Using `<NavLink />` ensures that the navigation is handled by PigletJS's routing system, which allows for features like client-side navigation, route transitions, and more.
 - It automatically applies `active` classes to the link when the current route matches the `to` attribute, making it easier to style active links.
 - It does not cause a full page reload, which is important for maintaining the state of your application and providing a smoother user experience.
-- It fires a `popstate` event when the link is clicked, allowing you to handle navigation events in your PigletJS scripts.
+- It navigates through `$navigate`, so the click goes through the same route pipeline and `piglet:*` events as a scripted navigation. See [Route events](Helpers#route-events).
 
 ## \<KinderGarten /> :id=KinderGarten
 

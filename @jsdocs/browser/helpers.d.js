@@ -18,7 +18,7 @@
 
 /**
  * @typedef {{
- *     condition: boolean, // The condition for navigation to succeed
+ *     condition?: boolean, // The condition for navigation to succeed. Defaults to true.
  *     fallback?: string, // Optional fallback route if navigation fails, defaults to '/',
  * }} NavigateOptions
  */

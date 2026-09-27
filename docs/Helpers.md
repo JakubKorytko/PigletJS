@@ -9,15 +9,51 @@ This function allows you to change the current page by specifying the path you w
 $navigate("/path/to/page");
 ```
 
+You can also pass an options object. When `condition` is `false`, PigletJS navigates to `fallback` instead (default `"/"`).
+
+```javascript
+$navigate("/admin", {
+  condition: user.isAdmin,
+  fallback: "/login",
+});
+```
+
 **Note:** The path should be relative to the root of your application, and it should not include the domain or protocol.
 You can't use `$navigate` to navigate to external URLs.
+
+`$navigate` assigns the application route. The route pipeline prefetches that path, renders it, then calls `pushState` once. `$navigate` does not fire `popstate`.
 
 ### Why use `$navigate` instead of `window.location.href`, `window.open` and other methods? :id=navigate-why
 
 - `$navigate` is specifically designed for navigation within a PigletJS application, while `window.location.href` is a standard JavaScript method that causes a full page reload.
 - Using `$navigate` ensures that the navigation is handled by PigletJS's routing system, which allows for features like client-side navigation, route transitions, and more.
 - It does not cause a full page reload, which is important for maintaining the state of your application and providing a smoother user experience.
-- It fires a `popstate` event when the navigation occurs, allowing you to handle navigation events in your PigletJS scripts
+- It dispatches PigletJS route events on `window`, so scripts can react without listening to `popstate`.
+
+### Route events :id=route-events
+
+Listen on `window`. Each event is a `CustomEvent`. `event.detail` has this shape:
+
+| Field | Meaning |
+| --- | --- |
+| `route` | Path being navigated to, including the query string when present |
+| `previousRoute` | Route before this navigation |
+| `isInitial` | `true` on the first route load |
+| `isReloaded` | `true` when the target path is already the current route |
+| `native` | `true` when the browser back or forward button triggered the change |
+| `redirected` | `true` when the server responded from a different path than the one requested |
+
+- `piglet:beforeRouteChange` fires after a successful prefetch and before the page is rendered.
+- `piglet:routeChanged` fires after the route is committed and browser history is updated.
+- `piglet:canceledByMiddleware` fires when the prefetch responds with a `4xx` or `5xx` status. Navigation stops and history stays unchanged.
+
+```javascript
+window.addEventListener("piglet:beforeRouteChange", (event) => {
+  console.log(event.detail.route);
+});
+```
+
+Browser back and forward still use the native `popstate` event internally. PigletJS turns that into the same route pipeline, so application code should listen to the `piglet:*` events above.
 
 ## API calls
 

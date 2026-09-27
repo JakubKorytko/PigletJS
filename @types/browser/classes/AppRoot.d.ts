@@ -1,6 +1,6 @@
 import ReactiveComponent from "./ReactiveComponent.d";
 import ReactiveDummyComponent from "./ReactiveDummyComponent.d";
-import type { api } from "../helpers.d";
+import type { api, Navigate } from "../helpers.d";
 import type { HerdInterface } from "./Herd.d";
 import type { RouteChangeEventDetail } from "./NavLink.d";
 
@@ -77,7 +77,7 @@ declare class AppRoot extends ReactiveComponent {
   };
 
   /** Function to navigate to a new route */
-  navigate: (route: string) => boolean;
+  navigate: Navigate;
 
   /** API instance for making requests */
   api: api;
@@ -98,7 +98,7 @@ declare class AppRoot extends ReactiveComponent {
   __routeCandidate: string;
 
   /** Resets the application state and component counter */
-  reset: () => void;
+  reset: (layoutComponents?: ReactiveComponent[]) => void;
 
   /** Fetches layout paths from the server */
   async getLayoutPaths(): Promise<void>;
@@ -113,10 +113,8 @@ declare class AppRoot extends ReactiveComponent {
   ): Promise<{
     base: ReactiveComponent | undefined;
     layout: string;
+    html?: string;
   }>;
-
-  /** Loads and renders the view for a given route */
-  loadRoute(route: string): Promise<void>;
 
   /** Extracts custom component tags from HTML source */
   extractCustomTags(pageSource: string): string[];
@@ -155,7 +153,7 @@ declare class AppRoot extends ReactiveComponent {
   startRouteChain: (
     navigator: Navigator,
     routeData: RouteChangeEventDetail,
-  ) => boolean;
+  ) => Promise<boolean>;
 
   /** Creates a new navigator instance for handling route changes */
   createNavigator(route: string): Navigator;
