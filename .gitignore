@@ -2,3 +2,4 @@
 !.idea/inspectionProfiles
 !.idea/webResources.xml
 build/
+.playwright-mcp/
