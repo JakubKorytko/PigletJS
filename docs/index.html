@@ -46,6 +46,7 @@
               : "dark");
           document.documentElement.setAttribute("data-theme", theme);
         } catch (error) {
+          console.warn(error);
           document.documentElement.setAttribute("data-theme", "dark");
         }
       })();
@@ -77,6 +78,8 @@
         subMaxLevel: 0,
         alias: {
           "/.*/_sidebar.md": "/_sidebar.md",
+          "/": "/Getting_started.md",
+          "/README(\\.md)?": "/Getting_started.md",
         },
         search: {
           placeholder: "Search docs  (/)",
@@ -98,7 +101,7 @@
         formatUpdated: "Updated: {MM}/{DD}/{YYYY} {HH}:{mm}",
       };
     </script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
