@@ -131,6 +131,23 @@ function fixPagination() {
   );
 }
 
+function fixDocumentTitle() {
+  const page = pageKey(window.location.hash);
+  let label = "";
+
+  document.querySelectorAll(".sidebar-nav a").forEach((anchor) => {
+    const text = (anchor.textContent || "").replace(/\s+/g, " ").trim();
+    if (text && anchor.title !== text) {
+      anchor.title = text;
+    }
+    if (!label && page && pageKey(anchor.getAttribute("href") || "") === page) {
+      label = text;
+    }
+  });
+
+  document.title = label || "PigletJS docs";
+}
+
 function bindShortcuts() {
   if (document.body.dataset.pigShortcuts === "1") {
     return;
@@ -160,6 +177,7 @@ function bindShortcuts() {
 
 export {
   bindShortcuts,
+  fixDocumentTitle,
   fixPagination,
   markCover,
   mountProgress,

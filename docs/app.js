@@ -8,6 +8,7 @@ import {
 } from "./plugin/sidebar.js";
 import {
   bindShortcuts,
+  fixDocumentTitle,
   fixPagination,
   markCover,
   mountProgress,
@@ -24,6 +25,7 @@ window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook)
     bindSidebarPin();
     markCover();
     markSection();
+    fixDocumentTitle();
     window.addEventListener("hashchange", markSection);
   });
   hook.doneEach(function () {
@@ -36,6 +38,7 @@ window.$docsify.plugins = (window.$docsify.plugins || []).concat(function (hook)
     setTimeout(function () {
       fixPagination();
       scrollNavToActive();
+      fixDocumentTitle();
     }, 0);
   });
 });
